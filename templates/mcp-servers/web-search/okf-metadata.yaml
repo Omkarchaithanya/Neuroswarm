@@ -1,0 +1,6 @@
+id: web-search
+name: Web Search MCP
+description: Search the web for relevant sources.
+params:
+  query: search query
+

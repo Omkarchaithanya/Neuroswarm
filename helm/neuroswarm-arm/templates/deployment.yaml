@@ -1,0 +1,19 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuroswarm-arm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neuroswarm-arm
+  template:
+    metadata:
+      labels:
+        app: neuroswarm-arm
+    spec:
+      containers:
+        - name: app
+          image: neuroswarm-arm:latest
+          ports:
+            - containerPort: 8000

@@ -1,0 +1,4 @@
+﻿apiVersion: v2
+name: neuroswarm-arm
+description: NeuroSwarm-Arm Helm chart
+version: 0.1.0

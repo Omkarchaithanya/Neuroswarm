@@ -1,0 +1,8 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuroswarm-arm-prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s

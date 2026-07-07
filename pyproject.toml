@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuroswarm-arm"
+version = "0.1.0"
+description = "Arm-native agent runtime scaffold for NEXUS-ARM / NeuroSwarm-Arm"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+llm = ["requests>=2.32", "numpy>=1.26"]
+routing = ["faiss-cpu>=1.8.0", "sentence-transformers>=3.0.1"]
+memory = ["mem0>=0.1.0"]
+dashboard = ["prometheus-client>=0.20.0"]
+bench = ["matplotlib>=3.9"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["neuroswarm_arm*"]
+
