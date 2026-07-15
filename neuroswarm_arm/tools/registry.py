@@ -1,9 +1,13 @@
+<<<<<<< HEAD
 """Tool registry facade — delegates to runtime.router when bound."""
 
+=======
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+<<<<<<< HEAD
 
 import yaml
 
@@ -38,11 +42,17 @@ def _to_record(tool: ToolDef | ToolRecord | dict) -> ToolRecord:
             auth=tool.auth,
         )
     return ToolRecord.from_dict(tool)
+=======
+import yaml
+
+from ..schemas import ToolDef
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 
 
 @dataclass
 class ToolRegistry:
     tools: dict[str, ToolDef] = field(default_factory=dict)
+<<<<<<< HEAD
     _runtime: RuntimeToolRegistry | None = field(default=None, repr=False)
 
     def bind(self, runtime: RuntimeToolRegistry) -> RuntimeToolRegistry:
@@ -72,6 +82,14 @@ class ToolRegistry:
             self._sync_from_runtime()
             return
         for meta in Path(root).rglob("okf-metadata.yaml"):
+=======
+
+    def register(self, tool: ToolDef) -> None:
+        self.tools[tool.id] = tool
+
+    def load_okf_metadata(self, root: Path) -> None:
+        for meta in root.rglob("okf-metadata.yaml"):
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
             data = yaml.safe_load(meta.read_text(encoding="utf-8")) or {}
             self.register(
                 ToolDef(
@@ -85,6 +103,11 @@ class ToolRegistry:
             )
 
     def as_list(self) -> list[ToolDef]:
+<<<<<<< HEAD
         if self._runtime is not None:
             self._sync_from_runtime()
         return list(self.tools.values())
+=======
+        return list(self.tools.values())
+
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

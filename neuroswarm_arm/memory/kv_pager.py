@@ -1,17 +1,25 @@
+<<<<<<< HEAD
 """Compatibility wrapper around the Plane-2 KV Memory Runtime.
 
 Deprecated: prefer ``neuroswarm_arm.runtime.kv.build_kv_runtime``.
 """
 
+=======
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+<<<<<<< HEAD
 from typing import Any
 
 from neuroswarm_arm.runtime.kv.factory import build_kv_runtime
 from neuroswarm_arm.runtime.kv.manager.runtime import KVRuntimeManager
 from neuroswarm_arm.runtime.kv.utils.config import load_kv_config
+=======
+import json
+import zlib
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 
 
 @dataclass
@@ -23,6 +31,7 @@ class KVPage:
 
 @dataclass
 class KVCachePager:
+<<<<<<< HEAD
     """Legacy pager API backed by KVRuntimeManager checkpoint/restore."""
 
     root: Path
@@ -67,3 +76,22 @@ class KVCachePager:
 
     def pressure(self) -> float:
         return self.runtime.pressure_snapshot().pressure
+=======
+    root: Path
+    pages: dict[str, KVPage] = field(default_factory=dict)
+
+    def save(self, session_id: str, payload: dict) -> Path:
+        self.root.mkdir(parents=True, exist_ok=True)
+        raw = json.dumps(payload).encode("utf-8")
+        page = KVPage(page_id=session_id, data=zlib.compress(raw), compressed=True)
+        self.pages[session_id] = page
+        target = self.root / f"{session_id}.kvz"
+        target.write_bytes(page.data)
+        return target
+
+    def load(self, session_id: str) -> dict:
+        target = self.root / f"{session_id}.kvz"
+        raw = zlib.decompress(target.read_bytes())
+        return json.loads(raw.decode("utf-8"))
+
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

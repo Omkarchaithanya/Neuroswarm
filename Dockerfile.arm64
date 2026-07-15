@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 FROM --platform=linux/arm64 python:3.12-slim-bookworm
 
 WORKDIR /app
@@ -25,4 +26,12 @@ RUN pip install --no-cache-dir \
     && pip install --no-cache-dir --no-deps -e .
 
 EXPOSE 8000
+=======
+﻿FROM python:3.12-slim
+
+WORKDIR /app
+COPY . /app
+RUN pip install --no-cache-dir -e .
+
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 CMD ["python", "-m", "neuroswarm_arm.main"]

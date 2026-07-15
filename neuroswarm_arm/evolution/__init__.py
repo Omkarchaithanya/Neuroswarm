@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Plane 5 — Autonomic Runtime Optimization Plane (AROP).
 
 NEXUS Layer 5 remains MAKS. AROP is the Evolution / Plane 5 optimizer:
@@ -26,3 +27,7 @@ __all__ = [
     "build_arop",
     "load_arop_config",
 ]
+=======
+"""Performix integration and evolution loop."""
+
+>>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
