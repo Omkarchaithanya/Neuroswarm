@@ -1,0 +1,24 @@
+# CPU / Axion hardware policy — no fake NUMA claims
+prefill_pool_size: 2
+decode_pool_size: 4
+affinity_enabled: true
+numa_fallback_single_node: true
+
+core_partition:
+  # Logical partition on homogeneous Axion; override via NSA_DIPA_* 
+  prefill_fraction: 0.4
+  decode_fraction: 0.6
+
+features:
+  require_kleidiai: false
+  allow_gpu: true
+  allow_npu: true
+  allow_cxl: true
+  allow_sme: true
+
+device_preference:
+  - cpu
+  - npu
+  - gpu
+  - cxl
+  - sme

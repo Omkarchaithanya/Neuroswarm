@@ -1,0 +1,26 @@
+{
+  "title": "ROF DIPA Dashboard",
+  "uid": "rof-dipa",
+  "tags": ["rof", "dipa"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Inference Duration",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "nexus_inference_duration_seconds_last", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Streaming TTFT",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "nexus_streaming_ttft_seconds_last", "refId": "A"}]
+    }
+  ]
+}

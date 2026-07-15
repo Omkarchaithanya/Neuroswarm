@@ -1,0 +1,17 @@
+version: "1.0"
+roles:
+  research:
+    class: AgentRole
+    domains: [research]
+  planner:
+    class: AgentRole
+    domains: [planning]
+  coding:
+    class: AgentRole
+    domains: [coding]
+  reviewer:
+    class: AgentRole
+    domains: [review]
+  architect:
+    class: AgentRole
+    domains: [architecture, planning]

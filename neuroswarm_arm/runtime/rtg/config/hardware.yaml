@@ -1,0 +1,9 @@
+# ARM / Axion hardware monitor settings (best-effort; ADR Axion fallbacks)
+enabled: true
+performix_snapshot: work/haoe/performix_snapshot.json
+pmu_enabled: true
+energy_aware: true
+watts_per_token: 0.002
+cpu_util_hard: 0.95
+l3_miss_hard: 0.80
+memory_bandwidth_soft_gbs: 200.0

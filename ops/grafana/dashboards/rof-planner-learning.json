@@ -1,0 +1,26 @@
+{
+  "title": "ROF Planner Learning",
+  "uid": "rof-planner-learning",
+  "tags": ["rof", "rcis", "learning"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Planner Prediction Error",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "nexus_planner_prediction_error", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Runtime Planner Accuracy",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "runtime_planner_accuracy", "refId": "A"}]
+    }
+  ]
+}

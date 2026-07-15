@@ -1,0 +1,124 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "runtime_cost_total", "legendFormat": "cost", "refId": "A"}],
+      "title": "Live Cost (Cumulative)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "runtime_cost_per_token", "legendFormat": "$/tok", "refId": "A"}],
+      "title": "Cost Per Token",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "id": 3,
+      "targets": [{"expr": "runtime_tokens_per_dollar", "legendFormat": "tok/$", "refId": "A"}],
+      "title": "Tokens Per Dollar",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 4,
+      "targets": [{"expr": "runtime_cpu_seconds", "legendFormat": "cpu_s", "refId": "A"}],
+      "title": "CPU Seconds",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 5,
+      "targets": [{"expr": "runtime_memory_bytes", "legendFormat": "bytes", "refId": "A"}],
+      "title": "Peak Memory",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 6,
+      "targets": [{"expr": "runtime_energy_estimate", "legendFormat": "J", "refId": "A"}],
+      "title": "Energy Estimate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
+      "id": 7,
+      "targets": [{"expr": "runtime_kv_reuse", "legendFormat": "reuse", "refId": "A"}],
+      "title": "KV Reuse Ratio",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
+      "id": 8,
+      "targets": [{"expr": "runtime_spec_acceptance", "legendFormat": "accept", "refId": "A"}],
+      "title": "Spec Acceptance",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
+      "id": 9,
+      "targets": [{"expr": "runtime_tokens_per_watt", "legendFormat": "tok/W", "refId": "A"}],
+      "title": "Tokens Per Watt",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "id": 10,
+      "targets": [
+        {"expr": "runtime_planner_prediction_error", "legendFormat": "error", "refId": "A"},
+        {"expr": "runtime_planner_accuracy", "legendFormat": "accuracy", "refId": "B"}
+      ],
+      "title": "Planner Accuracy / Prediction Errors",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "id": 11,
+      "targets": [
+        {"expr": "runtime_backend_cost", "legendFormat": "{{backend}}", "refId": "A"},
+        {"expr": "runtime_quant_cost", "legendFormat": "{{quant}}", "refId": "B"},
+        {"expr": "runtime_model_cost", "legendFormat": "{{model}}", "refId": "C"}
+      ],
+      "title": "Backend / Quant / Model Cost",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rcis", "finops", "armora"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "RCIS Runtime Cost Intelligence",
+  "uid": "rcis-runtime-cost",
+  "version": 1
+}

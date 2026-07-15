@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/nexus/frontmatter.nexus.schema.json",
+  "title": "NEXUS OKF Frontmatter Extensions",
+  "description": "Origin: NEXUS Extension. Producer conventions on top of Google OKF. Never required by official validator.",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-form per Google OKF. NEXUS producers MAY use agent|tool|policy|playbook|metric|domain|concept|ontology as conventions."
+    },
+    "title": {"type": "string"},
+    "description": {"type": "string"},
+    "resource": {"type": "string"},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "timestamp": {"type": "string"},
+    "okf_version": {"type": "string", "description": "NEXUS producer marker; Google uses okf_version only on root index.md"},
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "NEXUS alias id. Official Concept ID remains path without .md"
+    },
+    "aliases": {"type": "array", "items": {"type": "string"}},
+    "namespace": {"type": "string"},
+    "owners": {"type": "array", "items": {"type": "string"}},
+    "visibility": {"type": "string", "enum": ["public", "internal", "private", "restricted"]},
+    "permissions": {"type": "object"},
+    "status": {"type": "string", "enum": ["draft", "review", "approved", "deprecated"]},
+    "lifecycle": {"type": "string", "enum": ["experimental", "stable", "frozen"]},
+    "deprecated_by": {"type": ["string", "null"]},
+    "compat": {"type": "object"},
+    "priority": {"type": "number", "minimum": 0, "maximum": 100},
+    "token_budget": {"type": "integer", "minimum": 0},
+    "token_budget_hard": {"type": "integer", "minimum": 0},
+    "recency_weight": {"type": "number"},
+    "ontology": {"type": "object"},
+    "mount": {"type": "object"},
+    "sections": {"type": "array"},
+    "version": {"type": "string"}
+  },
+  "additionalProperties": true
+}

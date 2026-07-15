@@ -1,0 +1,11 @@
+﻿.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+work/
+*.log
+.pytest_cache/
+tests/experience/_tmp/
+okf/.okf/
+**/.okf/

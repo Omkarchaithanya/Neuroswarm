@@ -1,0 +1,16 @@
+# Hierarchical policy knobs
+layers:
+  L0_hard_constraints: true
+  L1_streaming_detectors: true
+  L2_bandit_thresholds: true
+  L3_ppo_scaffold: false
+
+force_close_message: "Due to time constraints, I need to give my answer now."
+
+escalation:
+  low_confidence: 0.45
+  plateau_escalate: false
+
+prompt_template: >
+  You may reason for up to {cap} tokens before producing a tool call.
+  If your chosen tool confidence is >= 0.85, commit immediately.

@@ -1,0 +1,42 @@
+# Multi-objective scoring weights (must sum ≈ 1.0)
+weights:
+  quality: 0.25
+  latency: 0.20
+  memory: 0.15
+  cost: 0.15
+  energy: 0.05
+  availability: 0.10
+  risk: 0.05
+  confidence: 0.05
+
+# Feature → objective boosts
+feature_boosts:
+  reasoning_score:
+    quality: 0.15
+  tool_likelihood:
+    latency: 0.10
+  memory_score:
+    memory: 0.20
+  cost_score:
+    cost: 0.15
+  latency_score:
+    latency: 0.15
+  cache_locality_score:
+    latency: 0.08
+  warm_bonus:
+    latency: 0.12
+    availability: 0.10
+
+top_n: 5
+safe_default:
+  model: tier2
+  quant: Q5_K_M
+  backend: llama_cpp
+
+# Role priors (features only — not sole decision path)
+role_quant_prior:
+  reasoning: Q5_K_M
+  tool_call: Q4_0
+  summarization: Q4_0
+  code: Q5_K_M
+  classification: Q4_0

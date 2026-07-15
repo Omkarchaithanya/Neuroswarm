@@ -1,0 +1,54 @@
+strategies:
+  draft_model:
+    enabled: true
+    class: draft_model
+  self_speculation:
+    enabled: true
+    class: self_speculation
+    ngram_size: 24
+    draft_min: 4
+    draft_max: 48
+  ngram:
+    enabled: true
+    class: ngram
+    ngram_size: 16
+  suffix:
+    enabled: true
+    class: suffix
+  eagle:
+    enabled: false
+    class: eagle
+    stub: true
+  eagle3:
+    enabled: false
+    class: eagle3
+    stub: true
+  medusa:
+    enabled: false
+    class: medusa
+    stub: true
+  pard:
+    enabled: false
+    class: pard
+    stub: true
+
+  block:
+    enabled: true
+    class: block
+  single_token:
+    enabled: true
+    class: single_token
+  batched:
+    enabled: true
+    class: batched
+  hierarchical:
+    enabled: false
+    class: hierarchical
+    stub: true
+  tree:
+    enabled: false
+    class: tree
+    stub: true
+  quality:
+    enabled: true
+    class: quality

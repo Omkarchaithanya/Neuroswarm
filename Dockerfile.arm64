@@ -1,0 +1,28 @@
+FROM --platform=linux/arm64 python:3.12-slim-bookworm
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    NSA_HOST=0.0.0.0 \
+    NSA_PORT=8000
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install gateway runtime deps first (avoid pulling the full optional ML stack in-image).
+COPY pyproject.toml README.md LICENSE /app/
+COPY neuroswarm_arm /app/neuroswarm_arm
+COPY templates /app/templates
+COPY okf /app/okf
+
+RUN pip install --no-cache-dir \
+      "fastapi>=0.115" \
+      "uvicorn[standard]>=0.34" \
+      "pydantic>=2.11" \
+      "pyyaml>=6.0" \
+    && pip install --no-cache-dir --no-deps -e .
+
+EXPOSE 8000
+CMD ["python", "-m", "neuroswarm_arm.main"]

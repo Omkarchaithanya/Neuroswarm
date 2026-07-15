@@ -1,0 +1,8 @@
+project_id    = "project-5bcdea88-8805-4908-991"
+region        = "us-central1"
+zone          = "us-central1-a"
+instance_name = "neuroswarm-axion"
+machine_type  = "c4a-standard-8"
+
+# Replace with your current public IP /32.
+source_ranges = ["203.0.113.10/32"]

@@ -1,0 +1,18 @@
+# Adaptive / hard thresholds for L0–L2 policies
+tool_confidence_commit: 0.85
+self_consistency_commit: 0.90
+kv_pressure_soft: 0.70
+kv_pressure_hard: 0.90
+memory_pressure_hard: 0.85
+entropy_stop: 0.35
+plateau_epsilon: 0.02
+plateau_windows: 3
+roi_stop: 0.05
+answer_stability_commit: 0.92
+slo_soft_ms: 4000
+bandit_arms:
+  - 0.70
+  - 0.80
+  - 0.85
+  - 0.90
+  - 0.95

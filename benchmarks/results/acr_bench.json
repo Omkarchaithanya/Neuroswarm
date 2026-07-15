@@ -1,0 +1,52 @@
+{
+  "repeat": 5,
+  "budget": 800,
+  "avg_compression_ratio": 0.8641975308641975,
+  "avg_token_reduction": 0.13580246913580252,
+  "avg_information_retained": 0.45,
+  "avg_latency_ms": 1.5920800622552633,
+  "p50_latency_ms": 1.141600077971816,
+  "throughput_rps": 1074.9683090922588,
+  "cache_hit_ratio": 0.75,
+  "health": {
+    "enabled": true,
+    "cache": {
+      "entries": 1,
+      "hits": 3,
+      "misses": 1,
+      "hit_ratio": 0.75,
+      "numa_node": null,
+      "policy": "lru"
+    },
+    "numa_nodes": [],
+    "arch": "AMD64",
+    "metrics": {
+      "counters": {
+        "understanding_total": 2.0,
+        "planning_total": 2.0,
+        "retrieval_total": 2.0,
+        "scoring_total": 2.0,
+        "compression_total": 2.0,
+        "assembly_total": 2.0,
+        "build_context": 2.0,
+        "cache_miss": 1.0,
+        "cache_hit": 3.0
+      },
+      "gauges": {
+        "last_compression_ratio": 0.8641975308641975,
+        "last_token_reduction": 0.13580246913580252,
+        "last_information_retained": 0.44999999999999996,
+        "cache_hit_ratio": 0.75
+      },
+      "latency_avg_ms": {
+        "understanding": 0.22865005303174257,
+        "planning": 0.059150042943656445,
+        "retrieval": 1.2619500048458576,
+        "scoring": 0.12794998474419117,
+        "compression": 0.2758998889476061,
+        "assembly": 0.11230004020035267
+      }
+    }
+  },
+  "note": "No fixed percentage target \u2014 maximize measured compression while retaining task info."
+}

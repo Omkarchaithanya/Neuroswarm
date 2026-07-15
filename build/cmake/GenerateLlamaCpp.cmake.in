@@ -1,0 +1,16 @@
+# Auto-generated template for llama.cpp + KleidiAI (filled by generate_cmake.py).
+# @ARCH@ @FEATURES@
+
+cmake_minimum_required(VERSION 3.16)
+
+set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+set(GGML_CPU_KLEIDIAI ON CACHE BOOL "Enable Arm KleidiAI CPU kernels" FORCE)
+set(GGML_NATIVE ON CACHE BOOL "Runtime-friendly native tune" FORCE)
+set(GGML_OPENMP ON CACHE BOOL "" FORCE)
+set(GGML_CPU_ALL_VARIANTS ON CACHE BOOL "Multi-variant CPU backends" FORCE)
+set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+set(GGML_METAL OFF CACHE BOOL "" FORCE)
+
+# Prefer clang when available (set by generate_cmake.py CLI wrapper).
+# SME: leave GGML_KLEIDIAI_SME unset for auto runtime detect.

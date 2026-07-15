@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.6
+# Production llama.cpp server with KleidiAI for ARM64 (Axion / Neoverse).
+# Build: docker buildx build --platform linux/arm64 -f docker/Dockerfile.llama-kleidiai -t nexus-arm/llama-kleidiai:server .
+
+FROM ubuntu:24.04 AS build
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git ca-certificates curl \
+    clang libomp-dev libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+ARG LLAMA_CPP_REF=master
+RUN git clone --depth 1 --branch "${LLAMA_CPP_REF}" https://github.com/ggml-org/llama.cpp.git
+
+WORKDIR /src/llama.cpp
+# Upstream-recommended KleidiAI enablement; GGML_NATIVE for runtime ISA pick.
+RUN cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=clang \
+        -DCMAKE_CXX_COMPILER=clang++ \
+        -DGGML_CPU_KLEIDIAI=ON \
+        -DGGML_NATIVE=ON \
+        -DGGML_OPENMP=ON \
+        -DGGML_CPU_ALL_VARIANTS=ON \
+        -DGGML_BLAS=OFF \
+        -DGGML_CUDA=OFF \
+        -DGGML_METAL=OFF \
+    && cmake --build build --config Release -j"$(nproc)" \
+    && install -d /opt/llama/bin \
+    && install -m 0755 build/bin/llama-server /opt/llama/bin/llama-server \
+    && (install -m 0755 build/bin/llama-bench /opt/llama/bin/llama-bench || true) \
+    && (install -m 0755 build/bin/llama-cli /opt/llama/bin/llama-cli || true)
+
+FROM ubuntu:24.04 AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 libcurl4 ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /opt/llama /opt/llama
+ENV PATH="/opt/llama/bin:${PATH}"
+# SME auto-detect unless overridden
+# ENV GGML_KLEIDIAI_SME=
+EXPOSE 8080
+VOLUME ["/models"]
+ENTRYPOINT ["llama-server"]
+CMD ["--host", "0.0.0.0", "--port", "8080"]

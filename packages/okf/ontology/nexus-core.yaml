@@ -1,0 +1,58 @@
+version: "1.0"
+namespaces:
+  nexus: "nexus"
+  mcp: "mcp"
+  org: "org"
+classes:
+  Concept:
+    parents: []
+    required: [id, type]
+  AgentRole:
+    parents: [Concept]
+    required: [id, title]
+  Tool:
+    parents: [Concept]
+    required: [id, title]
+  Policy:
+    parents: [Concept]
+    required: [id, title]
+  Playbook:
+    parents: [Concept]
+    required: [id, title]
+  Metric:
+    parents: [Concept]
+    required: [id, title]
+  Domain:
+    parents: [Concept]
+    required: [id, title]
+predicates:
+  uses_tool:
+    domain: AgentRole
+    range: Tool
+  governed_by:
+    domain: Concept
+    range: Policy
+  depends_on:
+    domain: Concept
+    range: Concept
+  extends:
+    domain: Concept
+    range: Concept
+  aliases:
+    domain: Concept
+    range: Concept
+  owns:
+    domain: Concept
+    range: Concept
+  see_also:
+    domain: Concept
+    range: Concept
+type_map:
+  agent: AgentRole
+  tool: Tool
+  policy: Policy
+  playbook: Playbook
+  metric: Metric
+  domain: Domain
+  concept: Concept
+  ontology: Concept

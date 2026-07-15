@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/permissions.schema.json",
+  "title": "OKF Permissions",
+  "type": "object",
+  "properties": {
+    "read": {"type": "array", "items": {"type": "string"}},
+    "write": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -1,0 +1,18 @@
+# Streaming engine policy
+default_transport: sse
+buffer_max_chunks: 256
+backpressure_high_watermark: 200
+backpressure_low_watermark: 50
+reconnect_enabled: true
+resume_enabled: true
+chunk_schedule_ms: 5
+
+transports:
+  sse:
+    enabled: true
+  websocket:
+    enabled: true
+  grpc:
+    enabled: true
+  chunked_http:
+    enabled: true

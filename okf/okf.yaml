@@ -1,0 +1,6 @@
+name: nexus-arm-okf
+okf_spec: "0.1"
+nexus_okf_version: "1.0"
+strict: true
+source_root: .
+artifact_root: .okf/artifacts

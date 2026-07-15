@@ -1,0 +1,7 @@
+NAME                          IMAGE                               COMMAND                  SERVICE      CREATED        STATUS                  PORTS
+neuroswarm-arm_gateway_1      neuroswarm-arm-gateway:dev          "python -m neuroswar…"   gateway      20 hours ago   Up 14 hours (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+neuroswarm-arm_grafana_1      grafana/grafana:11.4.0              "/run.sh"                grafana      20 hours ago   Up 14 hours (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+neuroswarm-arm_prometheus_1   prom/prometheus:v2.55.1             "/bin/prometheus --c…"   prometheus   20 hours ago   Up 14 hours (healthy)   0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+neuroswarm-arm_tier1_1        ghcr.io/ggml-org/llama.cpp:server   "/app/llama-server -…"   tier1        20 hours ago   Up 14 hours (healthy)   
+neuroswarm-arm_tier2_1        ghcr.io/ggml-org/llama.cpp:server   "/app/llama-server -…"   tier2        20 hours ago   Up 14 hours (healthy)   
+neuroswarm-arm_tier3_1        ghcr.io/ggml-org/llama.cpp:server   "/app/llama-server -…"   tier3        20 hours ago   Up 14 hours (healthy)   

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/bundle.schema.json",
+  "title": "OKF Bundle Config",
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "okf_version": {"type": "string"},
+    "source_root": {"type": "string"},
+    "artifact_root": {"type": "string"},
+    "strict": {"type": "boolean"},
+    "sign": {"type": "boolean"}
+  }
+}

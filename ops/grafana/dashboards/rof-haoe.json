@@ -1,0 +1,26 @@
+{
+  "title": "ROF HAOE Dashboard",
+  "uid": "rof-haoe",
+  "tags": ["rof", "haoe"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request Latency",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "nexus_request_latency_seconds_last", "refId": "A"}]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Queue Wait",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "nexus_queue_wait_seconds_last", "refId": "A"}]
+    }
+  ]
+}

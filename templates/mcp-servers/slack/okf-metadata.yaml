@@ -1,0 +1,7 @@
+id: slack
+name: Slack MCP
+description: Channel and direct message tools.
+params:
+  channel: slack channel
+  text: message body
+

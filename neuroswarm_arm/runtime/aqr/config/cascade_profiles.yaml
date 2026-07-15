@@ -1,0 +1,21 @@
+# Per-tier constraints — CascadeEngine reads via InferencePlan metadata
+# Never hardcode Q4/Q5/FP16 in Python; change here.
+tiers:
+  1:
+    quality_floor: 0.40
+    max_bits: 5.0
+    preferred_quants: [Q4_0, Q4_K_M, Q3_K]
+    preferred_models: [tier1]
+    max_cost_per_1k: 0.0005
+  2:
+    quality_floor: 0.55
+    max_bits: 6.0
+    preferred_quants: [Q4_K_M, Q5_K_M, Q4_0]
+    preferred_models: [tier2]
+    max_cost_per_1k: 0.002
+  3:
+    quality_floor: 0.75
+    max_bits: 16.0
+    preferred_quants: [Q5_K_M, Q6_K, Q8_0, BF16, FP16]
+    preferred_models: [tier3]
+    max_cost_per_1k: 0.01

@@ -1,0 +1,16 @@
+tiers:
+  - id: 1
+    backend: tier1
+    model: tier1
+    role: draft
+    acceptance_threshold: 0.85
+  - id: 2
+    backend: tier2
+    model: tier2
+    role: verify
+    acceptance_threshold: 0.50
+  - id: 3
+    backend: tier3
+    model: tier3
+    role: escalate
+    acceptance_threshold: 0.0

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/document.schema.json",
+  "title": "OKF Document",
+  "type": "object",
+  "required": ["id", "path", "type", "frontmatter", "body"],
+  "properties": {
+    "id": {"type": "string"},
+    "path": {"type": "string"},
+    "type": {"type": "string"},
+    "frontmatter": {"$ref": "frontmatter.schema.json"},
+    "body": {"type": "string"},
+    "sections": {"type": "array"},
+    "links": {"type": "array"},
+    "checksum": {"type": "string"}
+  }
+}

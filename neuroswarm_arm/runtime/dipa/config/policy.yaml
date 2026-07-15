@@ -1,0 +1,55 @@
+# DIPA workload / SLA / cost policy
+workloads:
+  classification:
+    preferred_model: tier1
+    latency_sla_ms: 800
+    cost_budget_usd: 0.001
+    use_cascade: false
+  tool_calling:
+    preferred_model: tier2
+    latency_sla_ms: 4000
+    cost_budget_usd: 0.01
+    use_cascade: true
+  coding:
+    preferred_model: tier3
+    latency_sla_ms: 8000
+    cost_budget_usd: 0.02
+    use_cascade: true
+  reasoning:
+    preferred_model: tier3
+    latency_sla_ms: 12000
+    cost_budget_usd: 0.05
+    use_cascade: true
+  embedding:
+    preferred_model: tier1
+    latency_sla_ms: 500
+    cost_budget_usd: 0.001
+    use_cascade: false
+  reranking:
+    preferred_model: tier1
+    latency_sla_ms: 600
+    cost_budget_usd: 0.001
+    use_cascade: false
+  vision:
+    preferred_model: tier3
+    latency_sla_ms: 10000
+    cost_budget_usd: 0.03
+    use_cascade: true
+  speech:
+    preferred_model: tier2
+    latency_sla_ms: 5000
+    cost_budget_usd: 0.02
+    use_cascade: false
+
+role_to_workload:
+  classification: classification
+  tool_call: tool_calling
+  code: coding
+  reasoning: reasoning
+  summarization: tool_calling
+
+defaults:
+  latency_sla_ms: 4000
+  cost_budget_usd: 0.01
+  use_cascade: true
+  max_retries: 2

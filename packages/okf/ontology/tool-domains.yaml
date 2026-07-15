@@ -1,0 +1,8 @@
+version: "1.0"
+domains:
+  github: {tags: [scm, code]}
+  postgres: {tags: [data, sql]}
+  s3: {tags: [storage]}
+  slack: {tags: [comms]}
+  web-search: {tags: [research]}
+  browser: {tags: [research, web]}

@@ -1,0 +1,46 @@
+model_dirs:
+  - ${NSA_MODEL_DIR}
+  - /models
+  - ./models
+  - work/models
+
+# Filename regex hints for GGUF discovery
+gguf_patterns:
+  - "*.gguf"
+  - "*.GGUF"
+
+# Map discovered quant tokens (case-insensitive) → catalog names
+quant_aliases:
+  q2_k: Q2_K
+  q2_k_s: Q2_K
+  q3_k: Q3_K
+  q3_k_m: Q3_K
+  q3_k_s: Q3_K
+  q4_0: Q4_0
+  q4_1: Q4_0
+  q4_k: Q4_K_M
+  q4_k_m: Q4_K_M
+  q4_k_s: Q4_K_M
+  q5_0: Q5_K_M
+  q5_k: Q5_K_M
+  q5_k_m: Q5_K_M
+  q5_k_s: Q5_K_M
+  q6_k: Q6_K
+  q8_0: Q8_0
+  f16: FP16
+  fp16: FP16
+  bf16: BF16
+
+# Tier alias mapping when models named tier1/tier2/tier3
+tier_env:
+  tier1: NSA_MODEL_TIER1
+  tier2: NSA_MODEL_TIER2
+  tier3: NSA_MODEL_TIER3
+
+backends_probe:
+  - llama_cpp
+  - vllm
+  - executorch
+  - litert
+  - sglang
+  - mock

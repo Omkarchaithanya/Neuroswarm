@@ -1,0 +1,259 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.arm64
+    image: neuroswarm-arm-gateway:${NSA_IMAGE_TAG:-dev}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NSA_TIER1_URL: http://tier1:8080
+      NSA_TIER2_URL: http://tier2:8080
+      NSA_TIER3_URL: http://tier3:8080
+      NSA_TOOL_METADATA_ROOT: /app/templates/mcp-servers
+      NSA_REQUIRE_KLEIDIAI: ${NSA_REQUIRE_KLEIDIAI:-0}
+      NSA_DIPA_KLEIDIAI: ${NSA_DIPA_KLEIDIAI:-1}
+      NSA_DIPA_OTEL: ${NSA_DIPA_OTEL:-0}
+      NSA_DIPA_OTEL_ENDPOINT: ${NSA_DIPA_OTEL_ENDPOINT:-}
+      NSA_DIPA_PD_MODE: ${NSA_DIPA_PD_MODE:-off}
+      NSA_DIPA_PREFILL_BACKEND: ${NSA_DIPA_PREFILL_BACKEND:-sglang}
+      NSA_DIPA_DECODE_BACKEND: ${NSA_DIPA_DECODE_BACKEND:-llama_cpp}
+      NSA_DIPA_SGLANG_URL: ${NSA_DIPA_SGLANG_URL:-http://sglang-prefill:30000}
+      NSA_DIPA_CHUNK_SIZE: ${NSA_DIPA_CHUNK_SIZE:-2048}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./work:/app/work
+      - ./okf:/app/okf:ro
+      - ${MODEL_DIR:-/models}:/models:ro
+    depends_on:
+      tier1:
+        condition: service_started
+      tier2:
+        condition: service_started
+      tier3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    # Plain docker compose honors mem_limit/cpus; deploy kept for swarm/--compatibility.
+    cpus: 1.0
+    mem_limit: 1536m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536M
+
+  tier1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-kleidiai
+    image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      # Unset = auto SME detect; set 0 to disable on Axion without SME
+      GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+    command:
+      - -m
+      - /models/qwen2.5-0.5b-q4_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - -ngl
+      - "0"
+      - -t
+      - "${TIER1_THREADS:-2}"
+      - -c
+      - "${TIER1_CTX:-4096}"
+      - --metrics
+    volumes:
+      - ${MODEL_DIR:-/models}:/models:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 2.0
+    mem_limit: 2g
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  tier2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-kleidiai
+    image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+    command:
+      - -m
+      - /models/llama-3.2-3b-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - -ngl
+      - "0"
+      - -t
+      - "${TIER2_THREADS:-3}"
+      - -c
+      - "${TIER2_CTX:-4096}"
+      - --metrics
+    volumes:
+      - ${MODEL_DIR:-/models}:/models:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 3.0
+    mem_limit: 6g
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: 6G
+
+  tier3:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-kleidiai
+    image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+    command:
+      - -m
+      - /models/llama-3.1-8b-q5_k_m.gguf
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - -ngl
+      - "0"
+      - -t
+      - "${TIER3_THREADS:-3}"
+      - -c
+      - "${TIER3_CTX:-4096}"
+      - --metrics
+    volumes:
+      - ${MODEL_DIR:-/models}:/models:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 3.0
+    mem_limit: 14g
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: 14G
+
+  sglang-prefill:
+    profiles: ["pd"]
+    image: ${NSA_SGLANG_IMAGE:-lmsysorg/sglang:latest}
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      SGLANG_USE_CPU_ENGINE: "1"
+    command:
+      - python
+      - -m
+      - sglang.launch_server
+      - --model-path
+      - ${NSA_SGLANG_MODEL:-meta-llama/Llama-3.2-1B-Instruct}
+      - --device
+      - cpu
+      - --host
+      - 0.0.0.0
+      - --port
+      - "30000"
+      - --mem-fraction-static
+      - "0.7"
+      - --chunked-prefill-size
+      - "${NSA_DIPA_CHUNK_SIZE:-2048}"
+    ports:
+      - "30000:30000"
+    volumes:
+      - ${MODEL_DIR:-/models}:/models:ro
+      - ${HF_HOME:-./work/hf}:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:30000/health >/dev/null || curl -fsS http://127.0.0.1:30000/v1/models >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+    cpus: 2.0
+    mem_limit: 8g
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    platform: linux/arm64
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - gateway
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    cpus: 0.5
+    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-neuroswarm}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 0.5
+    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+volumes:
+  grafana-data:

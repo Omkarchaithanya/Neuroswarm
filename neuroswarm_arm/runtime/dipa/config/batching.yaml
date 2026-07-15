@@ -1,0 +1,12 @@
+# Batching policy
+enabled: true
+micro:
+  max_batch: 8
+  window_ms: 10
+dynamic:
+  target_latency_ms: 50
+  max_batch: 32
+continuous:
+  enabled: false
+  max_batch: 64
+  require_backend_capability: true

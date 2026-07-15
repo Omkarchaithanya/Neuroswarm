@@ -1,0 +1,99 @@
+default_graph: default_linear
+
+graphs:
+  default_linear:
+    start: tier1
+    nodes:
+      tier1:
+        kind: tier
+        tier_id: 1
+      tier2:
+        kind: tier
+        tier_id: 2
+      tier3:
+        kind: tier
+        tier_id: 3
+      accept:
+        kind: accept
+    edges:
+      - source: tier1
+        target: accept
+        condition: high_confidence
+      - source: tier1
+        target: tier2
+        condition: low_confidence
+      - source: tier2
+        target: accept
+        condition: high_confidence
+      - source: tier2
+        target: tier3
+        condition: low_confidence
+      - source: tier3
+        target: accept
+        condition: always
+
+  tool_then_verify:
+    start: tier1
+    nodes:
+      tier1:
+        kind: tier
+        tier_id: 1
+      tool:
+        kind: tool
+      tier2:
+        kind: tier
+        tier_id: 2
+      accept:
+        kind: accept
+    edges:
+      - source: tier1
+        target: tool
+        condition: tool_needed
+      - source: tier1
+        target: tier2
+        condition: low_confidence
+      - source: tool
+        target: tier2
+        condition: always
+      - source: tier2
+        target: accept
+        condition: always
+
+  memory_escalate:
+    start: tier1
+    nodes:
+      tier1:
+        kind: tier
+        tier_id: 1
+      memory:
+        kind: memory
+      tier2:
+        kind: tier
+        tier_id: 2
+      tier3:
+        kind: tier
+        tier_id: 3
+      accept:
+        kind: accept
+    edges:
+      - source: tier1
+        target: memory
+        condition: memory_needed
+      - source: memory
+        target: tier2
+        condition: always
+      - source: tier2
+        target: tier3
+        condition: low_confidence
+      - source: tier2
+        target: accept
+        condition: high_confidence
+      - source: tier3
+        target: accept
+        condition: always
+      - source: tier1
+        target: tier2
+        condition: low_confidence
+      - source: tier1
+        target: accept
+        condition: high_confidence

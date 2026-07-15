@@ -1,0 +1,35 @@
+objectives:
+  quality:
+    enabled: true
+  latency:
+    enabled: true
+  memory:
+    enabled: true
+  cost:
+    enabled: true
+  energy:
+    enabled: true
+  throughput:
+    enabled: true
+
+sla:
+  default_latency_ms: 4000.0
+  default_budget_usd: 0.01
+
+governor:
+  # When governor requests high accuracy, boost quality weight
+  high_accuracy_quality_boost: 0.20
+  accuracy_threshold: 0.7
+
+kv:
+  pressure_threshold: 0.70
+  prefer_compatible_quant: true
+
+warm:
+  prefer_warm_models: true
+  warm_score_bonus: 0.15
+
+armora:
+  # Hints only — ARMORA proxy not implemented
+  respect_budget: true
+  respect_priority: true

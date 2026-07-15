@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/frontmatter.schema.json",
+  "title": "OKF Frontmatter (points to official)",
+  "description": "Default schema is Google OKF official. See schema/official/ and schema/nexus/ for layers.",
+  "$ref": "official/frontmatter.schema.json"
+}

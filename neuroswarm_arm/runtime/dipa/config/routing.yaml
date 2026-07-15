@@ -1,0 +1,47 @@
+# Scoring weights for model / backend selection
+weights:
+  latency_sla: 0.20
+  warm_hit: 0.10
+  batch_fit: 0.05
+  prompt_length: 0.10
+  streaming: 0.05
+  topology: 0.10
+  cpu_features: 0.05
+  health: 0.15
+  utilization: 0.10
+  cost: 0.05
+  agent_role: 0.05
+
+models:
+  tier1:
+    size_b: 0.5
+    roles: [classification, tool_calling, embedding, reranking]
+    latency_hint_ms: 40
+    cost_per_1k: 0.0001
+    reasoning: false
+  tier2:
+    size_b: 3.0
+    roles: [tool_calling, coding, speech]
+    latency_hint_ms: 80
+    cost_per_1k: 0.0005
+    reasoning: false
+  tier3:
+    size_b: 8.0
+    roles: [coding, reasoning, vision]
+    latency_hint_ms: 150
+    cost_per_1k: 0.002
+    reasoning: true
+
+backend_priorities:
+  llama_cpp: 1.0
+  mock: 0.1
+  vllm: 0.8
+  executorch: 0.5
+  litert: 0.5
+
+prompt_length_routing:
+  short_max_tokens: 32
+  medium_max_tokens: 256
+  short_model: tier1
+  medium_model: tier2
+  long_model: tier3

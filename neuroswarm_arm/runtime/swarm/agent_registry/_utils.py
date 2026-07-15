@@ -1,0 +1,26 @@
+"""Internal helpers for Agent Registry (no task_graph import)."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from datetime import datetime, timezone
+from typing import Any
+from uuid import uuid4
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def new_id(prefix: str = "agt_") -> str:
+    return f"{prefix}{uuid4().hex}"
+
+
+def stable_hash(payload: Any) -> str:
+    raw = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def clamp(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))

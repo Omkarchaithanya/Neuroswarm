@@ -1,0 +1,185 @@
+# Quantization profiles — Phase 1 supported + Phase 2 stubs (supported: false)
+profiles:
+  Q2_K:
+    bits: 2.0
+    quality: 0.35
+    latency: 0.95
+    memory: 0.95
+    expected_perplexity: 12.0
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: true
+    vllm: false
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [classification, tool_calling, embedding]
+  Q3_K:
+    bits: 3.0
+    quality: 0.45
+    latency: 0.90
+    memory: 0.90
+    expected_perplexity: 9.5
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: true
+    vllm: false
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [classification, tool_calling, summarization]
+  Q4_0:
+    bits: 4.0
+    quality: 0.55
+    latency: 0.85
+    memory: 0.80
+    expected_perplexity: 7.5
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: true
+    vllm: true
+    executorch: true
+    litert: true
+    supported: true
+    workloads: [tool_calling, classification, summarization, embedding]
+  Q4_K_M:
+    bits: 4.5
+    quality: 0.65
+    latency: 0.80
+    memory: 0.75
+    expected_perplexity: 6.5
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: true
+    vllm: true
+    executorch: true
+    litert: false
+    supported: true
+    workloads: [tool_calling, coding, speech, classification]
+  Q5_K_M:
+    bits: 5.0
+    quality: 0.80
+    latency: 0.65
+    memory: 0.60
+    expected_perplexity: 5.2
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: true
+    vllm: true
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [reasoning, coding, vision]
+  Q6_K:
+    bits: 6.0
+    quality: 0.88
+    latency: 0.50
+    memory: 0.45
+    expected_perplexity: 4.5
+    arm_kernel: true
+    kleidiai: false
+    llama_cpp: true
+    vllm: false
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [reasoning, coding]
+  Q8_0:
+    bits: 8.0
+    quality: 0.92
+    latency: 0.40
+    memory: 0.35
+    expected_perplexity: 4.0
+    arm_kernel: true
+    kleidiai: false
+    llama_cpp: true
+    vllm: true
+    executorch: true
+    litert: true
+    supported: true
+    workloads: [reasoning, coding, vision]
+  INT8:
+    bits: 8.0
+    quality: 0.90
+    latency: 0.45
+    memory: 0.40
+    expected_perplexity: 4.2
+    arm_kernel: true
+    kleidiai: true
+    llama_cpp: false
+    vllm: true
+    executorch: true
+    litert: true
+    supported: true
+    workloads: [classification, embedding, tool_calling]
+  BF16:
+    bits: 16.0
+    quality: 0.98
+    latency: 0.25
+    memory: 0.15
+    expected_perplexity: 3.2
+    arm_kernel: true
+    kleidiai: false
+    llama_cpp: true
+    vllm: true
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [reasoning, coding, vision]
+  FP16:
+    bits: 16.0
+    quality: 0.99
+    latency: 0.20
+    memory: 0.12
+    expected_perplexity: 3.0
+    arm_kernel: true
+    kleidiai: false
+    llama_cpp: true
+    vllm: true
+    executorch: false
+    litert: false
+    supported: true
+    workloads: [reasoning, coding, vision]
+  # Phase 2 stubs
+  FP8:
+    bits: 8.0
+    quality: 0.93
+    latency: 0.55
+    memory: 0.50
+    expected_perplexity: 3.8
+    arm_kernel: false
+    kleidiai: false
+    llama_cpp: false
+    vllm: true
+    executorch: false
+    litert: false
+    supported: false
+    workloads: [reasoning, coding]
+  INT4:
+    bits: 4.0
+    quality: 0.60
+    latency: 0.88
+    memory: 0.85
+    expected_perplexity: 7.0
+    arm_kernel: false
+    kleidiai: false
+    llama_cpp: false
+    vllm: true
+    executorch: true
+    litert: true
+    supported: false
+    workloads: [tool_calling, classification]
+  INT8_HYBRID:
+    bits: 8.0
+    quality: 0.91
+    latency: 0.50
+    memory: 0.42
+    expected_perplexity: 4.0
+    arm_kernel: false
+    kleidiai: false
+    llama_cpp: false
+    vllm: true
+    executorch: false
+    litert: false
+    supported: false
+    workloads: [reasoning, coding]

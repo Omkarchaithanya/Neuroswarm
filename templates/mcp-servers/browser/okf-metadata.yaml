@@ -1,0 +1,6 @@
+id: browser
+name: Browser MCP
+description: Headless browser actions for page inspection.
+params:
+  url: page URL
+

@@ -1,0 +1,8 @@
+id: github
+name: GitHub MCP
+description: GitHub API tools for issues, PRs, and search.
+params:
+  repo: repository slug
+  state: issue state
+  limit: result limit
+

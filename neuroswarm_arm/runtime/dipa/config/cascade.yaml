@@ -1,0 +1,49 @@
+# Cascade tier policy
+tiers:
+  - id: 1
+    backend: tier1
+    model: tier1
+    acceptance_threshold: 0.85
+  - id: 2
+    backend: tier2
+    model: tier2
+    acceptance_threshold: 0.5
+  - id: 3
+    backend: tier3
+    model: tier3
+    acceptance_threshold: 0.0
+
+confidence:
+  empty_score: 0.0
+  base_score: 0.5
+  length_bonus_cap: 0.4
+  length_divisor: 8000.0
+  uncertainty_penalty: 0.2
+  uncertainty_phrases:
+    - "I don't know"
+    - "cannot"
+
+speculation:
+  enabled: true
+  self_speculation: true
+  ngram_size: 24
+  draft_min: 12
+  draft_max: 48
+  # ASCR Adaptive Speculative Cascade Runtime knobs
+  strategy: draft_model
+  verify_strategy: block
+  graph: default_linear
+  draft_len: 8
+  accept_threshold: 0.7
+  verify_batch_size: 1
+  speculation_depth: 1
+
+ascr:
+  enabled: true
+  strategy: draft_model
+  verify_strategy: block
+  graph: default_linear
+
+fallback:
+  on_all_tiers_fail: degraded
+  degraded_message: "Inference temporarily degraded."

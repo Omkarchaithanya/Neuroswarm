@@ -1,0 +1,127 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "kv_ram_usage", "refId": "A"}],
+      "title": "KV RAM Usage",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "kv_blocks_total", "refId": "A"}],
+      "title": "KV Blocks Total",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "targets": [{"expr": "kv_hit_rate", "refId": "A"}],
+      "title": "KV Prefix Hit Rate",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "targets": [{"expr": "kv_dedup_ratio", "refId": "A"}],
+      "title": "KV Dedup Ratio",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 5,
+      "targets": [
+        {"expr": "kv_prefix_hits", "refId": "A"},
+        {"expr": "kv_prefix_misses", "refId": "B"}
+      ],
+      "title": "Prefix Hits / Misses",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 6,
+      "targets": [
+        {"expr": "kv_migration_count", "refId": "A"},
+        {"expr": "kv_evictions", "refId": "B"}
+      ],
+      "title": "Migrations / Evictions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 7,
+      "targets": [
+        {"expr": "kv_checkpoint_latency", "refId": "A"},
+        {"expr": "kv_restore_latency", "refId": "B"}
+      ],
+      "title": "Checkpoint / Restore Latency (ms)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
+      "id": 8,
+      "targets": [
+        {"expr": "kv_storage_usage", "refId": "A"},
+        {"expr": "kv_compression_ratio", "refId": "B"}
+      ],
+      "title": "Storage Usage / Compression Ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
+      "id": 9,
+      "targets": [
+        {"expr": "kv_blocks_shared", "refId": "A"},
+        {"expr": "kv_reference_count", "refId": "B"}
+      ],
+      "title": "Shared Blocks / Refcounts",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
+      "id": 10,
+      "targets": [
+        {"expr": "kv_fragmentation", "refId": "A"},
+        {"expr": "kv_reuse_ratio", "refId": "B"},
+        {"expr": "kv_miss_rate", "refId": "C"}
+      ],
+      "title": "Fragmentation / Reuse / Miss Rate",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["neuroswarm", "kv", "plane2"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "KV Memory Runtime",
+  "uid": "kv-memory-runtime",
+  "version": 1
+}

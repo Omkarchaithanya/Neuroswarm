@@ -1,0 +1,42 @@
+# Adaptive Speculative Cascade Runtime — master config
+enabled: true
+quality_cascade_fallback: true
+default_graph: default_linear
+
+defaults:
+  proposal_strategy: draft_model
+  verify_strategy: block
+  draft_len: 8
+  accept_threshold: 0.7
+  escalate_threshold: 0.4
+  verify_batch_size: 1
+  speculation_depth: 1
+  max_rounds: 4
+
+confidence:
+  empty_score: 0.0
+  base_score: 0.5
+  length_bonus_cap: 0.4
+  length_divisor: 8000.0
+  uncertainty_penalty: 0.2
+  uncertainty_phrases:
+    - "I don't know"
+    - "cannot"
+  weights:
+    agreement: 0.30
+    quality: 0.25
+    historical: 0.15
+    entropy_inv: 0.10
+    tool: 0.10
+    reasoning: 0.05
+    runtime: 0.05
+
+arm:
+  numa_aware: true
+  pin_draft_pool: true
+  pin_verify_pool: true
+  report_unavailable: true
+
+telemetry:
+  emit_ascr_metrics: true
+  alias_dipa_cascade: true

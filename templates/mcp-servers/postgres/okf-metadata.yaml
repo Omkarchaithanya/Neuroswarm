@@ -1,0 +1,6 @@
+id: postgres
+name: Postgres MCP
+description: Read-only SQL query tools.
+params:
+  sql: sql statement
+

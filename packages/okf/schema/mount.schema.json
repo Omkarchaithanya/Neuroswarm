@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/mount.schema.json",
+  "title": "OKF Mount Rules",
+  "type": "object",
+  "properties": {
+    "agents": {"type": "array", "items": {"type": "string"}},
+    "domains": {"type": "array", "items": {"type": "string"}}
+  }
+}

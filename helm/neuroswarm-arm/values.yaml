@@ -1,0 +1,57 @@
+﻿replicaCount: 1
+
+image:
+  gateway: neuroswarm-arm-gateway:dev
+  llama: nexus-arm/llama-kleidiai:server
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8000
+
+resources:
+  gateway:
+    limits:
+      cpu: "1"
+      memory: 1536Mi
+  tier1:
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+env:
+  NSA_REQUIRE_KLEIDIAI: "0"
+  NSA_DIPA_KLEIDIAI: "1"
+  NSA_DIPA_OTEL: "0"
+  NSA_DIPA_PD_MODE: "off"
+  NSA_DIPA_PREFILL_BACKEND: "sglang"
+  NSA_DIPA_DECODE_BACKEND: "llama_cpp"
+  NSA_DIPA_SGLANG_URL: "http://sglang-prefill:30000"
+  NSA_DIPA_CHUNK_SIZE: "2048"
+
+sglangPrefill:
+  enabled: false
+  image: lmsysorg/sglang:latest
+  port: 30000
+  model: meta-llama/Llama-3.2-1B-Instruct
+  resources:
+    limits:
+      cpu: "2"
+      memory: 8Gi
+  env:
+    SGLANG_USE_CPU_ENGINE: "1"
+
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  readiness:
+    path: /ready
+    initialDelaySeconds: 20
+    periodSeconds: 15
+  startup:
+    path: /health
+    failureThreshold: 30
+    periodSeconds: 10
+
+terminationGracePeriodSeconds: 45

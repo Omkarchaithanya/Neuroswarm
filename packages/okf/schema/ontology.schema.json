@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus-arm.dev/okf/ontology.schema.json",
+  "title": "OKF Ontology",
+  "type": "object",
+  "required": ["classes", "predicates"],
+  "properties": {
+    "version": {"type": "string"},
+    "classes": {"type": "object"},
+    "predicates": {"type": "object"},
+    "namespaces": {"type": "object"}
+  }
+}

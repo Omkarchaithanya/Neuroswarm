@@ -1,0 +1,60 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "RTG Early Exits",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "rtg_early_exit_total", "legendFormat": "early_exit"}]
+    },
+    {
+      "title": "RTG Thinking Tokens",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "rtg_thinking_tokens", "legendFormat": "thinking_tokens"}]
+    },
+    {
+      "title": "RTG Budget Remaining",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [{"expr": "rtg_budget_remaining", "legendFormat": "remaining"}]
+    },
+    {
+      "title": "RTG Initial Budget",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 4,
+      "targets": [{"expr": "rtg_last_initial_budget", "legendFormat": "initial"}]
+    },
+    {
+      "title": "RTG Confidence",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 5,
+      "targets": [{"expr": "rtg_last_confidence", "legendFormat": "confidence"}]
+    },
+    {
+      "title": "Legacy Thinking Cap",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "id": 6,
+      "targets": [{"expr": "neuroswarm_last_thinking_token_cap", "legendFormat": "cap"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["neuroswarm", "rtg", "axion"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser",
+  "title": "NEXUS RTG — Reasoning Token Governor",
+  "uid": "neuroswarm-rtg",
+  "version": 1
+}

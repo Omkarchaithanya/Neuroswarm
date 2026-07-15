@@ -1,0 +1,11 @@
+hierarchy: 0.15
+priority: 0.20
+recency: 0.05
+ownership: 0.05
+tag_overlap: 0.15
+reference_score: 0.10
+graph_distance: 0.15
+ontology_distance: 0.05
+manual_weight: 0.05
+agent_mount_fit: 0.05
+user_history: 0.00

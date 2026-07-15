@@ -1,0 +1,102 @@
+groups:
+- name: nexus_rmf_runtime
+  rules:
+  - alert: NexusHighLatency
+    expr: histogram_quantile(0.95, sum(rate(nexus_request_duration_seconds_bucket[5m]))
+      by (le)) > 5
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: P95 request latency high
+      description: P95 nexus_request_duration_seconds > 5s for 5m
+  - alert: NexusPlannerFailure
+    expr: increase(nexus_planner_budget_violations_total[5m]) > 5 or increase(nexus_admission_failures_total[5m])
+      > 10
+    for: 3m
+    labels:
+      severity: page
+    annotations:
+      summary: Planner / admission failures elevated
+  - alert: NexusBackendFailure
+    expr: sum(rate(nexus_routing_failures_total[5m])) > 0.2 or sum(rate(nexus_request_failed_total{status="error"}[5m]))
+      > 0.5
+    for: 3m
+    labels:
+      severity: page
+    annotations:
+      summary: Backend or request failures elevated
+  - alert: NexusBudgetExhaustion
+    expr: min(nexus_budget_remaining) < 0.05 or min(nexus_budget_token_remaining)
+      < 64
+    for: 2m
+    labels:
+      severity: page
+    annotations:
+      summary: Budget nearly exhausted
+  - alert: NexusMemoryPressure
+    expr: nexus_memory_rss_bytes > 12e9 or nexus_hw_memory_usage_bytes > 12e9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Process memory pressure
+  - alert: NexusKVCachePressure
+    expr: nexus_kv_cache_reuse < 0.2 and rate(nexus_kv_cache_evictions_total[5m])
+      > 10
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: KV cache pressure / low reuse
+  - alert: NexusWorkerSaturation
+    expr: avg(nexus_haoe_worker_utilization) > 0.9
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: HAOE workers saturated
+  - alert: NexusHighQueueDepth
+    expr: nexus_haoe_queue_depth > 100 or nexus_admission_queue > 50
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: Scheduler or admission queue deep
+  - alert: NexusSpeculativeFailure
+    expr: sum(rate(nexus_dipa_speculative_rejection_total[5m])) / clamp_min(sum(rate(nexus_dipa_speculative_acceptance_total[5m]))
+      + sum(rate(nexus_dipa_speculative_rejection_total[5m])), 1) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Speculative decoding rejection ratio high
+  - alert: NexusStreamingFailure
+    expr: sum(rate(nexus_request_failed_total{streaming="true"}[5m])) > 0.2
+    for: 3m
+    labels:
+      severity: page
+    annotations:
+      summary: Streaming request failures
+  - alert: NexusPlannerPredictionError
+    expr: avg(nexus_planner_prediction_error) > 0.5 or avg(nexus_planner_cost_error)
+      > 0.5
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Planner prediction error elevated
+  - alert: NexusEnergySpike
+    expr: avg_over_time(nexus_energy_estimated_power_watts[5m]) > 2 * avg_over_time(nexus_energy_estimated_power_watts[1h])
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Energy / power spike vs hourly baseline
+  - alert: NexusCPUSaturation
+    expr: avg(nexus_hw_cpu_usage) > 0.9
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: CPU saturation
