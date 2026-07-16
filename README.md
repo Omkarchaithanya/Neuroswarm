@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # NeuroSwarm-Arm
 
 NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization Challenge. The MVP runs on a single GCP Axion VM and combines:
@@ -85,3 +86,6 @@ Arm-native multi-agent runtime scaffold for llama.cpp, semantic MCP routing, mem
 
 >>>>>>> d9145c4 (Initial NeuroSwarm Arm implementation)
 >>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
+=======
+# Neuroswarm
+>>>>>>> 25426d5f3d4e7952b0d7f73ae763e0974b4e97a0
