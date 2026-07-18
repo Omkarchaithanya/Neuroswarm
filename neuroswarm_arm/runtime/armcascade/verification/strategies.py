@@ -86,8 +86,12 @@ class BlockVerifier(_BackendVerifierBase):
         text = result.text or ""
         prefix_len, agreement = _token_agreement(draft.text, text)
         quality = text_quality_score(text, self._quality_cfg)
-        # HTTP backends rarely expose logits — mark honestly.
-        logits = bool(result.raw.get("logits") or result.metrics.get("logits_available"))
+        # Prefer explicit backend flags; also accept OpenAI/llama logprobs shapes.
+        logits = bool(
+            result.raw.get("logits")
+            or result.metrics.get("logits_available")
+            or _raw_has_logprobs(result.raw)
+        )
         entropy = float(result.metrics.get("entropy", 1.0 - agreement))
         elapsed = (time.monotonic() - t0) * 1000.0
         return VerifyResult(
@@ -107,9 +111,20 @@ class BlockVerifier(_BackendVerifierBase):
                 "draft_len": float(draft_len),
                 "prefix_len": float(prefix_len),
                 "agreement": agreement,
+                "accept_mode": 1.0 if logits else 0.0,
             },
             raw=dict(result.raw),
         )
+
+
+def _raw_has_logprobs(raw: dict[str, Any]) -> bool:
+    choices = raw.get("choices") or []
+    if not choices or not isinstance(choices[0], dict):
+        return False
+    c0 = choices[0]
+    if c0.get("logprobs") or c0.get("completion_probabilities") or c0.get("probs"):
+        return True
+    return False
 
 
 @register_verifier("single_token")

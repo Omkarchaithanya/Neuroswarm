@@ -29,7 +29,7 @@ Create a restricted firewall rule for demo ports. Replace `<your-public-ip>/32`;
 
 ```bash
 gcloud compute firewall-rules create neuroswarm-demo \
-  --allow tcp:8000,tcp:9090,tcp:3000 \
+  --allow tcp:80 \
   --source-ranges <your-public-ip>/32 \
   --target-tags neuroswarm-demo
 ```
@@ -177,13 +177,20 @@ Expected fields:
 Prometheus:
 
 ```text
-http://VM_EXTERNAL_IP:9090
+http://VM_EXTERNAL_IP/prometheus/
 ```
 
-Gateway metrics:
+Grafana:
+
+```text
+http://VM_EXTERNAL_IP/grafana/
+```
+
+Gateway (via proxy):
 
 ```bash
-curl http://127.0.0.1:8000/metrics
+curl http://127.0.0.1/health
+curl http://127.0.0.1/metrics
 ```
 
 ## 8. Benchmark Claims

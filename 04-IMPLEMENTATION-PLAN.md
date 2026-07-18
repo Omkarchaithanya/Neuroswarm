@@ -44,29 +44,24 @@ APX_LOG=debug ./llama-bench -m /models/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf -t 16
 ### Day 5-6: Install Arm Performix + MCP
 
 ```bash
-# Download Arm Performix (free, requires Arm Developer account)
-wget https://developer.arm.com/-/media/Files/downloads/performix/latest/performix-cli-linux-arm64.tar.gz
-tar xzf performix-cli-linux-arm64.tar.gz -C /opt/
+# On Axion (primary — not Windows GUI):
+bash scripts/install-performix.sh
+# Current CLI: prepare 0-arg; recipe with --deploy-tools; export by run_id
+apx target prepare
+apx recipe run code_hotspots --system-wide --timeout 60 --deploy-tools --json
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 PERFORMIX_DURATION=60 \
+  bash scripts/refresh-performix-snapshot.sh
+# Expect work/performix/snapshot.json source=apx
 
-# Run system characterization
-/opt/performix/bin/apx recipe run system-characterization \
-  --target ssh://ubuntu@localhost \
-  --output ./benchmarks/sys-char.json
+# Product MCP = performix-bridge (HTTP), not arm/mcp:
+export NSA_AROP_PERFORMIX_MCP=http://performix-bridge:8090
+docker compose --profile performix up -d --build performix-bridge gateway
 
-# Install Arm MCP server (Docker)
-docker pull arm/mcp:latest
-docker run -d --name arm-mcp -p 8080:8080 \
-  -e ARM_PERFORMIX_TARGET=ssh://ubuntu@localhost \
-  arm/mcp:latest
-
-# Test the MCP server from Python
-pip install mcp-client
-python -c "
-from mcp import MCPClient
-c = MCPClient('http://localhost:8080')
-print(c.list_tools())  # should show apx_recipe_run, kb_search, etc.
-"
+# Optional IDE-only Arm MCP (armlimited/arm-mcp) — see .cursor/mcp.json.example
+docker pull armlimited/arm-mcp:latest
 ```
+
+Windows Performix desktop app is **optional** (SSH Targets → Axion for interactive UI). Not required for Neuroswarm automation.
 
 ### Day 7: First cascade prototype
 
@@ -506,14 +501,13 @@ See [docs/migrate-from-gpu.md](docs/migrate-from-gpu.md).
 ### Day 33-34: Final Performix benchmarks
 
 ```bash
-# Baseline run (single llama.cpp, no cascade)
-apx recipe run code-hotspots --binary /usr/local/bin/llama-server --output baseline.json
-
-# Optimized run (full NeuroSwarm-Arm)
-apx recipe run code-hotspots --binary /usr/local/bin/neuroswarm-router --output optimized.json
-
-# Generate comparison report
-apx recipe compare --baseline baseline.json --optimized optimized.json --output COMPARISON.md
+# On Axion host (current apx CLI):
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 PERFORMIX_DURATION=60 \
+  bash scripts/refresh-performix-snapshot.sh
+# Inspect: work/performix/snapshot.json → source=apx, non-empty hotspots
+# Optional second pass after cascade load for before/after comparison artifacts
+python3 scripts/performix_normalize_export.py --help 2>/dev/null || true
+apx recipe compare --help   # flags vary by apx build; prefer exported run dirs
 ```
 
 ### Day 35: Demo video

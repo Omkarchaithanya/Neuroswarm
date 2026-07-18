@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "arm-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--pull=always",
+        "-v",
+        "${workspaceFolder}:/workspace",
+        "armlimited/arm-mcp:latest"
+      ]
+    }
+  }
+}

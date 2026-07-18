@@ -1,0 +1,64 @@
+{{- if .Values.qdrant.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "neuroswarm-arm.fullname" . }}-qdrant
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app: qdrant
+    app.kubernetes.io/component: qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: qdrant
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: qdrant
+    spec:
+      containers:
+        - name: qdrant
+          image: "{{ .Values.qdrant.image }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.qdrant.port }}
+            - name: grpc
+              containerPort: 6334
+          volumeMounts:
+            - name: qdrant-storage
+              mountPath: /qdrant/storage
+          resources:
+            {{- toYaml .Values.qdrant.resources | nindent 12 }}
+      volumes:
+        - name: qdrant-storage
+          {{- if .Values.work.hostPath }}
+          hostPath:
+            path: {{ printf "%s/memory/qdrant-k8s" .Values.work.hostPath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app: qdrant
+    app.kubernetes.io/component: qdrant
+spec:
+  type: ClusterIP
+  selector:
+    app: qdrant
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: {{ .Values.qdrant.port }}
+      targetPort: http
+{{- end }}

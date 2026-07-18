@@ -41,7 +41,7 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
             self.config.get("default_graph", "default_linear")
         )
 
-        # Plan metadata overrides (SpeculationRouter / DecisionEngine).
+        # Plan metadata overrides (SpeculationRouter / DecisionEngine / AQR cascade_profiles).
         meta = dict(getattr(plan, "metadata", None) or {})
         spec = dict(meta.get("speculation") or {})
         if spec.get("strategy"):
@@ -51,10 +51,32 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
         if spec.get("graph"):
             graph = str(spec["graph"])
 
+        # Wire cascade_profiles.yaml floors into thresholds / quant metadata.
+        aqr_floor = meta.get("aqr_quality_floor")
+        if aqr_floor is None:
+            try:
+                from neuroswarm_arm.runtime.aqr import cascade_profile_for_tier
+
+                tier_hint = int(meta.get("aqr_cascade_tier") or meta.get("tier") or 1)
+                profile = cascade_profile_for_tier(tier_hint)
+                if profile.get("quality_floor") is not None:
+                    aqr_floor = float(profile["quality_floor"])
+                    meta = {
+                        **meta,
+                        "aqr_quality_floor": aqr_floor,
+                        "aqr_preferred_quants": list(profile.get("preferred_quants") or []),
+                        "aqr_max_bits": float(profile.get("max_bits", 0) or 0),
+                    }
+            except Exception:
+                aqr_floor = None
+
         thresholds = ThresholdSet(
             draft_len=int(spec.get("draft_len", self.base.draft_len)),
             accept_threshold=float(
-                spec.get("accept_threshold", self.base.accept_threshold)
+                spec.get(
+                    "accept_threshold",
+                    aqr_floor if aqr_floor is not None else self.base.accept_threshold,
+                )
             ),
             verify_batch_size=int(
                 spec.get("verify_batch_size", self.base.verify_batch_size)
@@ -106,5 +128,8 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
             metadata={
                 "task_kind": classification.task_kind.value,
                 "complexity": classification.complexity,
+                "aqr_quality_floor": meta.get("aqr_quality_floor"),
+                "aqr_preferred_quants": meta.get("aqr_preferred_quants"),
+                "aqr_max_bits": meta.get("aqr_max_bits"),
             },
         )

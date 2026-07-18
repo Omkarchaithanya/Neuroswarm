@@ -6,12 +6,9 @@ __pycache__/
 work/
 *.log
 .pytest_cache/
-<<<<<<< HEAD
 tests/experience/_tmp/
 okf/.okf/
 **/.okf/
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 # =====================================
 # Python
 # =====================================
@@ -80,3 +77,66 @@ benchmarks/results/
 # =====================================
 Thumbs.db
 .DS_Store
+
+# =====================================
+# Large / binary installers (do not push)
+# =====================================
+# Arm Performix Windows installer (often 100MB+; local 0-byte stub also ignored)
+ArmPerformix-windows-x64.exe
+ArmPerformix*.exe
+ArmPerformix*.msi
+ArmPerformix*.dmg
+ArmPerformix*.deb
+ArmPerformix*.rpm
+ArmPerformix*.pkg
+ArmPerformix*.zip
+ArmPerformix*.tar
+ArmPerformix*.tar.gz
+ArmPerformix*.tgz
+
+# Generic large binaries / archives
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.pkg
+*.appimage
+*.iso
+*.img
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.xz
+*.bz2
+*.whl
+
+# Large data / dumps / snapshots (runtime artifacts)
+*.sqlite
+*.sqlite3
+*.db
+*.parquet
+*.arrow
+*.feather
+*.h5
+*.hdf5
+*.npz
+*.npz.zip
+*.pkl
+*.pickle
+*.npy
+*.npz.gz
+*.csv.gz
+*.json.gz
+*.ndjson.gz
+performix*.zip
+apx-export*/
+work/performix/
+work/arop/
+
+# Cursor local (keep only the checked-in example via negation)
+.cursor/*
+!.cursor/mcp.json.example

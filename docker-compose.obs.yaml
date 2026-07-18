@@ -1,0 +1,93 @@
+# Observability host — Prometheus + Grafana + nginx (:80)
+# Deploy on neuroswarm-obs separately from the app VM.
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    platform: linux/arm64
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.external-url=/prometheus/
+      - --web.route-prefix=/prometheus/
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus.obs.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/prometheus/-/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    cpus: 1.0
+    mem_limit: 1536m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536M
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-neuroswarm}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost/grafana/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/grafana/api/health >/dev/null 2>&1 || wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 0.5
+    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  proxy:
+    image: nginx:1.27-alpine
+    platform: linux/arm64
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./ops/nginx/obs.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+      grafana:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/prometheus/-/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    cpus: 0.25
+    mem_limit: 128m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+volumes:
+  prometheus-data:
+  grafana-data:

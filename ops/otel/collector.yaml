@@ -1,0 +1,64 @@
+# OpenTelemetry Collector on neuroswarm-axion
+# Receives OTLP from gateway + scrapes /metrics; remote_writes to neuroswarm-obs Prometheus.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: neuroswarm-gateway
+          scrape_interval: 10s
+          scrape_timeout: 8s
+          metrics_path: /metrics
+          honor_timestamps: false
+          static_configs:
+            - targets:
+                - gateway:8000
+              labels:
+                service: neuroswarm-gateway
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: axion
+        action: upsert
+      - key: service.namespace
+        value: neuroswarm
+        action: upsert
+
+exporters:
+  prometheusremotewrite:
+    endpoint: ${env:OBS_PROMETHEUS_REMOTE_WRITE}
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [batch, resource]
+      exporters: [prometheusremotewrite, prometheus]
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [debug]

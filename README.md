@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 # NeuroSwarm-Arm
 
 NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization Challenge. The MVP runs on a single GCP Axion VM and combines:
@@ -45,7 +43,7 @@ pytest tests/runtime/dipa -q
 ```bash
 uv sync --all-groups
 cp .env.example .env   # Linux/macOS; on Windows: Copy-Item .env.example .env
-docker compose up --build
+docker compose --compatibility up --build -d
 ```
 
 The gateway listens on `http://VM_EXTERNAL_IP:8000`.
@@ -65,27 +63,13 @@ curl -s http://127.0.0.1:8000/v1/chat/completions \
   -d '{"messages":[{"role":"user","content":"Plan a cost-optimized ARM inference demo."}],"max_tokens":256}'
 ```
 
-The response now includes OpenAI-style `choices` and `usage` fields in addition to the project-specific cascade metadata.
-
 Detailed from-scratch setup is in `docs/gcp-axion-setup.md`.
 
-For repeatable GCP setup, use:
+Deploy scripts:
 
-- `scripts/bootstrap-gcp.ps1`
-- `scripts/bootstrap-vm.sh`
+- `scripts/sync-vm.ps1` — push repo to Axion
+- `scripts/deploy-vm.ps1` — sync + bootstrap
+- `scripts/deploy-k8s.sh` — Helm one-command
+- `scripts/bootstrap-gcp.ps1` / `scripts/bootstrap-vm.sh`
 
 Initial dev target: `c4a-standard-8` with `hyperdisk-balanced`.
-=======
-<<<<<<< HEAD
-# ARMORA
-Agentic Multi-model Routing &amp; Resource Orchestrator on Arm Neoverse
-=======
-﻿# NeuroSwarm-Arm
-
-Arm-native multi-agent runtime scaffold for llama.cpp, semantic MCP routing, memory, and observability.
-
->>>>>>> d9145c4 (Initial NeuroSwarm Arm implementation)
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
-=======
-# Neuroswarm
->>>>>>> 25426d5f3d4e7952b0d7f73ae763e0974b4e97a0

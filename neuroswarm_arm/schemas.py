@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-<<<<<<< HEAD
 from time import time
 from uuid import uuid4
 
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 from pydantic import BaseModel, Field
 
 
@@ -20,11 +17,8 @@ class ChatRequest(BaseModel):
     max_tokens: int = 1024
     temperature: float = 0.2
     agent_role: str = "tool_call"
-<<<<<<< HEAD
     session_id: str | None = None
     agent_id: str = "default"
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 
 
 class ToolDef(BaseModel):
@@ -39,18 +33,14 @@ class ToolDef(BaseModel):
 class PlanState(BaseModel):
     tool_confidence_top1: float = 0.0
     kv_pressure: float = 0.0
-<<<<<<< HEAD
     kv_hit_rate: float = 0.0
     kv_storage_tier: int = 1
     kv_migration_latency_ms: float = 0.0
     memory_pressure: float = 0.0
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
     slo_remaining_ms: float = 4000.0
     self_consistency_score: float = 0.0
     cascade_tier_used: int = 1
     cost_so_far_usd: float = 0.0
-<<<<<<< HEAD
     session_id: str = ""
 
 
@@ -80,15 +70,3 @@ class ChatResponse(BaseModel):
     metrics: dict[str, float | str] = Field(default_factory=dict)
     # Dual output: ExecutionResult fields above + optional RuntimeCostReport payload
     runtime_cost_report: dict[str, object] | None = None
-=======
-
-
-class ChatResponse(BaseModel):
-    model: str
-    tier_used: int
-    content: str
-    tool_schemas_used: list[str]
-    thinking_token_cap: int
-    metrics: dict[str, float] = Field(default_factory=dict)
-
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

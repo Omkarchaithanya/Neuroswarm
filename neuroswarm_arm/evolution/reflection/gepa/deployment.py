@@ -76,8 +76,9 @@ class ApprovalGate:
 
 class TextArtifactDeployer:
     """
-    Deploy approved TextCandidate components to OKF + Mem0.
+    Deploy approved TextCandidate components under work/arop/gepa/ (writable).
 
+    Optional later copy into OKF sources — never write to read-only okf mounts.
     Maps to AROP deployment for *text* — not ASCR RLAction thresholds.
     """
 
@@ -85,10 +86,13 @@ class TextArtifactDeployer:
         self,
         *,
         okf_root: Path | None = None,
+        artifact_root: Path | None = None,
         memory: Any | None = None,
         pool: CandidatePool | None = None,
     ) -> None:
-        self.okf_root = Path(okf_root or "okf")
+        # Prefer writable work volume; okf_root kept for optional mirror.
+        self.artifact_root = Path(artifact_root or okf_root or "work/arop/gepa")
+        self.okf_root = Path(okf_root) if okf_root is not None else None
         self.memory = memory
         self.pool = pool
 
@@ -105,9 +109,9 @@ class TextArtifactDeployer:
             from neuroswarm_arm.runtime.okf.connectors.evolution_sink import write_evolved_prompt
 
             for name, body in candidate.components.items():
-                rel = f"domains/architecture/gepa/{candidate.id}/{name}.md"
+                rel = f"{candidate.id}/{name}.md"
                 path = write_evolved_prompt(
-                    self.okf_root,
+                    self.artifact_root,
                     rel,
                     body,
                     frontmatter={
@@ -121,6 +125,21 @@ class TextArtifactDeployer:
                     },
                 )
                 written.append(str(path))
+            # Activate for runtime chat/governor load.
+            from neuroswarm_arm.evolution.reflection.gepa.active_prompt import (
+                activate_deployed_components,
+            )
+
+            teacher = None
+            meta = getattr(candidate, "metadata", None) or {}
+            if isinstance(meta, dict):
+                teacher = meta.get("teacher")
+            active_paths = activate_deployed_components(
+                dict(candidate.components),
+                work_dir=self.artifact_root.parent if self.artifact_root.name == "gepa" else None,
+                teacher=str(teacher) if teacher else None,
+            )
+            written.extend(active_paths)
         except Exception as exc:
             return {"success": False, "message": str(exc), "candidate_id": candidate.id}
 
@@ -142,11 +161,24 @@ class TextArtifactDeployer:
             except Exception:
                 self.pool.add(deployed)
 
+        teacher_out = "unknown"
+        try:
+            from neuroswarm_arm.evolution.reflection.gepa.active_prompt import gepa_active_dir
+
+            tpath = gepa_active_dir(
+                self.artifact_root.parent if self.artifact_root.name == "gepa" else None
+            ) / "teacher.json"
+            if tpath.is_file():
+                teacher_out = str(json.loads(tpath.read_text(encoding="utf-8")).get("teacher") or "unknown")
+        except Exception:
+            pass
+
         return {
             "success": True,
             "candidate_id": candidate.id,
             "paths": written,
-            "message": "deployed text artifacts to OKF/Mem0",
+            "teacher": teacher_out,
+            "message": "deployed text artifacts to work/arop/gepa",
         }
 
     def remember_reflection(self, text: str, *, metadata: Mapping[str, Any] | None = None) -> None:

@@ -2,16 +2,30 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from datetime import date, datetime
 from pathlib import Path
+from typing import Any
 
 from nexus_okf.compiler.ast import DocumentNode, LinkNode, SectionNode
 from nexus_okf.internal.hashutil import content_hash
 
 
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_jsonable(v) for v in value]
+    return value
+
+
 def _doc_to_dict(doc: DocumentNode) -> dict:
     payload = asdict(doc)
     payload["path"] = str(doc.path)
-    return payload
+    return _jsonable(payload)
 
 
 def _doc_from_dict(payload: dict) -> DocumentNode:

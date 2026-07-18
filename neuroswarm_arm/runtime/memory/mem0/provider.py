@@ -80,13 +80,20 @@ class Mem0Provider:
             "success_score": record.success_score,
             "failure_reason": record.failure_reason,
         }
-        # Direct fact ingest as message string (ADD-only; no UPDATE path)
+        # Direct fact ingest as message string (ADD-only; no UPDATE path).
+        # Local tier demos: skip Mem0's huge extraction prompt (often >4k ctx).
+        infer = None
+        if self.cfg.llm_mode == "local":
+            infer = False
+        elif self.cfg.llm_mode == "none":
+            infer = False
         result = self.client.add(
             record.content,
             user_id=record.owner,
             agent_id=record.origin_agent or None,
             run_id=record.execution_id or None,
             metadata=meta,
+            infer=infer,
         )
         # Capture provider ids when returned
         if isinstance(result, dict):

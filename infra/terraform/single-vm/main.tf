@@ -51,7 +51,7 @@ resource "google_compute_firewall" "demo" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8000", "9090", "3000"]
+    ports    = ["80"]
   }
 
   source_ranges = var.source_ranges

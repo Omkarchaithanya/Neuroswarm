@@ -29,6 +29,14 @@ class ExactNumpyIndex:
     def backend_name(self) -> str:
         return "exact"
 
+    @property
+    def kernel_path(self) -> str:
+        return "numpy"
+
+    @property
+    def sve_kernels_active(self) -> bool:
+        return False
+
     def insert(self, key: str, vector: np.ndarray) -> None:
         self.batch_insert([key], np.asarray(vector, dtype=np.float32).reshape(1, -1))
 

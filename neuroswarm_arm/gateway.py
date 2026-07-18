@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-<<<<<<< HEAD
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -17,20 +16,12 @@ if TYPE_CHECKING:
     from .runtime.haoe import HAOERuntime
     from .runtime.kv.manager.runtime import KVRuntimeManager
     from .runtime.router import SemanticToolRouter
-=======
-
-from .schemas import ChatRequest, ChatResponse
-from .tools.registry import ToolRegistry
-from .tools.semantic_mcp_router import SemanticMCPRouter
-from .inference.cascade import CascadeRouter
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 
 
 @dataclass
 class AgentGateway:
     registry: ToolRegistry
     semantic_router: SemanticMCPRouter
-<<<<<<< HEAD
     cascade: CascadeRouter | None = None
     dipa: DIPARuntime | None = None
     kv_runtime: KVRuntimeManager | None = None
@@ -395,12 +386,3 @@ class AgentGateway:
 
             anyio.run(_ckpt)
         return self._attach_runtime_cost_report(req, response)
-=======
-    cascade: CascadeRouter
-
-    def handle_chat(self, req: ChatRequest) -> ChatResponse:
-        selected_tools = self.semantic_router.route(req.messages[-1].content if req.messages else "")
-        tool_names = [t.name for t in selected_tools]
-        return self.cascade.handle(req, tool_names)
-
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

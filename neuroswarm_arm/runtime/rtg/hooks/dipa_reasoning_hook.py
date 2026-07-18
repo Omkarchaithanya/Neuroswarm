@@ -25,10 +25,21 @@ class DIPAReasoningHook:
         self._session_map[frame.session_id] = state.session_id
         self._agent_by_session[state.session_id] = frame.agent_id or "default"
         cap = state.budget.initial_tokens
+        system = self.rtg.prompt(cap)
+        try:
+            from neuroswarm_arm.evolution.reflection.gepa.active_prompt import (
+                load_active_system_prompt,
+            )
+
+            evolved = load_active_system_prompt()
+            if evolved:
+                system = f"{system}\n\n# GEPA evolved system prompt\n{evolved}"
+        except Exception:
+            pass
         return {
             "session_id": state.session_id,
             "thinking_token_cap": cap,
-            "system_prompt": self.rtg.prompt(cap),
+            "system_prompt": system,
             "governor_accuracy_demand": float(
                 1.0 - frame.tool_confidence_top1 if frame.complexity_score > 0.5 else 0.4
             ),

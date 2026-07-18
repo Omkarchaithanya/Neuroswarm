@@ -92,6 +92,9 @@ try {
   }
 
   Copy-ToRemote -Staging $staging
+
+  # Windows robocopy keeps CRLF; bash scripts need LF on the VM.
+  Invoke-Remote "find '$RemotePath/scripts' -name '*.sh' -print0 2>/dev/null | xargs -0 -r sed -i 's/\r`$//' ; true"
 } finally {
   Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue
 }

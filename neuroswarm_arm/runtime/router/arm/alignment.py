@@ -15,6 +15,7 @@ class ArmFeatures:
     arch: str
     is_arm64: bool
     neon: bool
+    sve: bool
     sve2: bool
     numa_nodes: int
     huge_pages_hint: bool
@@ -24,15 +25,26 @@ def detect_arm_features() -> ArmFeatures:
     arch = platform.machine().lower()
     is_arm = arch in {"aarch64", "arm64", "armv8", "armv8l"}
     neon = is_arm
+    sve = False
     sve2 = False
     if is_arm:
         try:
             if os.path.exists("/proc/cpuinfo"):
                 cpuinfo = open("/proc/cpuinfo", encoding="utf-8", errors="ignore").read().lower()
-                sve2 = "sve2" in cpuinfo or "sve" in cpuinfo
+                for line in cpuinfo.splitlines():
+                    if "features" in line or line.strip().startswith("flags"):
+                        tokens = set(line.split(":", 1)[-1].split())
+                        sve = "sve" in tokens
+                        sve2 = "sve2" in tokens
+                        if sve or sve2:
+                            break
+                if not sve and not sve2:
+                    sve2 = "sve2" in cpuinfo
+                    sve = "sve" in cpuinfo or sve2
         except Exception:
             pass
         if os.getenv("NSA_ROUTER_FORCE_SVE2") == "1":
+            sve = True
             sve2 = True
     numa = 1
     try:
@@ -45,6 +57,7 @@ def detect_arm_features() -> ArmFeatures:
         arch=arch,
         is_arm64=is_arm,
         neon=neon,
+        sve=sve,
         sve2=sve2,
         numa_nodes=numa,
         huge_pages_hint=huge,

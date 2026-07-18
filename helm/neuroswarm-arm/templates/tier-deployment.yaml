@@ -1,0 +1,56 @@
+{{- range $name, $tier := .Values.tiers }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "neuroswarm-arm.labels" $ | nindent 4 }}
+    app: {{ $name }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      containers:
+        - name: llama
+          image: "{{ $.Values.image.llama }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          args:
+            - -m
+            - {{ printf "%s/%s" $.Values.models.mountPath $tier.model | quote }}
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+            - -ngl
+            - "0"
+            - -t
+            - {{ $tier.threads | quote }}
+            - -c
+            - {{ $tier.ctx | quote }}
+            - --metrics
+          volumeMounts:
+            {{- include "neuroswarm-arm.modelsVolumeMount" $ | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 12
+          resources:
+            {{- toYaml $tier.resources | nindent 12 }}
+      volumes:
+        {{- include "neuroswarm-arm.modelsVolume" $ | nindent 8 }}
+{{- end }}

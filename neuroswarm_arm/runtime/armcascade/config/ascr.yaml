@@ -1,6 +1,7 @@
 # Adaptive Speculative Cascade Runtime — master config
 enabled: true
 quality_cascade_fallback: true
+text_agree_accept: true
 default_graph: default_linear
 
 defaults:

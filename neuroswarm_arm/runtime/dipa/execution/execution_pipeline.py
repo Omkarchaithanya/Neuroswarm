@@ -59,8 +59,40 @@ class ExecutionPipeline:
         except Exception as exc:  # noqa: BLE001 — recovery boundary
             ctx.errors.append(str(exc))
             ctx.mark(ExecutionPhase.RECOVERING)
+            try:
+                import logging
+                from pathlib import Path
+                import traceback
+
+                logging.getLogger("neuroswarm.dipa").exception("dipa execute failed: %s", exc)
+                Path("work/arop").mkdir(parents=True, exist_ok=True)
+                Path("work/arop/last_dipa_exc.txt").write_text(
+                    f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}",
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
             recovered = self.runtime.recovery.handle_failure(req, ctx, exc)
             if recovered is not None:
+                # Still record DIPA request metrics so /metrics is not empty on recovery.
+                try:
+                    plan = ctx.plan
+                    self.runtime.metrics.record_inference(
+                        latency_ms=(time.monotonic() - t0) * 1000.0,
+                        ttft_ms=float((recovered.metrics or {}).get("latency_ms") or 0.0),
+                        tier=int(recovered.tier_used or 0),
+                        quant=str(getattr(recovered, "quant", "") or (plan.quant if plan else "")),
+                        backend=str(getattr(recovered, "backend", "") or ""),
+                        workload=str(
+                            getattr(getattr(plan, "workload", None), "value", None)
+                            or getattr(plan, "workload", "")
+                            or "unknown"
+                        ),
+                        prompt_tokens=int(recovered.prompt_tokens or 0),
+                        completion_tokens=int(recovered.completion_tokens or 0),
+                    )
+                except Exception:
+                    pass
                 return session.finish(recovered)
             ctx.mark(ExecutionPhase.FAILED)
             raise

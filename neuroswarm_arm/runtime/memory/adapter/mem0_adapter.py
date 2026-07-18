@@ -197,12 +197,17 @@ class Mem0Adapter:
         )
         if self._use_emergency and self.emergency is not None:
             return self.emergency.add(rec)
+        # Typed facts are already atomic — skip huge Mem0 extraction prompts on local tiers.
+        infer = True
+        if getattr(self.client, "cfg", None) is not None and getattr(self.client.cfg, "llm_mode", "") == "local":
+            infer = False
         result = self.client.add(
             content,
             user_id=owner,
             agent_id=rec.origin_agent or None,
             run_id=rec.execution_id or None,
             metadata=meta,
+            infer=infer,
         )
         if isinstance(result, dict):
             results = result.get("results") or result.get("memories") or []
@@ -255,14 +260,17 @@ class Mem0Adapter:
             q = SearchQuery(text=query, owner=owner, limit=limit, namespace=namespace, **kw)
         if self._use_emergency and self.emergency is not None:
             return self.emergency.search(q)
-        raw = self.client.search(
-            q.text,
-            user_id=q.owner,
-            agent_id=agent_id,
-            top_k=q.limit,
-            threshold=self.cfg.search_threshold,
-            rerank=self.cfg.rerank,
-        )
+        try:
+            raw = self.client.search(
+                q.text,
+                user_id=q.owner,
+                agent_id=agent_id,
+                top_k=q.limit,
+                threshold=self.cfg.search_threshold,
+                rerank=self.cfg.rerank,
+            )
+        except Exception:  # noqa: BLE001
+            return []
         hits: list[SearchHit] = []
         for item in raw:
             if not isinstance(item, dict):

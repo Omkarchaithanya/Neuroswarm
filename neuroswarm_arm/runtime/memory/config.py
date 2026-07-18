@@ -23,7 +23,10 @@ class MemoryRuntimeConfig:
     llm_mode: str = field(default_factory=lambda: os.getenv("NSA_MEM_LLM", "local").lower())
     # local → OpenAI-compatible llama.cpp; openai → cloud; none → direct ingest only
     llm_base_url: str = field(
-        default_factory=lambda: os.getenv("NSA_MEM_LLM_BASE_URL", os.getenv("NSA_TIER1_URL", "http://127.0.0.1:8080"))
+        default_factory=lambda: os.getenv(
+            "NSA_MEM_LLM_BASE_URL",
+            os.getenv("NSA_TIER2_URL", os.getenv("NSA_TIER1_URL", "http://127.0.0.1:8080")),
+        )
     )
     llm_api_key: str = field(default_factory=lambda: os.getenv("NSA_MEM_LLM_API_KEY", os.getenv("OPENAI_API_KEY", "local")))
     llm_model: str = field(default_factory=lambda: os.getenv("NSA_MEM_LLM_MODEL", "gpt-4o-mini"))

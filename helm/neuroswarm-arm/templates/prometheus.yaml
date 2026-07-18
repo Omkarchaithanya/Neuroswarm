@@ -1,8 +1,82 @@
-﻿apiVersion: v1
+﻿{{- if .Values.observability.enabled }}
+apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: neuroswarm-arm-prometheus
+  name: {{ include "neuroswarm-arm.fullname" . }}-prometheus
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
+      scrape_interval: 10s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: neuroswarm-gateway
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - {{ include "neuroswarm-arm.fullname" . }}-gateway:{{ .Values.service.port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "neuroswarm-arm.fullname" . }}-prometheus
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: prometheus
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: prometheus
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: prometheus
+          image: {{ .Values.observability.prometheus.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+          ports:
+            - name: http
+              containerPort: {{ .Values.observability.prometheus.port }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.observability.prometheus.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "neuroswarm-arm.fullname" . }}-prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "neuroswarm-arm.fullname" . }}-prometheus
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: {{ .Values.observability.prometheus.port }}
+      targetPort: http
+{{- end }}

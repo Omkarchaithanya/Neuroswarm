@@ -169,6 +169,9 @@ class ASCREngine(ICascadeEngine):
         last_backend = policy.draft_backend
         last_model = policy.draft_backend
         tier_used = 1
+        last_logits = True
+        last_agreement: float | None = None
+        saw_logits = False
 
         while state.rounds < thresholds.max_rounds:
             state.rounds += 1
@@ -195,11 +198,11 @@ class ASCREngine(ICascadeEngine):
                             owner=str(getattr(req, "agent_id", "") or "default"),
                         )
                         if delta:
-                            state.mode = "quality_cascade"
                             state.acr_context_delta = delta
                     except Exception:
                         pass
-                state.mode = "quality_cascade"
+                # Do not permanently pin mode to quality_cascade — that blocked the
+                # logits verify path after HAOE memory prefetch. Memory/tool is a hop.
                 edge = self.escalation.next(graph, esc_state)
                 if edge is None:
                     break
@@ -295,9 +298,20 @@ class ASCREngine(ICascadeEngine):
             last_model = vres.model or last_model
 
             if not vres.logits_available and policy.quality_cascade_fallback:
-                # Still use agreement/quality; label mode when agreement is weak.
-                if vres.agreement < 0.2:
-                    state.mode = "quality_cascade"
+                # Text-agreement interim mode — do not claim true speculative gain.
+                text_agree = bool(
+                    (self.config or {}).get("text_agree_accept", True)
+                )
+                if text_agree or vres.agreement < 0.2:
+                    state.mode = "text_agree" if vres.agreement >= 0.2 else "quality_cascade"
+                last_logits = False
+                last_agreement = float(vres.agreement)
+            else:
+                last_logits = bool(vres.logits_available)
+                last_agreement = float(vres.agreement)
+                if last_logits:
+                    saw_logits = True
+                    state.mode = "speculative"
 
             signals = AcceptanceSignals(
                 confidence=0.0,
@@ -368,11 +382,16 @@ class ASCREngine(ICascadeEngine):
             )
             last_backend = policy.escalate_backend
             tier_used = 3
-            state.mode = "quality_cascade"
+            # Keep speculative label if a verify round already saw logits.
+            if not saw_logits:
+                state.mode = "quality_cascade"
 
         elapsed_ms = (time.monotonic() - t0) * 1000.0
         accept_rate = state.accepted_tokens / max(1, state.accepted_tokens + state.rejected_tokens)
         self._history_accept = 0.8 * self._history_accept + 0.2 * accept_rate
+
+        if saw_logits and state.mode != "quality_cascade":
+            state.mode = "speculative"
 
         self.metrics.record_round(
             accepted_tokens=state.accepted_tokens or approx_tokens(committed),
@@ -385,6 +404,8 @@ class ASCREngine(ICascadeEngine):
             cpu=telemetry["cpu_utilization"],
             cache_hit=telemetry["cache_hit_ratio"],
             kv_reuse=float(getattr(ctx, "kv_reuse", 0.0) or 0.0),
+            logits_available=saw_logits and state.mode == "speculative",
+            text_agreement=last_agreement,
         )
         self.performix.record(
             {
@@ -421,6 +442,7 @@ class ASCREngine(ICascadeEngine):
                 "ascr_strategy": policy.proposal_strategy,
                 "ascr_verify": policy.verify_strategy,
                 "ascr_graph": policy.graph_name,
+                "logits_available": saw_logits,
             },
             metrics={
                 "confidence": state.last_confidence,
@@ -432,6 +454,8 @@ class ASCREngine(ICascadeEngine):
                 "ascr_speculation_gain": float(
                     self.metrics.snapshot().get("ascr_speculation_gain", 0.0)
                 ),
+                "logits_available": 1.0 if saw_logits else 0.0,
+                "ascr_mode": state.mode,
             },
         )
 

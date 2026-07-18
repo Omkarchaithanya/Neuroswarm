@@ -96,6 +96,25 @@ class DecisionEngine:
         if not plan.fallbacks:
             plan.fallbacks = _default_fallbacks(plan.model)
 
+        # AQR cascade_profiles → plan metadata for ASCR policy / quant floors.
+        try:
+            from neuroswarm_arm.runtime.aqr import plan_metadata_from_profiles
+
+            tier = int(plan.cascade_start_tier or _tier_from_name(plan.model) or 1)
+            aqr_meta = plan_metadata_from_profiles(tier)
+            if aqr_meta:
+                plan.metadata.update(aqr_meta)
+                preferred = ""
+                qmeta = aqr_meta.get("quant")
+                if isinstance(qmeta, dict):
+                    preferred = str(qmeta.get("aqr_preferred") or "")
+                elif qmeta:
+                    preferred = str(qmeta)
+                if preferred and not plan.quant:
+                    plan.quant = preferred
+        except Exception:
+            pass
+
         plan.metadata.setdefault("decision", {})
         plan.metadata["decision"].update(
             {

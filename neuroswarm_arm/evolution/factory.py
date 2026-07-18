@@ -85,6 +85,34 @@ class AROPRuntime:
         h["gepa"] = self.gepa is not None
         return h
 
+    def submit_gepa_best(self) -> dict[str, Any]:
+        """After GEPA optimize: auto-submit best candidate to ApprovalGate."""
+        out: dict[str, Any] = {}
+        reflection = getattr(self.optimizer, "reflection", None)
+        gepa_strat = getattr(reflection, "gepa", None) if reflection is not None else None
+        last = getattr(gepa_strat, "last_result", None) if gepa_strat is not None else None
+        if last is None and reflection is not None:
+            last = getattr(reflection, "last_result", None)
+        best = getattr(last, "best", None) if last is not None else None
+        if best is None or self.approval_gate is None:
+            return out
+        try:
+            self.approval_gate.submit(best)
+            if self.gepa is not None:
+                try:
+                    self.gepa.candidate_pool().add(best)
+                except Exception:
+                    try:
+                        self.gepa.candidate_pool().replace_same_id(best)
+                    except Exception:
+                        pass
+            out["gepa_candidate_id"] = best.id
+            out["gepa_submitted"] = True
+            out["gepa_pending"] = len(self.approval_gate.pending())
+        except Exception as exc:
+            out["gepa_submit_error"] = str(exc)
+        return out
+
 
 def _build_reflection(name: str, *, gepa_facade: Any | None = None):
     key = (name or "rule").lower()
@@ -146,6 +174,7 @@ def build_arop(
         output_dir=config.work_dir / "performix",
         recipe=config.performix_recipe,
         enabled=config.performix_enabled,
+        snapshot_path=Path("work/performix/snapshot.json"),
     )
     providers = [
         runtime_provider,
@@ -176,9 +205,17 @@ def build_arop(
         TextArtifactDeployer,
     )
 
-    gepa_facade = GEPAFacade(work_dir=config.work_dir / "gepa")
+    from neuroswarm_arm.evolution.reflection.gepa.mutation.reflective import (
+        build_reflection_lm,
+    )
+
+    gepa_facade = GEPAFacade(
+        work_dir=config.work_dir / "gepa",
+        reflection_lm=build_reflection_lm(config.gepa_lm),
+    )
     approval_gate = ApprovalGate()
     text_deployer = TextArtifactDeployer(
+        artifact_root=config.work_dir / "gepa",
         okf_root=config.okf_root,
         memory=memory,
         pool=gepa_facade.candidate_pool(),

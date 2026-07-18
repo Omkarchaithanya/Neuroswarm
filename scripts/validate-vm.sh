@@ -70,7 +70,10 @@ done
 
 section "Local Ports"
 if command -v ss >/dev/null 2>&1; then
-  ss -ltnp | grep -E ':(8000|9090|3000)\b' || true
+  echo "Public:"
+  ss -ltnp | grep -E ':80\b' || true
+  echo "Private loopback:"
+  ss -ltnp | grep -E '127\.0\.0\.1:(8000|9090|3000)\b' || true
 else
   printf 'ss not available; skipping port listing.\n'
 fi

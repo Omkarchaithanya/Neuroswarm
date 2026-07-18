@@ -290,17 +290,70 @@ class LlamaCppBackend(InferenceBackend):
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
-        raw = await asyncio.to_thread(
-            self._client.chat,
-            req.messages,
-            max_tokens=req.max_tokens,
-            temperature=req.temperature,
-            stream=False,
-        )
+        extra: dict[str, Any] = {}
+        try:
+            n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
+        except ValueError:
+            n_probs = 0
+        if n_probs > 0:
+            # OpenAI-compatible chat logprobs (preferred on modern llama-server).
+            extra["logprobs"] = True
+            extra["top_logprobs"] = n_probs
+        raw: dict[str, Any] = {}
+        try:
+            raw = await asyncio.to_thread(
+                self._client.chat,
+                req.messages,
+                max_tokens=req.max_tokens,
+                temperature=req.temperature,
+                stream=False,
+                extra=extra or None,
+            )
+        except Exception:
+            # Retry: older servers want n_probs; some 500 on top_logprobs.
+            if n_probs > 0:
+                try:
+                    raw = await asyncio.to_thread(
+                        self._client.chat,
+                        req.messages,
+                        max_tokens=req.max_tokens,
+                        temperature=req.temperature,
+                        stream=False,
+                        extra={"n_probs": n_probs},
+                    )
+                except Exception:
+                    raw = await asyncio.to_thread(
+                        self._client.chat,
+                        req.messages,
+                        max_tokens=req.max_tokens,
+                        temperature=req.temperature,
+                        stream=False,
+                        extra=None,
+                    )
+            else:
+                raise
         latency_ms = (time.perf_counter() - t0) * 1000.0
         text = _extract_chat_content(raw)
         prompt_tokens = _usage_or_approx(raw, "prompt_tokens", req.messages)
         completion_tokens = _usage_or_approx_text(raw, "completion_tokens", text)
+        logits_meta = _extract_logits_meta(raw if isinstance(raw, dict) else {})
+        # Also accept completion_probabilities from n_probs path
+        if not logits_meta.get("logits_available") and isinstance(raw, dict):
+            choices = raw.get("choices") or []
+            if choices and isinstance(choices[0], dict):
+                if choices[0].get("completion_probabilities"):
+                    logits_meta = {
+                        "logits_available": True,
+                        "logits": choices[0]["completion_probabilities"],
+                        "entropy": 1.0,
+                    }
+        metrics: dict[str, float] = {}
+        raw_out: dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+        if logits_meta.get("logits_available"):
+            metrics["logits_available"] = 1.0
+            raw_out["logits"] = logits_meta.get("logits") or True
+            if "entropy" in logits_meta:
+                metrics["entropy"] = float(logits_meta["entropy"])
         return GenerateResult(
             text=text,
             prompt_tokens=prompt_tokens,
@@ -310,7 +363,8 @@ class LlamaCppBackend(InferenceBackend):
             backend=self.name,
             quant=req.quant,
             tier_used=self.tier,
-            raw=raw if isinstance(raw, dict) else {},
+            raw=raw_out,
+            metrics=metrics,
         )
 
     async def cancel(self, session_id: str) -> None:
@@ -376,3 +430,45 @@ def _usage_or_approx_text(payload: dict[str, Any], key: str, text: str) -> int:
     if isinstance(value, int):
         return value
     return _approx_word_tokens(text)
+
+
+def _extract_logits_meta(payload: dict[str, Any]) -> dict[str, Any]:
+    """Detect llama.cpp / OpenAI logprobs or n_probs payloads."""
+    choices = payload.get("choices") or []
+    if not choices:
+        return {"logits_available": False}
+    choice = choices[0] if isinstance(choices[0], dict) else {}
+    logprobs = choice.get("logprobs")
+    # llama.cpp may also put probs under completion_probabilities / probs
+    alt = choice.get("completion_probabilities") or choice.get("probs") or payload.get("probs")
+    if not logprobs and not alt:
+        return {"logits_available": False}
+    logits: Any = logprobs if logprobs is not None else alt
+    entropy = 1.0
+    try:
+        # OpenAI-style: logprobs.content[].top_logprobs
+        content = []
+        if isinstance(logprobs, dict):
+            content = list(logprobs.get("content") or [])
+        elif isinstance(logprobs, list):
+            content = logprobs
+        if content and isinstance(content[0], dict):
+            tops = content[0].get("top_logprobs") or content[0].get("top_probs") or []
+            if tops:
+                import math
+
+                probs: list[float] = []
+                for t in tops[:8]:
+                    if not isinstance(t, dict):
+                        continue
+                    if "logprob" in t:
+                        probs.append(math.exp(float(t["logprob"])))
+                    elif "prob" in t:
+                        probs.append(float(t["prob"]))
+                if probs:
+                    s = sum(probs) or 1.0
+                    probs = [p / s for p in probs]
+                    entropy = -sum(p * math.log(max(p, 1e-12)) for p in probs)
+    except Exception:
+        entropy = 1.0
+    return {"logits_available": True, "logits": logits, "entropy": float(entropy)}

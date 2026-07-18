@@ -33,8 +33,28 @@ Enable real Mem0:
 ```bash
 set NSA_MEM_PROVIDER=mem0
 set NSA_MEM_LLM=local   # or openai
-pip install "mem0ai[nlp]" fastembed
+# Lean gateway image already includes mem0ai via uv group `gateway`.
+# For local NLP extras: uv sync --group nlp
 ```
+
+### Axion Compose demo (fact extraction)
+
+Default Axion stays `NSA_MEM_LLM=none` (stable, hash ingest). For a live extraction demo:
+
+```bash
+# on VM:
+PRODUCT_DEMO=1 bash scripts/remote-compose-up.sh
+# or manually:
+export NSA_MEM_LLM=local
+export NSA_MEM_LLM_BASE_URL=http://tier2:8080
+export NSA_MEM_EMBEDDER=hash   # hash vectors; tier LLM extracts facts
+export TIER2_CTX=8192          # Mem0 v3 default prompt needs headroom; we also install a lean prompt
+docker compose up -d --force-recreate tier2 gateway
+# then: bash scripts/axion-product-verify.sh
+# Expect /health memory.provider=mem0 and non-empty recall after chat remember.
+```
+
+`NSA_MEM_EMBEDDER=hash` avoids requiring llama `--embeddings`. Typed `remember_fact` uses `infer=False`; chat `remember(messages)` uses lean extraction + fallback.
 
 ## ADR
 

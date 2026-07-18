@@ -21,7 +21,12 @@ from neuroswarm_arm.evolution.reflection.gepa.deployment import ApprovalGate, Te
 from neuroswarm_arm.evolution.reflection.gepa.evaluation import EvaluationBatch
 from neuroswarm_arm.evolution.reflection.gepa.facade import GEPAFacade, GEPAOptimizeResult
 from neuroswarm_arm.evolution.reflection.gepa.merge import SystemAwareMergeEngine
-from neuroswarm_arm.evolution.reflection.gepa.mutation import MockReflectionLM, ReflectiveMutationEngine
+from neuroswarm_arm.evolution.reflection.gepa.mutation import (
+    HttpReflectionLM,
+    MockReflectionLM,
+    ReflectiveMutationEngine,
+    build_reflection_lm,
+)
 from neuroswarm_arm.evolution.reflection.gepa.pareto import ParetoFront
 
 __all__ = [
@@ -32,6 +37,7 @@ __all__ = [
     "EvaluationBatch",
     "GEPAFacade",
     "GEPAOptimizeResult",
+    "HttpReflectionLM",
     "MockReflectionLM",
     "NexusGEPAAdapter",
     "OfficialGEPABridge",
@@ -41,4 +47,5 @@ __all__ = [
     "SystemAwareMergeEngine",
     "TextArtifactDeployer",
     "TextCandidate",
+    "build_reflection_lm",
 ]

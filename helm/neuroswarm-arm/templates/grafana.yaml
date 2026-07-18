@@ -1,6 +1,84 @@
-﻿apiVersion: v1
+﻿{{- if .Values.observability.enabled }}
+apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: neuroswarm-arm-grafana
+  name: {{ include "neuroswarm-arm.fullname" . }}-grafana-datasource
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
 data:
-  dashboard.json: "{}"
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://{{ include "neuroswarm-arm.fullname" . }}-prometheus:{{ .Values.observability.prometheus.port }}
+        isDefault: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "neuroswarm-arm.fullname" . }}-grafana
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: grafana
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: grafana
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: grafana
+          image: {{ .Values.observability.grafana.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: {{ .Values.observability.grafana.adminUser | quote }}
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: {{ .Values.observability.grafana.adminPassword | quote }}
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+          ports:
+            - name: http
+              containerPort: {{ .Values.observability.grafana.port }}
+          volumeMounts:
+            - name: datasource
+              mountPath: /etc/grafana/provisioning/datasources
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.observability.grafana.resources | nindent 12 }}
+      volumes:
+        - name: datasource
+          configMap:
+            name: {{ include "neuroswarm-arm.fullname" . }}-grafana-datasource
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "neuroswarm-arm.fullname" . }}-grafana
+  labels:
+    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: {{ .Values.observability.grafana.port }}
+      targetPort: http
+{{- end }}

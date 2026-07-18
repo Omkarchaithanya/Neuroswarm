@@ -105,7 +105,7 @@ class PerformixCollector:
         self,
         registry: MetricRegistry,
         *,
-        path: str | Path = "work/haoe/performix_snapshot.json",
+        path: str | Path = "work/performix/snapshot.json",
         interval_s: float = 5.0,
         enabled: bool = False,
     ) -> None:
@@ -145,6 +145,46 @@ class PerformixCollector:
         self.registry.set(
             "nexus_performix_branch_misses",
             float(data.get("branch_misses") or 0.0),
+        )
+        metrics = data.get("metrics") if isinstance(data.get("metrics"), dict) else {}
+        self.registry.set(
+            "nexus_performix_hotspot_top_pct",
+            float(metrics.get("hotspot_top_pct") or data.get("hotspot_pct") or 0.0),
+        )
+        hotspots = data.get("hotspots") or []
+        self.registry.set(
+            "nexus_performix_hotspot_count",
+            float(len(hotspots) if isinstance(hotspots, list) else 0),
+        )
+        if isinstance(hotspots, list):
+            for item in hotspots[:10]:
+                if not isinstance(item, dict):
+                    continue
+                fn = str(item.get("function") or item.get("name") or item.get("symbol") or "unknown")[:96]
+                pct = item.get("pct") or item.get("percent") or item.get("self")
+                if pct is None:
+                    continue
+                try:
+                    self.registry.set(
+                        "nexus_performix_hotspot_pct",
+                        float(pct),
+                        labels={"function": fn},
+                    )
+                except Exception:
+                    continue
+        topdown = data.get("topdown") or data.get("microarch") or {}
+        if isinstance(topdown, dict):
+            self.registry.set(
+                "nexus_performix_frontend_bound",
+                float(topdown.get("frontend_bound") or topdown.get("frontend") or 0.0),
+            )
+            self.registry.set(
+                "nexus_performix_backend_bound",
+                float(topdown.get("backend_bound") or topdown.get("backend") or 0.0),
+            )
+        self.registry.set(
+            "nexus_performix_pmu_available",
+            float(data.get("pmu_available") if data.get("pmu_available") is not None else (1.0 if cycles > 0 else 0.0)),
         )
         pmu = data.get("pmu_events") or data.get("events") or {}
         if isinstance(pmu, dict):

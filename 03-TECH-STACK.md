@@ -57,7 +57,7 @@
 | Component | Source |
 |---|---|
 | **Arm Performix** | https://developer.arm.com/servers-and-cloud-computing/arm-performix (free download) |
-| **Arm MCP Server** | https://github.com/arm/mcp (Docker hub: arm/mcp) |
+| **Arm MCP Server** | https://github.com/arm/mcp (Docker Hub: `armlimited/arm-mcp`) — IDE/stdio toolbox; product AROP uses `performix-bridge` |
 | **Arm Kleidi learning paths** | https://learn.arm.com/learning-paths/servers-and-cloud-computing/ |
 
 ### Orchestration
@@ -142,87 +142,49 @@ python convert_hf_to_gguf.py /path/to/Llama-3.1-8B-Instruct --outfile llama-3.1-
 
 ## Arm Performix recipes we'll run
 
-### Recipe 1: System Characterization (baseline)
-```bash
-apx recipe run system-characterization \
-  --target ssh://ubuntu@<graviton5-ip> \
-  --output ./benchmarks/sys-char.json
-```
-*Why:* Establishes the hardware baseline (memory bandwidth, L3 latency, NUMA topology). Documents that we're running on real Graviton5.
+**Primary Neuroswarm path:** install `apx` **on the Axion target** (see `scripts/install-performix.sh`). Windows Performix GUI is optional (SSH Targets → Axion for interactive exploration only).
 
-### Recipe 2: Code Hotspots (the headline numbers)
-```bash
-apx recipe run code-hotspots \
-  --target ssh://ubuntu@<graviton5-ip> \
-  --binary /usr/local/bin/neuroswarm-router \
-  --duration 60 \
-  --output ./benchmarks/code-hotspots-llama-cpp.svg
-```
-*Why:* This is the flame graph judges will look at. Shows ggml_vec_dot_q4_K_M, I8MM kernels, SVE2 SIMD utilization. The before/after Performix comparison validates the cascade speedup.
+Current CLI (2026 Performix) — **no** `--output` / `--binary` / `prepare local`:
 
-### Recipe 3: CPU Microarchitecture (Arm-specific)
 ```bash
-apx recipe run cpu-microarch \
-  --target ssh://ubuntu@<graviton5-ip> \
-  --binary /usr/local/bin/neuroswarm-router \
-  --output ./benchmarks/topdown.svg
+apx target prepare
+apx recipe run code_hotspots --system-wide --timeout 60 --deploy-tools --json
+# parse run_id from NDJSON even if RC!=0, then:
+apx run export <run_id> /tmp/apx-export --json
+# normalize → work/performix/snapshot.json with source=apx
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 PERFORMIX_DURATION=60 \
+  bash scripts/refresh-performix-snapshot.sh
 ```
-*Why:* Top-down analysis. Shows pipeline stalls, branch mispredicts, memory-bound phases. Validates that decode is memory-bound (our cascade theory).
 
-### Recipe 4: System Utilization (multi-agent)
-```bash
-apx recipe run system-utilization \
-  --target ssh://ubuntu@<graviton5-ip> \
-  --attach-pid $(pgrep -f neuroswarm-router) \
-  --duration 300 \
-  --output ./benchmarks/multi-agent.svg
-```
-*Why:* Shows 192-core utilization pattern during real agent load. Validates HAOE scheduler is using NUMA-aware work-stealing.
+Recipe ids use underscores (`code_hotspots`, `cpu_microarchitecture`, `system_utilization`). Hyphen aliases are normalized in `PerformixClient`.
 
-### Recipe 5: Comparison (the proof)
+Optional compare (best-effort; flags may vary by `apx` build):
+
 ```bash
-apx recipe compare \
-  --baseline ./benchmarks/code-hotspots-baseline.json \
-  --optimized ./benchmarks/code-hotspots-cascade.json \
-  --output ./benchmarks/comparison.md
+apx recipe compare --help
 ```
-*Why:* Generates the side-by-side report we'll put in the submission.
 
 ---
 
 ## Arm MCP Server integration
 
+**Do not conflate:**
+
+| Surface | Image / URL | Role |
+|---------|-------------|------|
+| Product AROP MCP | `performix-bridge:8090` | HTTP `/mcp` wrapping **host** `apx` |
+| Official Arm MCP | `armlimited/arm-mcp` ([arm/mcp](https://github.com/arm/mcp)) | IDE stdio: `kb_search`, migrate, Performix-over-SSH |
+
 ```bash
-# Run Arm MCP server alongside our agent
-docker run -d \
-  --name arm-mcp \
-  -p 8080:8080 \
-  -e ARM_PERFORMIX_TARGET=ssh://ubuntu@<graviton5-ip> \
-  arm/mcp:latest
+# Product path (Compose)
+export NSA_AROP_PERFORMIX_MCP=http://performix-bridge:8090
+docker compose --profile performix up -d performix-bridge gateway
+
+# Optional IDE-only (see .cursor/mcp.json.example)
+docker pull armlimited/arm-mcp:latest
 ```
 
-```python
-# In our evolution loop (Plane 5)
-from mcp_client import MCPClient
-
-arm_mcp = MCPClient("http://localhost:8080")
-
-async def profile_and_evolve():
-    hotspots = await arm_mcp.apx_recipe_run(
-        recipe="code-hotspots",
-        binary="/usr/local/bin/neuroswarm-router",
-        duration=60
-    )
-    return hotspots
-```
-
-**The Arm MCP server exposes:**
-- `apx_recipe_run` — run a profiling recipe
-- `apx_recipe_compare` — compare two runs
-- `kb_search` — semantic search across Arm docs
-- `migrate_analysis` — analyze x86 → Arm porting
-- `container_inspect` — inspect ARM64 container
-
+Official Arm MCP tools (IDE): `kb_search`, migrate analysis, container inspect, assembly/LLVM-MCA, Performix-over-SSH — **not** wired as the Compose AROP default.
 ---
 
 ## Helm chart structure

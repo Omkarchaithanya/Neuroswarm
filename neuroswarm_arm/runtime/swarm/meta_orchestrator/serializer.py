@@ -32,6 +32,17 @@ def _context_to_dict(context: Any) -> Any:
     raise SerializationError(f"unsupported context type: {type(context)!r}")
 
 
+def _rehydrate_graph(data: Any) -> Any:
+    if data is None or not isinstance(data, dict):
+        return data
+    try:
+        from neuroswarm_arm.runtime.swarm.task_graph.graph import TaskGraph
+
+        return TaskGraph.model_validate(data)
+    except Exception:
+        return data
+
+
 class WorkflowSerializer:
     """JSON serializer for WorkflowExecution (graph/context as dicts)."""
 
@@ -49,6 +60,8 @@ class WorkflowSerializer:
             data = json.loads(raw)
             if "status" in data and isinstance(data["status"], str):
                 data["status"] = WorkflowStatus(data["status"])
+            if isinstance(data.get("graph"), dict):
+                data["graph"] = _rehydrate_graph(data["graph"])
             return WorkflowExecution.model_validate(data)
         except Exception as exc:  # noqa: BLE001
             raise SerializationError(str(exc)) from exc

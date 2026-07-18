@@ -39,10 +39,23 @@ class SpeculationRouter:
         )
 
     def apply(self, plan: ExecutionPlan) -> ExecutionPlan:
-        plan.speculation = self.enabled and plan.use_cascade
-        plan.self_speculation = self.self_speculation and self.enabled
+        import os
+
+        # When llama n_probs/logprobs are requested, enable draft/verify so logits can surface.
+        try:
+            n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
+        except ValueError:
+            n_probs = 0
+        enabled = self.enabled or n_probs > 0
+        plan.speculation = enabled and plan.use_cascade
+        plan.self_speculation = self.self_speculation and enabled
         plan.metadata.setdefault("speculation", {})
         strategy = self.strategy
+        if n_probs > 0:
+            # Prefer draft+verify so tier generate can return logprobs into ASCR.
+            strategy = strategy or "draft_model"
+            if strategy in {"self_speculation", "ngram", "suffix"}:
+                strategy = "draft_model"
         if not strategy:
             if plan.self_speculation:
                 strategy = "self_speculation"
@@ -64,6 +77,7 @@ class SpeculationRouter:
                 "accept_threshold": self.accept_threshold,
                 "verify_batch_size": self.verify_batch_size,
                 "speculation_depth": self.speculation_depth,
+                "logits_requested": n_probs > 0,
             }
         )
         return plan

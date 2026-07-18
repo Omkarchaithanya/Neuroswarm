@@ -408,7 +408,7 @@ result = arop.run_once()  # never Reflect→Deploy; SafetyGate required
 | Predicts failures + reroutes | Cost-aware RL router + reasoning governor | 4 |
 | Evolves via experience replay/memory | Plane 5: GEPA + Mem0 + OKF | 5 |
 | Mem0 / OKF concepts | Plane 2 + Plane 5 | 2, 5 |
-| Hierarchical task graphs + SVE vector stores | HAOE scheduler (Plane 4) + SVE2 JSON parsing | 4 |
+| Hierarchical task graphs + ARM ANN vector path (TurboVec/exact; SVE kernels future) | HAOE scheduler (Plane 4) + router VectorIndex | 4 |
 | CPU-native RL/quantization loop | Plane 5 (evolution) + AQR (Plane 3) | 3, 5 |
 | KleidiAI / llama.cpp / vLLM extensions | Plane 3 inference substrate | 3 |
 | 2-3× throughput | Cascade 1.8-2.3× + KleidiAI 2.5× TTFT | 3 |
