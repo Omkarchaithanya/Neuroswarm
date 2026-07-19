@@ -1,4 +1,5 @@
-project_id    = "project-5bcdea88-8805-4908-991"
+# Copy to terraform.tfvars (gitignored) — do not commit live project IDs.
+project_id    = "YOUR_GCP_PROJECT_ID"
 region        = "us-central1"
 zone          = "us-central1-a"
 instance_name = "neuroswarm-axion"

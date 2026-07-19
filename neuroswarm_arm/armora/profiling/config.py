@@ -45,7 +45,7 @@ class RPFRuntimeConfig:
     max_provider_failures: int = 3
     parca_url: str = ""
     pyroscope_url: str = ""
-    performix_recipe: str = "code-hotspots"
+    performix_recipe: str = "code_hotspots"
     performix_binary: str = "apx"
 
 
@@ -78,7 +78,7 @@ def load_rpf_config(*, work_dir: Path | None = None) -> RPFRuntimeConfig:
         max_provider_failures=_int("NSA_RPF_MAX_PROVIDER_FAILURES", "3"),
         parca_url=os.getenv("NSA_RPF_PARCA_URL", "").strip(),
         pyroscope_url=os.getenv("NSA_RPF_PYROSCOPE_URL", "").strip(),
-        performix_recipe=os.getenv("NSA_RPF_PERFORMIX_RECIPE", "code-hotspots"),
+        performix_recipe=os.getenv("NSA_RPF_PERFORMIX_RECIPE", "code_hotspots"),
         performix_binary=os.getenv("NSA_RPF_PERFORMIX_BINARY", "apx"),
     )
     try:

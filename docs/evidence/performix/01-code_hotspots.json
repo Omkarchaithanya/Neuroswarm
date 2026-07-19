@@ -1,0 +1,146 @@
+{
+  "source": "apx",
+  "run_id": "74aab167ede4",
+  "hotspots": [
+    {
+      "function": "default_idle_call",
+      "pct": 96.694,
+      "samples": 266174.0
+    },
+    {
+      "function": "<Unknown code in libpython3.12.so.1.0>",
+      "pct": 0.878,
+      "samples": 2417.0
+    },
+    {
+      "function": "<Unknown code in k3s>",
+      "pct": 0.551,
+      "samples": 1517.0
+    },
+    {
+      "function": "Unknown symbol @ 0x0007e810",
+      "pct": 0.231,
+      "samples": 637.0
+    },
+    {
+      "function": "finish_task_switch.isra.0",
+      "pct": 0.217,
+      "samples": 598.0
+    },
+    {
+      "function": "<Unknown code in sl-record>",
+      "pct": 0.182,
+      "samples": 502.0
+    },
+    {
+      "function": "<Unknown code in containerd-shim-runc-v2>",
+      "pct": 0.109,
+      "samples": 301.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00137404",
+      "pct": 0.058,
+      "samples": 159.0
+    },
+    {
+      "function": "Unknown symbol @ 0x005b2580",
+      "pct": 0.042,
+      "samples": 115.0
+    },
+    {
+      "function": "__write",
+      "pct": 0.042,
+      "samples": 115.0
+    },
+    {
+      "function": "<Unknown code in runc>",
+      "pct": 0.039,
+      "samples": 108.0
+    },
+    {
+      "function": "<Unknown code in metrics-server>",
+      "pct": 0.036,
+      "samples": 100.0
+    },
+    {
+      "function": "<Unknown code in [vdso]>",
+      "pct": 0.033,
+      "samples": 91.0
+    },
+    {
+      "function": "_PyEval_EvalFrameDefault",
+      "pct": 0.033,
+      "samples": 92.0
+    },
+    {
+      "function": "<Unknown code in dockerd>",
+      "pct": 0.031,
+      "samples": 85.0
+    },
+    {
+      "function": "Unknown symbol @ 0x004f1130",
+      "pct": 0.029,
+      "samples": 79.0
+    },
+    {
+      "function": "Unknown symbol @ 0x0052cc50",
+      "pct": 0.029,
+      "samples": 79.0
+    },
+    {
+      "function": "strncmp",
+      "pct": 0.028,
+      "samples": 77.0
+    },
+    {
+      "function": "_IO_str_seekoff",
+      "pct": 0.026,
+      "samples": 71.0
+    },
+    {
+      "function": "<Unknown code in containerd>",
+      "pct": 0.023,
+      "samples": 62.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00137560",
+      "pct": 0.021,
+      "samples": 57.0
+    },
+    {
+      "function": "fstatat",
+      "pct": 0.02,
+      "samples": 55.0
+    },
+    {
+      "function": "<Unknown code in otelcol-contrib>",
+      "pct": 0.02,
+      "samples": 55.0
+    },
+    {
+      "function": "_IO_link_in",
+      "pct": 0.018,
+      "samples": 50.0
+    },
+    {
+      "function": "<Unknown code in apx>",
+      "pct": 0.018,
+      "samples": 50.0
+    }
+  ],
+  "summary": {
+    "cycles": null,
+    "instructions": null,
+    "ipc": null
+  },
+  "metadata": {
+    "run.result": "success",
+    "run.recipe_name": "code_hotspots",
+    "engine.version": "1.19.0",
+    "target.name": "localhost"
+  },
+  "pmu_available": 1.0,
+  "recommendations": [
+    "Focus hottest function with Arm Performix code_hotspots / cpu_microarchitecture recipes"
+  ]
+}

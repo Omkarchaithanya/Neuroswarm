@@ -1,0 +1,2 @@
+fastmcp==3.4.4
+playwright==1.54.0

@@ -193,6 +193,8 @@ services:
 
   sglang-prefill:
     profiles: ["pd"]
+    # Multi-arch; verify arm64 + Arm Neoverse CPU engine before demo claims.
+    # https://developer.arm.com/community/arm-community-blogs/b/ai-blog/posts/bringing-sglang-high-performance-llm-inference-to-arm-neoverse
     image: ${NSA_SGLANG_IMAGE:-lmsysorg/sglang:latest}
     platform: linux/arm64
     restart: unless-stopped

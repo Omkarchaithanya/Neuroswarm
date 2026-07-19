@@ -1,7 +1,7 @@
 param(
   [ValidateSet("compose", "k8s")]
   [string]$Mode = "compose",
-  [string]$ProjectId = "project-5bcdea88-8805-4908-991",
+  [string]$ProjectId = "$($env:GCP_PROJECT)",
   [string]$Zone = "us-central1-a",
   [string]$InstanceName = "neuroswarm-axion",
   [string]$RemotePath = "",

@@ -124,6 +124,11 @@ hpa:
   targetCPUUtilizationPercentage: 70
 
 sglangPrefill:
+  # Optional pd profile. Image must be multi-arch linux/arm64 with Arm Neoverse
+  # CPU engine (SGLANG_USE_CPU_ENGINE=1). Arm blog May 2026:
+  # https://developer.arm.com/community/arm-community-blogs/b/ai-blog/posts/bringing-sglang-high-performance-llm-inference-to-arm-neoverse
+  # Verify before demo: docker buildx imagetools inspect lmsysorg/sglang:latest
+  # If :latest drifts, pin a known multi-arch tag (e.g. v0.5.12-cu129-runtime).
   enabled: false
   image: lmsysorg/sglang:latest
   port: 30000

@@ -88,7 +88,8 @@ neuroswarm-arm/
 
 ## 2. Provision Arm Machine
 
-Use AWS Graviton5 if available. If not, use Graviton4.
+**Primary demo host:** GCP Axion `c4a-standard-8` (Neoverse-V2, typically **1 NUMA node**).  
+Optional scale-up: multi-socket AWS Graviton4/5 — HAOE/DIPA auto-detect NUMA/CXL and activate split placement only when topology supports it (**Option A**). Do not require 2 NUMA nodes for the Axion demo.
 
 ```bash
 uname -m
@@ -101,7 +102,7 @@ Acceptance criteria:
 
 - Architecture is `aarch64`.
 - SVE2 / I8MM / DotProd / BF16 are visible where supported.
-- NUMA topology is captured.
+- NUMA topology is captured (Axion: expect 1 node; record honestly).
 - Hardware details are saved to `benchmarks/01-system-info.txt`.
 
 ## 3. Build llama.cpp with KleidiAI
@@ -374,28 +375,30 @@ Acceptance criteria:
 
 ## 14. Integrate Arm Performix
 
-Install Performix on the Arm host and save recipes under `benchmarks/recipes/`.
-
-Required recipes:
+Install Performix on the **Axion host** (`bash scripts/install-performix.sh`). Use the GA recipe IDs (underscores), not invented names:
 
 ```bash
-apx recipe run system-characterization --output benchmarks/results/01-sys-char.json
-apx recipe run code-hotspots --binary /usr/local/bin/llama-server --output benchmarks/results/02-baseline.svg
-apx recipe run code-hotspots --binary /usr/local/bin/neuroswarm-router --output benchmarks/results/03-optimized.svg
-apx recipe run cpu-microarch --binary /usr/local/bin/neuroswarm-router --output benchmarks/results/04-topdown.svg
-apx recipe compare --baseline benchmarks/results/02-baseline.json --optimized benchmarks/results/03-optimized.json --output benchmarks/results/05-comparison.md
+# Discovery
+apx recipe list
+
+# Capture all five GA recipes into docs/evidence/performix/
+NSA_PERFORMIX_ALLOW_DEMO=0 PERFORMIX_DURATION=60 bash performix_capture.sh
+
+# Or single recipe via current CLI (no --output / --binary):
+apx target prepare
+apx recipe run code_hotspots --system-wide --timeout 60 --deploy-tools --json
+apx recipe run instruction_mix --system-wide --timeout 60 --deploy-tools --json
+# Export by run_id even if RC!=0; normalize via scripts/performix_normalize_export.py
 ```
 
-Implement `app/evolution/performix_client.py`:
+Canonical IDs: `code_hotspots`, `cpu_microarchitecture`, `instruction_mix`, `memory_access`, `system_characterization`.
 
-- run recipe
-- collect output path
-- parse summary metrics
-- expose latest hotspot list to dashboard
+Use `neuroswarm_arm/evolution/performix_client.py` (aliases map legacy hyphen names).
 
 Acceptance criteria:
 
-- At least one baseline and one optimized flame graph exist.
+- At least `instruction_mix` + `code_hotspots` artifacts under `docs/evidence/performix/` with `source=apx`.
+- Snapshot honesty: never silent demo (`NSA_PERFORMIX_ALLOW_DEMO=0`).
 - Benchmark comparison is reproducible from `benchmarks/run_all.sh`.
 
 ## 15. Add AROP (Plane 5) — Autonomic Runtime Optimization Plane

@@ -217,6 +217,57 @@ def normalize(export_dir: Path, out_json: Path, run_id: str) -> str:
         print(f"EXPORT_FAIL token={token} result={run_result!r} err={err[:300]!r}", file=sys.stderr)
         return token
 
+    # Instruction Mix exports have static_instruction_mix.csv, not hotspots.
+    csv_files = []
+    for root in roots:
+        csv_files.extend(p for p in root.rglob("static_instruction_mix.csv") if p.is_file())
+    if not hotspots and csv_files:
+        import csv
+        from collections import defaultdict
+
+        rows: list[dict] = []
+        with csv_files[0].open(encoding="utf-8", errors="replace") as f:
+            rows = list(csv.DictReader(f))
+        simd_keys = ("sve", "sve2", "neon", "asimd", "i8mm", "dotprod", "bf16", "simd", "vector")
+        simd = total = 0.0
+        for row in rows:
+            name = " ".join(str(v) for v in row.values()).lower()
+            cnt = 0.0
+            for c in ("count", "Count", "instructions", "pct", "percent"):
+                if c in row:
+                    try:
+                        cnt = float(row[c])
+                        break
+                    except Exception:
+                        pass
+            total += cnt
+            if any(s in name for s in simd_keys):
+                simd += cnt
+        payload = {
+            "source": "apx",
+            "recipe": "instruction_mix",
+            "run_id": run_id,
+            "available": 1.0,
+            "instruction_mix_rows": rows[:200],
+            "summary": {
+                "simd_related_count": simd,
+                "total_count": total,
+                "simd_share_approx": (simd / total) if total else None,
+                "rows": len(rows),
+                "csv": str(csv_files[0]),
+            },
+            "metadata": {
+                "run.result": run_result,
+                "run.recipe_name": meta.get("run.recipe_name"),
+                "engine.version": meta.get("engine.version"),
+                "target.name": meta.get("target.name"),
+            },
+        }
+        out_json.parent.mkdir(parents=True, exist_ok=True)
+        out_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(f"normalized {out_json} instruction_mix_rows={len(rows)}", file=sys.stderr)
+        return "ok"
+
     if not hotspots:
         print("EXPORT_FAIL token=no_hotspots_in_export", file=sys.stderr)
         return "no_hotspots_in_export"

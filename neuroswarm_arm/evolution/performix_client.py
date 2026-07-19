@@ -12,30 +12,51 @@ import tempfile
 import zipfile
 
 
-# Human/legacy names → Arm Performix recipe ids (underscores).
+# Human / display / MCP names → Arm Performix GA recipe ids (underscores).
+# Real GA set (Apr 2026): Code Hotspots, CPU Microarchitecture, Instruction Mix,
+# Memory Access, System Characterization (preview). There is NO system-utilization.
 _RECIPE_ALIASES = {
     "code-hotspots": "code_hotspots",
     "code_hotspots": "code_hotspots",
+    "Code Hotspots": "code_hotspots",
     "cpu-microarch": "cpu_microarchitecture",
     "cpu-microarchitecture": "cpu_microarchitecture",
     "cpu_microarchitecture": "cpu_microarchitecture",
+    "CPU Microarchitecture": "cpu_microarchitecture",
     "instruction-mix": "instruction_mix",
     "instruction_mix": "instruction_mix",
+    "Instruction Mix": "instruction_mix",
     "memory-access": "memory_access",
     "memory_access": "memory_access",
-    "system-utilization": "system_utilization",
-    "system_utilization": "system_utilization",
-    "syscall-trace-summary": "syscall_trace_summary",
-    "syscall_trace_summary": "syscall_trace_summary",
-    "asct": "asct",
+    "Memory Access": "memory_access",
+    "system-characterization": "system_characterization",
+    "system_characterization": "system_characterization",
+    "System Characterization": "system_characterization",
+    "asct": "system_characterization",
+    # Legacy invented alias — map to System Characterization, never emit system_utilization.
+    "system-utilization": "system_characterization",
+    "system_utilization": "system_characterization",
 }
+
+# Canonical GA recipe ids for capture scripts / docs.
+GA_RECIPE_IDS: tuple[str, ...] = (
+    "code_hotspots",
+    "cpu_microarchitecture",
+    "instruction_mix",
+    "memory_access",
+    "system_characterization",
+)
 
 
 def normalize_recipe(recipe: str) -> str:
     key = (recipe or "").strip()
     if key in _RECIPE_ALIASES:
         return _RECIPE_ALIASES[key]
-    return key.replace("-", "_")
+    # Collapse display names: "Code Hotspots" → code_hotspots
+    collapsed = key.lower().replace(" ", "_").replace("-", "_")
+    if collapsed in _RECIPE_ALIASES:
+        return _RECIPE_ALIASES[collapsed]
+    return collapsed
 
 
 @dataclass(slots=True)

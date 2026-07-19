@@ -25,10 +25,15 @@ After k8s mode, API is typically on NodePort **30080** (`curl http://<axion-ip>:
 
 ```bash
 cp .env.example .env   # Windows: Copy-Item .env.example .env
-# Place GGUFs under MODEL_DIR (default /models) or: bash scripts/prepare-models.sh --demo-source /models/<small>.gguf
+# MUST use KleidiAI image — never leave stock llama.cpp for evidence:
+#   bash scripts/deploy-kleidiai-tiers.sh
 docker compose --compatibility up --build -d
 curl -fsS http://127.0.0.1/health
-curl -fsS http://127.0.0.1/ready
+curl -fsS http://127.0.0.1:8000/ready
+bash scripts/capture-evidence.sh
+bash performix_capture.sh          # Arm Performix (apx)
+bash scripts/verify-mcp-templates.sh
+bash scripts/verify-sglang-arm64.sh  # before pd-profile claims
 ```
 
 Stack: nginx proxy public `:80` → gateway API. Prometheus + Grafana run on **neuroswarm-obs** (`docker-compose.obs.yaml`). OTEL collector on axion remote_writes metrics. Paths on obs: `/prometheus/`, `/grafana/`.

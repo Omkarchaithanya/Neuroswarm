@@ -49,6 +49,9 @@ ensure_env NSA_AROP_REFLECTION hybrid
 ensure_env NSA_AROP_GEPA_LM mock
 ensure_env NSA_ASCR_TEXT_AGREE 1
 ensure_env NSA_LLAMA_N_PROBS 0
+# Never silently run stock llama.cpp — judges check IMAGE column.
+ensure_env NSA_LLAMA_IMAGE nexus-arm/llama-kleidiai:server
+ensure_env NSA_SGLANG_IMAGE lmsysorg/sglang:latest
 
 # Optional product-demo knobs (PRODUCT_DEMO=1): real GEPA LM + Mem0 extraction + logits.
 if [[ "${PRODUCT_DEMO:-0}" == "1" ]]; then

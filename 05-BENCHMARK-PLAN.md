@@ -1,260 +1,101 @@
 # Benchmark Plan — Prove Every Claim
 
-> Every number in the pitch must be reproducible. Here's how.
+> Replace targets with **measured** Axion numbers. Under-claim beats hype.
 
 ---
 
-## Required: Arm Performix recipes
+## Required: Arm Performix (GA recipes only)
 
-The hackathon explicitly says: *"Developers can use Arm Performix to get exact benchmarks of their Arm-based performance and be able to clearly show their results."*
-
-We run **5 recipes** minimum:
-
-### Recipe 1: System Characterization
+Hackathon rules name Performix. Capture via host `apx` + `PerformixClient`:
 
 ```bash
-apx recipe run system-characterization \
-  --target ssh://ubuntu@<graviton5-ip> \
-  --output ./benchmarks/01-sys-char.json
+apx recipe list
+bash performix_capture.sh
+# publishes to docs/evidence/performix/
 ```
 
-**Captures:** Memory bandwidth, L3 latency, NUMA topology, sustained FLOPs.
-**Why judges care:** Establishes we're on real Arm silicon, not a mock.
+| # | Recipe id | Why |
+|---|---|---|
+| 1 | `code_hotspots` | Flame / function attribution |
+| 2 | `cpu_microarchitecture` | Topdown (frontend/backend bound) |
+| 3 | `instruction_mix` | **SIMD / SVE2 / I8MM proof** (Arm’s own NEON example recipe) |
+| 4 | `memory_access` | SPE load/store latency |
+| 5 | `system_characterization` | ASCT preview — platform bring-up |
 
-### Recipe 2: Code Hotspots (the headline number)
+**Removed:** `system-utilization` (does not exist).  
+**CLI truth:** current `apx` uses `recipe run <id> --json` → `run export` (see `performix_client.py`). Do not document fake `--output` / `--duration` as primary flags.
+
+### Stock vs KleidiAI
 
 ```bash
-# Baseline (single llama.cpp, no cascade)
-apx recipe run code-hotspots \
-  --binary /usr/local/bin/llama-server \
-  --duration 60 \
-  --output ./benchmarks/02-hotspots-baseline.svg
+# Baseline
+NSA_LLAMA_IMAGE=ghcr.io/ggml-org/llama.cpp:server docker compose up -d --force-recreate tier1 tier2 tier3
+OUT_DIR=benchmarks/results/performix/stock bash performix_capture.sh
 
-# Optimized (NeuroSwarm-Arm)
-apx recipe run code-hotspots \
-  --binary /usr/local/bin/neuroswarm-router \
-  --duration 60 \
-  --output ./benchmarks/02-hotspots-cascade.svg
+# Optimized
+bash scripts/deploy-kleidiai-tiers.sh
+OUT_DIR=benchmarks/results/performix bash performix_capture.sh
+COMPARE=1 bash performix_capture.sh
 ```
 
-**Captures:** Flame graph showing where time is spent.
-**What we expect to see:**
-- Baseline: ~85% time in `ggml_vec_dot_q4_K_M`, no SIMD utilization
-- Cascade: ~60% in ggml (less work per request), visible I8MM kernels (`sdot`, `smmla`), SVE2 SIMD ~87% util
+Expect Instruction Mix / hotspots to show higher SIMD/I8MM share on Kleidi image.
 
-### Recipe 3: CPU Microarchitecture (top-down)
+---
+
+## Application benches (real JSON)
 
 ```bash
-apx recipe run cpu-microarch \
-  --binary /usr/local/bin/neuroswarm-router \
-  --output ./benchmarks/03-topdown.svg
+uv sync --all-groups
+uv run python benchmarks/run_all.py --out benchmarks/results/run_all.json
+# or full evidence pack:
+bash scripts/capture-evidence.sh
 ```
 
-**Captures:** Pipeline stalls, branch mispredicts, memory-bound vs. compute-bound.
-**What we expect to see:** Decode phase dominates with memory-bound stalls (validates cascade theory — single-batch decode IS memory-bound on Arm).
+Key scripts:
 
-### Recipe 4: System Utilization (multi-agent load)
-
-```bash
-apx recipe run system-utilization \
-  --attach-pid $(pgrep -f neuroswarm-router) \
-  --duration 300 \
-  --output ./benchmarks/04-system-util.svg
-```
-
-**Captures:** 192-core utilization under 10 concurrent agents.
-**What we expect to see:** HAOE scheduler puts critical-path agents on fast cores (cores 0-15), background tasks on cores 16-191. NUMA-aware work-stealing visible.
-
-### Recipe 5: Comparison report
-
-```bash
-apx recipe compare \
-  --baseline ./benchmarks/02-hotspots-baseline.json \
-  --optimized ./benchmarks/02-hotspots-cascade.json \
-  --output ./benchmarks/05-COMPARISON.md
-```
-
-**Output:** Markdown table we paste directly into the submission.
-
----
-
-## Token economics benchmark
-
-We need to prove **3.5× tokens/$, not just "fast".**
-
-```bash
-# Standard agent workload: 1000 requests, mixed complexity
-python ./benchmarks/agent_workload.py \
-  --instances 10 \
-  --requests-per-instance 100 \
-  --output ./benchmarks/economics.json
-```
-
-Measures per-request:
-- Input tokens
-- Output tokens (visible + thinking)
-- Wall-clock latency
-- Cost (Arm: $0.5243/hr for c8g.4xlarge at $0.0001456/vCPU-s)
-
-Then:
-- **H100 spot baseline:** $2.00 per 1M tokens (published industry average)
-- **NeuroSwarm-Arm:** computed from our JSON
-
----
-
-## Cascade acceptance rate benchmark
-
-```python
-# benchmarks/cascade_acceptance.py
-results = []
-for prompt in test_prompts:  # 500 diverse agent prompts
-    draft = tier1.generate(prompt, k=5)
-    accepted = tier2.verify(draft)
-    results.append({"prompt": prompt, "accepted": accepted})
-
-acceptance_rate = sum(r["accepted"] for r in results) / len(results)
-print(f"Cascade acceptance: {acceptance_rate:.1%}")
-# Target: ≥70%
-```
-
----
-
-## Semantic router accuracy
-
-Use MCPGA ground truth:
-
-```python
-# benchmarks/router_accuracy.py
-from mcpga import MCPGADataset  # public eval
-
-dataset = MCPGADataset()
-correct = 0
-for q, ground_truth_tools in dataset:
-    predicted = router.route(q, k=3)
-    if any(t.id in ground_truth_tools for t in predicted):
-        correct += 1
-
-print(f"Top-3 accuracy: {correct/len(dataset):.1%}")
-# Target: ≥95% (vs ~91.5% baseline per MCPGA paper)
-```
-
----
-
-## Reasoning-token governor
-
-```python
-# benchmarks/governor.py
-results_uncontrolled = run_deepseek_r1(prompts, max_thinking=8192)
-results_governed = run_deepseek_r1(prompts, max_thinking=governor.cap(plan))
-
-print(f"Uncontrolled avg thinking tokens: {mean(r.thinking for r in results_uncontrolled)}")
-print(f"Governed avg thinking tokens:     {mean(r.thinking for r in results_governed)}")
-print(f"Accuracy delta: {accuracy(results_governed) - accuracy(results_uncontrolled):+.1%}")
-# Target: ~60% fewer tokens, ≤2% accuracy drop
-```
-
----
-
-## KV cache survival test
-
-```bash
-# benchmarks/kv_survival.sh
-# 1. Start agent with 200k-token session
-python ./benchmarks/long_session.py --tokens 200000 --output session.json &
-
-# 2. Wait until session.json has full KV
-sleep 300
-
-# 3. Kill the worker
-pkill -f "long_session.py"
-
-# 4. Restart — verify session.json resumes seamlessly
-python ./benchmarks/resume_session.py --from session.json
-# Target: zero copy of pre-kill KV, resumes mid-conversation
-```
-
----
-
-## Self-speculation speedup
-
-```bash
-# Use llama.cpp --spec-self
-./llama-cli -m Llama-3.1-8B-Q5_K_M.gguf \
-  --spec-self ngram-map-k \
-  --spec-ngram-size-n 24 \
-  --draft-min 12 --draft-max 48 \
-  -p "$(cat agent_prompts.jsonl)" \
-  -n 512 > output_self_spec.txt
-
-# Compare to baseline (no spec)
-./llama-cli -m Llama-3.1-8B-Q5_K_M.gguf \
-  -p "$(cat agent_prompts.jsonl)" \
-  -n 512 > output_baseline.txt
-```
-
----
-
-## Helm install time
-
-```bash
-time helm install neuro ./helm/neuroswarm-arm
-# Target: <90 seconds from `helm install` to dashboard accessible
-```
-
----
-
-## AROP Plane 5 (policy optimization loop)
-
-```bash
-python benchmarks/arop/run_benchmark.py
-pytest tests/runtime/evolution -q
-# Optional live: POST /arop/optimize  (NSA_AROP_PERFORMIX=0 for CI mocks)
-```
-
-**Captures:** candidate vs baseline reward, canary/rollback decisions, policy registry status.
-**Note:** NEXUS Layer 5 = MAKS; AROP = Plane 5. Never claim Performix wins without `NSA_AROP_PERFORMIX=1` + real `apx` output.
-
----
-
-## Final benchmark dashboard (the screenshots)
-
-Six PNGs we put in the submission README:
-
-1. `benchmarks/screenshots/01-sys-char.png` — System characterization
-2. `benchmarks/screenshots/02-hotspots-baseline.png` — Baseline flame graph
-3. `benchmarks/screenshots/03-hotspots-cascade.png` — Optimized flame graph
-4. `benchmarks/screenshots/04-cascade-hit-rate.png` — Donut: 71% / 23% / 6%
-5. `benchmarks/screenshots/05-cost-dashboard.png` — Live Grafana
-6. `benchmarks/screenshots/06-arm-vs-gpu.png` — Tokens/$ bar chart
-
----
-
-## The headline claim ledger
-
-| Claim | How we prove it |
+| Script | Proves |
 |---|---|
-| 1.8–2.3× cascade speedup | llama-bench + Performix code-hotspots |
-| 60–80% orchestration latency reduction (HAOE) | Performix system-utilization recipe |
-| 92% tool schema reduction | Token count: 143k → 11k, measured |
-| +5% tool selection accuracy | MCPGA ground-truth benchmark |
-| 60% fewer thinking tokens | Governor benchmark, accuracy delta verified |
-| 2× more concurrent agents | KV cache dedup + MTE measurement |
-| ≥3.5× tokens/$ vs. H100 | Live cost dashboard + H100 spot baseline |
-| 200k-token session survival | KV survival test script |
-| Cold-start ~150ms vs ~600ms | End-to-end latency benchmark |
+| `cascade_acceptance.py` | ASCR accept rate / latency |
+| `router_accuracy.py` | Top-K tool routing |
+| `governor_tokens.py` | RTG token caps |
+| `kv_*.py` | KV share / compress / latency |
+| `economics.py` | tokens/$ model |
 
-Every claim has a script. Every script outputs JSON. Every JSON becomes a screenshot or a number in the README.
+Publish copies under `docs/evidence/latest/` (gitignored raw dir: `benchmarks/results/`).
 
 ---
 
-## What we DON'T claim (and why)
+## Topology honesty
 
-| Don't claim | Why |
-|---|---|
-| "Best in class" / "fastest" | Relative claims need baselines that don't exist |
-| "10× speedup" | Best documented Arm number is 2.5× TTFT — 10× is hype |
-| "Replaces all GPUs" | DIPA optional GPU offload — we augment, not replace |
-| "Zero cost" | Mem0 marketing cites high reduction; we report measured compression_ratio / retention |
-| "Production ready" | It's a hackathon project, but production-shaped |
+On Axion `c4a-standard-8`:
 
-Under-promise, over-deliver. The judges will respect numbers they can verify.
+```bash
+numactl --hardware   # expect 1 node
+lscpu | grep -i numa
+```
+
+Do **not** claim measurable NUMA-split speedup on this VM. Claim adaptive HAL + Option A wording.
+
+---
+
+## Target → measured table (fill before submit)
+
+| Claim | Target (aspirational) | Measured (Axion) | Artifact |
+|---|---|---|---|
+| Cascade latency / accept | — | ASCR accept **~0.42**; sample chat ~66s / tier3; cascade_acceptance tier_used=2 | `prometheus-metrics.txt`, `chat-completion.json`, `run_all.json` |
+| Router schema reduction | ≥90% | **16%** avg token reduction (route top-k); tools-route sample **47%** prompt token cut; top-1 **83%**, top-3 **100%**; **6** tools indexed | `run_all.json` / `tools-route.json` |
+| Kleidi vs stock tok/s | >1× | Kleidi image proven live (`nexus-arm/llama-kleidiai:server`); full tok/s A/B still optional | `kleidiai-runtime-gate.txt`, `docker-compose-ps.txt` |
+| Instruction Mix SIMD share | up vs stock | Kleidi static mix: **Advanced SIMD (NEON) 1.61%** + **SVE 0.34%** (~**1.95%** SIMD-class); integer 44.4% / load-store 27.7% | `static_instruction_mix.csv`, `02-instruction_mix.json` |
+| $/1M tokens vs H100 spot | ≥3.5× | sample RCIS **~$0.0016**/req; economics savings score **0.57** (under-claim; not H100 A/B yet) | `chat-completion.json`, `run_all.json` economics |
+
+---
+
+## Reproduce for judges
+
+```bash
+uv sync --all-groups
+cp .env.example .env
+bash scripts/deploy-kleidiai-tiers.sh
+bash scripts/capture-evidence.sh
+bash performix_capture.sh   # requires apx + Arm account
+```
