@@ -21,9 +21,9 @@ bash performix_capture.sh
 | 3 | `instruction_mix` | **SIMD / SVE2 / I8MM proof** (Arm’s own NEON example recipe) |
 | 4 | `memory_access` | SPE load/store latency |
 | 5 | `system_characterization` | ASCT preview — platform bring-up |
+| 6 | `system_utilization` | Host utilization (present on this `apx` install — see `00-recipe-list.txt`) |
 
-**Removed:** `system-utilization` (does not exist).  
-**CLI truth:** current `apx` uses `recipe run <id> --json` → `run export` (see `performix_client.py`). Do not document fake `--output` / `--duration` as primary flags.
+**CLI truth:** current `apx` uses `recipe run <id> --json` → `run export` (see `performix_client.py`). Do not document fake `--output` / `--duration` as primary flags (use `--timeout`).
 
 ### Stock vs KleidiAI
 

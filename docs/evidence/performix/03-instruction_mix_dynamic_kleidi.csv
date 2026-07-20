@@ -1,0 +1,14 @@
+group,instruction_count,percentage
+Scalable Vector Extension (SVE) Instructions,10253,0.94
+Scalable Matrix Extension (SME) Instructions,48,0.0
+Load and Store Instructions,310224,28.33
+Barrier Instructions,59,0.01
+Branch Instructions,199163,18.19
+Control Flow (Non-Branch) Instructions,47673,4.35
+Integer Instructions,446687,40.79
+Floating Point Instructions,43424,3.96
+Cryptographic Instructions,0,0.0
+Advanced SIMD Instructions,37365,3.41
+Reserved Instructions,3,0.0
+Unknown Instructions,293,0.03
+All Instructions,1095192,100.0

@@ -255,7 +255,8 @@ services:
     restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
     environment:
-      OBS_PROMETHEUS_REMOTE_WRITE: ${OBS_PROMETHEUS_REMOTE_WRITE:-http://127.0.0.1:9090/prometheus/api/v1/write}
+      # Dual-host: neuroswarm-obs Prometheus (not container loopback). Set in .env.
+      OBS_PROMETHEUS_REMOTE_WRITE: ${OBS_PROMETHEUS_REMOTE_WRITE:?set OBS_PROMETHEUS_REMOTE_WRITE to neuroswarm-obs IP:9090/prometheus/api/v1/write}
     ports:
       - "127.0.0.1:4317:4317"
       - "127.0.0.1:4318:4318"
@@ -265,11 +266,13 @@ services:
     depends_on:
       gateway:
         condition: service_started
+    # Distroless image has no /bin/sh — CMD-SHELL healthchecks always fail.
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
+      test: ["CMD", "/otelcol-contrib", "components"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
+      start_period: 10s
     cpus: 0.5
     mem_limit: 512m
     deploy:

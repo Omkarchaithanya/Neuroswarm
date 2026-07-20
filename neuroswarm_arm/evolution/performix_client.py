@@ -92,6 +92,7 @@ class PerformixClient:
         *,
         system_wide: bool = True,
         pid: int | None = None,
+        params: list[str] | None = None,
     ) -> dict:
         """Run an Arm Performix recipe and materialize JSON at ``output``.
 
@@ -113,6 +114,8 @@ class PerformixClient:
             cmd.append("--system-wide")
         if duration is not None:
             cmd.extend(["--timeout", str(int(duration))])
+        for p in params or []:
+            cmd.extend(["--param", str(p)])
 
         result = subprocess.run(cmd, capture_output=True, text=True)
         payload: dict = {

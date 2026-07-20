@@ -1,0 +1,87 @@
+{
+  "source": "apx",
+  "recipe": "instruction_mix",
+  "run_id": "dcc868c81924",
+  "mode": "both",
+  "capture": "live_decode_load_plus_lib_analysis",
+  "workload": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/bin/stock/root/app/libggml-cpu-armv9.2_2.so",
+  "working_dir": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/bin/stock/root/app",
+  "available": 1.0,
+  "instruction_mix_rows": [
+    {
+      "group": "Scalable Vector Extension (SVE) Instructions",
+      "instruction_count": "12830",
+      "percentage": "1.19"
+    },
+    {
+      "group": "Scalable Matrix Extension (SME) Instructions",
+      "instruction_count": "48",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Load and Store Instructions",
+      "instruction_count": "313846",
+      "percentage": "29.02"
+    },
+    {
+      "group": "Barrier Instructions",
+      "instruction_count": "74",
+      "percentage": "0.01"
+    },
+    {
+      "group": "Branch Instructions",
+      "instruction_count": "205808",
+      "percentage": "19.03"
+    },
+    {
+      "group": "Control Flow (Non-Branch) Instructions",
+      "instruction_count": "47070",
+      "percentage": "4.35"
+    },
+    {
+      "group": "Integer Instructions",
+      "instruction_count": "453041",
+      "percentage": "41.89"
+    },
+    {
+      "group": "Floating Point Instructions",
+      "instruction_count": "25413",
+      "percentage": "2.35"
+    },
+    {
+      "group": "Cryptographic Instructions",
+      "instruction_count": "0",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Advanced SIMD Instructions",
+      "instruction_count": "23112",
+      "percentage": "2.14"
+    },
+    {
+      "group": "Reserved Instructions",
+      "instruction_count": "3",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Unknown Instructions",
+      "instruction_count": "243",
+      "percentage": "0.02"
+    },
+    {
+      "group": "All Instructions",
+      "instruction_count": "1081488",
+      "percentage": "100.0"
+    }
+  ],
+  "static_instruction_mix_csv": "/tmp/exp-stock/u/dcc868c81924/tool/instruction_mix/0/static_instruction_mix.csv",
+  "summary": {
+    "neon_pct": 2.14,
+    "sve_pct": 1.19,
+    "rows": 13,
+    "analysis": "static_of_deployed_lib_during_live_load"
+  },
+  "dynamic_metrics": {
+    "nrows": 0
+  }
+}
