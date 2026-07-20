@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 from .aqr.quant_connector import AQRQuantConnector
 from .awpp.warm_connector import HeuristicWarmConnector
 from .backends.factory import BackendFactory
+from .backends.llama_cpp import LlamaCppBackend
 from .backends.registry import BackendRegistry
 from .batching.batch_manager import BatchManager
 from .cache.kv_connector import KVConnector
@@ -139,6 +140,9 @@ def build_dipa(
         endpoint=config.otel_endpoint,
         metrics=metrics_collector,
     )
+    for backend in registry.all():
+        if isinstance(backend, LlamaCppBackend):
+            backend._telemetry = telemetry  # noqa: SLF001
     lifecycle = LifecycleManager()
     affinity = ThreadAffinityManager()
     hw_control = ControlHardwareDetector()
@@ -150,7 +154,7 @@ def build_dipa(
         request_queue, workers=config_mgr.scheduler_workers()
     )
     streaming_engine = StreamingEngine()
-    kv_cache_mgr = KVCacheManager(kv_conn.connector)
+    kv_cache_mgr = KVCacheManager(kv_conn.connector, telemetry=telemetry)
     tokenizer_mgr = TokenizerManager(backend_mgr)
 
     metrics = DIPAMetrics(bridge=metrics_bridge)

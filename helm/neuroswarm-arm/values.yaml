@@ -1,5 +1,4 @@
 ﻿replicaCount: 1
-<<<<<<< HEAD
 
 image:
   gateway: neuroswarm-arm-gateway:dev
@@ -56,5 +55,3 @@ probes:
     periodSeconds: 10
 
 terminationGracePeriodSeconds: 45
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

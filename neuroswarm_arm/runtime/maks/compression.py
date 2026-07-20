@@ -10,6 +10,19 @@ from neuroswarm_arm.runtime.kv.compression import (
 )
 
 from .interfaces import ICompression
+from .q8_codec import decode_q8, encode_q8
+
+
+class Q8Codec(ICompression):
+    @property
+    def name(self) -> str:
+        return "q8"
+
+    def compress(self, data: bytes) -> bytes:
+        return encode_q8(data)
+
+    def decompress(self, data: bytes) -> bytes:
+        return decode_q8(data)
 
 
 class NoneCodec(ICompression):
@@ -84,6 +97,8 @@ def build_compression(name: str) -> ICompression:
             return NoneCodec()
     if key in {"quantized", "quantized_kv"}:
         return QuantizedKVStub()
+    if key == "q8":
+        return Q8Codec()
     # Fall back through Plane-2 builder then wrap
     inner = _build_kv(key)
     if inner.name == "none":

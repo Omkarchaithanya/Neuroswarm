@@ -179,6 +179,54 @@ def test_connector_capability_surface(maks):
     assert "llama.cpp" in conn.capability_matrix()
 
 
+def test_s3fifo_policy_selects_victims() -> None:
+    from neuroswarm_arm.runtime.maks.models import KVIdentity, KVRegistryRecord, KVTier, ProviderName
+    from neuroswarm_arm.runtime.maks.policies.s3fifo import S3FIFOPolicy
+
+    policy = S3FIFOPolicy()
+    policy.observe("old")
+    policy.observe("new", frequent=True)
+    records = [
+        KVRegistryRecord(
+            kv_id="old",
+            owner_agent="a",
+            identity=KVIdentity(),
+            provider=ProviderName.RAM,
+            tier=KVTier.HOT,
+            last_access=1.0,
+        ),
+        KVRegistryRecord(
+            kv_id="new",
+            owner_agent="b",
+            identity=KVIdentity(),
+            provider=ProviderName.RAM,
+            tier=KVTier.HOT,
+            last_access=2.0,
+        ),
+    ]
+    victims = policy.select_victims(records, count=1)
+    assert victims
+    assert victims[0] in {"old", "new"}
+
+
+def test_q8_codec_roundtrip() -> None:
+    from neuroswarm_arm.runtime.maks.compression import build_compression
+
+    codec = build_compression("q8")
+    data = b"neuroswarm " * 512
+    compressed = codec.compress(data)
+    assert codec.decompress(compressed) == data
+
+
+def test_semantic_cache_minhash_hit() -> None:
+    from neuroswarm_arm.runtime.dipa.cache.semantic_cache import SemanticCache
+
+    cache = SemanticCache(threshold=0.5)
+    cache.store("system: you are a helpful assistant", "kv-1")
+    hit = cache.lookup("system: you are a helpful assistant for coding")
+    assert hit == "kv-1"
+
+
 def test_pressure_monitor_unified(maks):
     async def _run():
         await maks.create(b"pressure-bytes" * 50, agent_id="a1")

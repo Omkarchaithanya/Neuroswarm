@@ -13,6 +13,27 @@ Env:
 - `NSA_REQUIRE_KLEIDIAI=1` — fail readiness if `CPU_KLEIDIAI` missing from logs
 - `NSA_DIPA_KLEIDIAI=1` — mark capabilities.kleidiai
 - `GGML_KLEIDIAI_SME` — unset=auto, `0`=off
+- `NSA_DIPA_OTEL=1` — enable DIPA OpenTelemetry spans (default in compose)
+- `NSA_DIPA_OTEL_ENDPOINT` — OTLP HTTP endpoint for trace export
+- `TIER*_PARALLEL=4` — llama-server slot count per tier
+- `NSA_MAKS_COMPRESSION=q8` — optional Q8 blob compression in MAKS
+- `NSA_MAKS_EVICTION=s3fifo` — optional S3-FIFO eviction policy
+
+### llama-server slot persistence
+
+Each tier mounts a writable volume at `/var/lib/ns/slots` and starts with:
+
+```text
+--parallel 4 --slot-save-path /var/lib/ns/slots
+```
+
+NeuroSwarm `SlotRouter` binds `session_id` → `id_slot` and uses `cache_prompt: true`
+for multi-turn reuse. Validate KleidiAI:
+
+```bash
+python scripts/validate_kleidiai.py --url http://127.0.0.1:8080
+python benchmarks/slot_reuse.py --url http://127.0.0.1:8080
+```
 
 ## Kubernetes / Helm
 

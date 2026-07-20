@@ -6,6 +6,7 @@ from .arc import ARCPolicy
 from .cost_aware import CostAwarePolicy
 from .lfu import LFUPolicy
 from .lru import LRUPolicy
+from .s3fifo import S3FIFOPolicy
 from .scored import EvictionWeights, ScoredEvictionPolicy
 from .temperature import TemperaturePolicy
 
@@ -18,6 +19,8 @@ def build_policy(name: EvictionPolicyName | str) -> IEvictionPolicy:
         return LFUPolicy()
     if key is EvictionPolicyName.ARC:
         return ARCPolicy()
+    if key is EvictionPolicyName.S3FIFO:
+        return S3FIFOPolicy()
     if key is EvictionPolicyName.TEMPERATURE:
         return TemperaturePolicy()
     if key is EvictionPolicyName.COST_AWARE:
@@ -32,6 +35,7 @@ __all__ = [
     "ARCPolicy",
     "TemperaturePolicy",
     "CostAwarePolicy",
+    "S3FIFOPolicy",
     "ScoredEvictionPolicy",
     "EvictionWeights",
     "build_policy",

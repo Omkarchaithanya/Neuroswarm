@@ -2,7 +2,6 @@
 kind: Deployment
 metadata:
   name: neuroswarm-arm
-<<<<<<< HEAD
   labels:
     app: neuroswarm-arm
 spec:
@@ -12,10 +11,6 @@ spec:
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
-=======
-spec:
-  replicas: 1
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
   selector:
     matchLabels:
       app: neuroswarm-arm
@@ -24,7 +19,6 @@ spec:
       labels:
         app: neuroswarm-arm
     spec:
-<<<<<<< HEAD
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       containers:
         - name: gateway
@@ -74,10 +68,3 @@ spec:
             preStop:
               exec:
                 command: ["/bin/sh", "-c", "sleep 5"]
-=======
-      containers:
-        - name: app
-          image: neuroswarm-arm:latest
-          ports:
-            - containerPort: 8000
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84

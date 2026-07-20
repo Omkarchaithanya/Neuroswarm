@@ -213,8 +213,13 @@ class KVManager:
         prov, location = await self.allocator.allocate(
             kv_id, len(payload), hint=loc_hint
         )
-        # Backends that need compression (e.g. NVMe) apply it themselves.
-        await prov.store(kv_id, payload)
+        stored = payload
+        if self.compression.name not in {"", "none"}:
+            try:
+                stored = self.compression.compress(payload)
+            except NotImplementedError:
+                stored = payload
+        await prov.store(kv_id, stored)
 
         dedup_key = ""
         if can_dedup:

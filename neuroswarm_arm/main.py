@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-<<<<<<< HEAD
 import os
 import platform
 from pathlib import Path
@@ -25,18 +24,12 @@ from .armora.telemetry.middleware import ROFMiddleware
 from .config import get_config
 from .evolution import build_arop, load_arop_config
 from .evolution.api import create_arop_router
-=======
-from fastapi import FastAPI
-
-from .config import get_config
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 from .evolution.performix_client import PerformixClient
 from .gateway import AgentGateway
 from .governor import ReasoningGovernor
 from .inference.cascade import CascadeRouter
 from .inference.llama_client import LlamaClient
 from .metrics import metrics
-<<<<<<< HEAD
 from .metrics.bridges import PlaneMetricBridge, RMFObservationProvider
 from .metrics.lifecycle import build_rmf
 from .metrics.middleware import install_rmf_middleware
@@ -56,15 +49,11 @@ from .runtime.rtg import build_rtg
 from .runtime.rtg.hooks import DIPAReasoningHook
 from .runtime.router import build_router, create_tool_router, load_router_config
 from .schemas import ChatRequest
-=======
-from .schemas import ChatRequest, ToolDef
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 from .tools.registry import ToolRegistry
 from .tools.semantic_mcp_router import SemanticMCPRouter
 
 
 cfg = get_config()
-<<<<<<< HEAD
 router_cfg = load_router_config()
 router_cfg.top_k = cfg.router_top_k
 router_cfg.tool_metadata_root = cfg.tool_metadata_root
@@ -175,16 +164,10 @@ try:
 except Exception:
     pass
 # Compat cascade facade delegates to DIPA.
-=======
-registry = ToolRegistry()
-semantic_router = SemanticMCPRouter(registry=registry)
-semantic_router.index_tools()
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 cascade = CascadeRouter(
     tier1=LlamaClient(cfg.tier1_url),
     tier2=LlamaClient(cfg.tier2_url),
     tier3=LlamaClient(cfg.tier3_url),
-<<<<<<< HEAD
     governor=governor,
     confidence_threshold=cfg.cascade_confidence_threshold,
     kv_runtime=kv_runtime,
@@ -477,38 +460,6 @@ def export_metrics(request: Request) -> Response:
     except Exception:
         arop_txt = ""
     return Response(content=body + mem + arop_txt, media_type=ctype)
-=======
-    governor=ReasoningGovernor(),
-)
-gateway = AgentGateway(registry=registry, semantic_router=semantic_router, cascade=cascade)
-performix = PerformixClient()
-
-app = FastAPI(title="NeuroSwarm-Arm", version="0.1.0")
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/metrics")
-def export_metrics() -> str:
-    return metrics.export_prometheus()
-
-
-@app.post("/tools/register")
-def register_tool(tool: dict) -> dict:
-    registry.register(ToolDef(**tool))
-    semantic_router.index_tools()
-    return {"registered": tool.get("id")}
-
-
-@app.post("/tools/route")
-def route_tools(payload: dict) -> dict:
-    query = payload.get("query", "")
-    tools = semantic_router.route(query)
-    return {"tools": [t.model_dump() if hasattr(t, "model_dump") else t.__dict__ for t in tools]}
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 
 
 @app.post("/v1/chat/completions")
@@ -517,7 +468,6 @@ def chat(req: ChatRequest) -> dict:
     return response.model_dump()
 
 
-<<<<<<< HEAD
 @app.get("/v1/cost/economics")
 def cost_economics(limit: int = 200) -> dict:
     return rcis.unit_economics(limit=limit).model_dump()
@@ -535,8 +485,6 @@ def cost_feedback_backends() -> dict:
     return rcis.feedback.lowest_cost_backend_sync(WorkloadKey()).model_dump()
 
 
-=======
->>>>>>> 8d3d8a66b9c2ddab68c72e55592421d807031c84
 @app.post("/bench/run")
 def bench_run(payload: dict) -> dict:
     recipe = payload.get("recipe", "system-characterization")
