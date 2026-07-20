@@ -14,5 +14,5 @@ Source: `docs/evidence/latest/run_all.json` + Prometheus + chat + Performix (202
 | Economics savings score | **0.57** | `run_all` economics |
 | Performix code_hotspots | **OK** | `source=apx`, 25 hotspots in snapshot |
 | Instruction Mix SIMD share (approx) | **NEON 1.61% + SVE 0.34%** | from `static_instruction_mix.csv` |
-| NUMA nodes | **1** | Option A — no NUMA-split claim |
+| NUMA nodes | **1** | Option A — C4A single UMA; `locality_mode=cache_aware` (cpuset 0-1/2-4/5-7); `cross_numa_penalty_applicable=false` |
 | SGLang image | **arm64 in manifest** | `lmsysorg/sglang:latest` verified |

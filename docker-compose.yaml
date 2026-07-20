@@ -83,9 +83,14 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    # Axion c4a-standard-8 (1 NUMA): cache-aware pin — draft on cores 0-1
+    cpuset: "${NSA_TIER1_CPUSET:-0-1}"
     environment:
       # Unset = auto SME detect; set 0 to disable on Axion without SME
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+      OMP_NUM_THREADS: "${TIER1_THREADS:-2}"
+      OMP_PROC_BIND: ${OMP_PROC_BIND:-close}
+      OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
       - /models/qwen2.5-0.5b-q4_k_m.gguf
@@ -122,8 +127,13 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    # Verifier mid-tier on cores 2-4 (single-UMA locality; not NUMA1)
+    cpuset: "${NSA_TIER2_CPUSET:-2-4}"
     environment:
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+      OMP_NUM_THREADS: "${TIER2_THREADS:-3}"
+      OMP_PROC_BIND: ${OMP_PROC_BIND:-close}
+      OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
       - /models/llama-3.2-3b-q5_k_m.gguf
@@ -160,8 +170,13 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    # Verifier large-tier on cores 5-7 (disjoint from draft; single-UMA)
+    cpuset: "${NSA_TIER3_CPUSET:-5-7}"
     environment:
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+      OMP_NUM_THREADS: "${TIER3_THREADS:-3}"
+      OMP_PROC_BIND: ${OMP_PROC_BIND:-close}
+      OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
       - /models/llama-3.1-8b-q5_k_m.gguf

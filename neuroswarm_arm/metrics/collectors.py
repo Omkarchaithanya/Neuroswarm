@@ -224,6 +224,52 @@ class PerformixCollector:
             self._thread = None
 
 
+class NumaCollector:
+    """Publish honest NUMA topology gauges (Axion = single UMA / cross_numa=0)."""
+
+    def __init__(
+        self,
+        registry: MetricRegistry,
+        *,
+        interval_s: float = 15.0,
+    ) -> None:
+        self.registry = registry
+        self.interval_s = max(2.0, float(interval_s))
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def collect(self) -> None:
+        try:
+            from neuroswarm_arm.runtime.haoe.topology.numa_status import publish_numa_metrics
+
+            publish_numa_metrics(self.registry)
+        except Exception as exc:
+            logger.debug("numa collect failed: %s", exc)
+
+    def start(self) -> None:
+        if self._thread is not None and self._thread.is_alive():
+            return
+
+        def _loop() -> None:
+            while not self._stop.is_set():
+                try:
+                    self.collect()
+                except Exception as exc:
+                    logger.debug("numa collect failed: %s", exc)
+                self._stop.wait(self.interval_s)
+
+        self._stop.clear()
+        self.collect()
+        self._thread = threading.Thread(target=_loop, name="rmf-numa", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=2.0)
+            self._thread = None
+
+
 class CollectorHub:
     def __init__(self) -> None:
         self._collectors: list[MetricCollector] = []

@@ -178,6 +178,15 @@ class DIPARuntime(IRuntime):
             self._engine = InferenceEngineAdapter(self)
         return self._engine
 
+    @property
+    def awpp(self) -> Any:
+        """Layer-4 warm connector (PredictiveWarmConnector when wired)."""
+        return self.registry.get("awpp") or getattr(self.warm_manager, "connector", None)
+
+    @property
+    def warm(self) -> Any:
+        return self.awpp
+
     def start(self) -> None:
         self.state.set(KernelState.STARTING)
         self.scheduler.start()
@@ -287,6 +296,12 @@ class DIPARuntime(IRuntime):
             out["prefix_cache"] = dict(self.prefix_cache.snapshot())
         if self.batch_scheduler is not None:
             out["batch"] = dict(self.batch_scheduler.snapshot())
+        connector = self.awpp
+        if connector is not None and hasattr(connector, "status"):
+            try:
+                out["awpp"] = dict(connector.status())
+            except Exception:
+                out["awpp"] = {"error": "status_failed"}
         return out
 
     def health(self) -> Mapping[str, Any]:

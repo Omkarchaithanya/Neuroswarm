@@ -1,0 +1,42 @@
+{
+  "bind_planned": {
+    "tier1": null,
+    "tier2": null,
+    "tier3": null
+  },
+  "cpulists": {
+    "0": [0, 1, 2, 3, 4, 5, 6, 7]
+  },
+  "cross_numa_penalty_applicable": false,
+  "llama_numa": null,
+  "machine_type": "c4a-standard-8",
+  "memory_bind_active": false,
+  "multi_node": false,
+  "numa_nodes": 1,
+  "numa_policy_env": "auto",
+  "policy": "single_uma",
+  "locality_mode": "cache_aware",
+  "core_partitions": {
+    "tier1": [0, 1],
+    "tier2": [2, 3, 4],
+    "tier3": [5, 6, 7]
+  },
+  "cpuset_strings": {
+    "tier1": "0-1",
+    "tier2": "2-4",
+    "tier3": "5-7"
+  },
+  "omp": {
+    "OMP_PROC_BIND": "close",
+    "OMP_PLACES": "cores"
+  },
+  "reason": "Single-UMA / Axion path: cache-aware CPU affinity (draft=0-1, verifier tier2=2-4, tier3=5-7). Cross-NUMA split is not applicable.",
+  "live_axion_ssh": {
+    "date": "2026-07-19",
+    "host": "neuroswarm-axion",
+    "lscpu": "NUMA node(s): 1; NUMA node0 CPU(s): 0-7",
+    "numactl": "available: 1 nodes (0); node 0 size: 32020 MB",
+    "machine_type": "c4a-standard-8"
+  },
+  "implementation": "CPU affinity-aware speculative decoding (not fake NUMA0/NUMA1). Compose cpuset + OMP_PROC_BIND=close."
+}

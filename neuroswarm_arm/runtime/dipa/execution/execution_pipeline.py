@@ -163,6 +163,26 @@ class ExecutionPipeline:
         warm = rt.warm_manager.ensure(req, plan)
         ctx.warm = warm
         ctx.mark(ExecutionPhase.WARM_CHECKED)
+        # Surface AQR warm features on plan/baggage for WarmBonusExtractor
+        connector = getattr(rt, "awpp", None) or getattr(rt.warm_manager, "connector", None)
+        if connector is not None and hasattr(connector, "populate_aqr_context"):
+            try:
+                from neuroswarm_arm.runtime.aqr.models import RequestContext
+
+                aqr_ctx = RequestContext(
+                    agent_id=req.agent_id,
+                    session_id=req.session_id,
+                    agent_role=req.agent_role,
+                    awpp_prediction=getattr(connector, "last_prediction", None),
+                    model_warm_state=dict(getattr(connector, "model_warm_state", {}) or {}),
+                )
+                connector.populate_aqr_context(aqr_ctx)
+                plan.metadata["awpp_prediction"] = aqr_ctx.awpp_prediction
+                plan.metadata["model_warm_state"] = dict(aqr_ctx.model_warm_state)
+                req.baggage["awpp_prediction"] = aqr_ctx.awpp_prediction
+                req.baggage["model_warm_state"] = dict(aqr_ctx.model_warm_state)
+            except Exception:
+                pass
 
         kv_handle = rt.kv_loader.load_sync(req.session_id, req.agent_id)
         ctx.kv_handle = kv_handle
@@ -237,6 +257,20 @@ class ExecutionPipeline:
             },
         )
         ctx.mark(ExecutionPhase.METRICS)
+        # AWPP observation feedback → policy update + replay JSONL
+        connector = getattr(rt, "awpp", None) or getattr(rt.warm_manager, "connector", None)
+        if connector is not None and hasattr(connector, "record_observation"):
+            try:
+                connector.record_observation(
+                    req,
+                    plan,
+                    latency_ms=float(result.latency_ms or 0.0),
+                    tools_used=list(req.tool_names or []),
+                    model=result.model or plan.model or req.model,
+                    cold_start=not bool(ctx.warm),
+                )
+            except Exception:
+                pass
         return result
 
     def _pd_ready(self, rt: Any) -> bool:

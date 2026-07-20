@@ -67,14 +67,23 @@ Publish copies under `docs/evidence/latest/` (gitignored raw dir: `benchmarks/re
 
 ## Topology honesty
 
-On Axion `c4a-standard-8`:
+On Axion `c4a-standard-8` (GCP C4A = **single UMA domain**):
 
 ```bash
 numactl --hardware   # expect 1 node
 lscpu | grep -i numa
+bash scripts/probe-numa.sh   # → docs/evidence/latest/numa-status.json
+# expect: cross_numa_penalty_applicable=false, locality_mode=cache_aware
+# expect cpusets: tier1=0-1, tier2=2-4, tier3=5-7
 ```
 
-Do **not** claim measurable NUMA-split speedup on this VM. Claim adaptive HAL + Option A wording.
+| Configuration | Draft | Verifier | Notes |
+|---|---|---|---|
+| Baseline | OS default | OS default | Highest migration (control) |
+| Affinity-aware (Axion) | CPU 0–1 | CPU 2–7 (split 2–4 / 5–7) | Defensible on 1-NUMA |
+| NUMA-aware (future) | NUMA 0 | NUMA 1 | Only when `numa_nodes > 1` |
+
+Do **not** claim measurable NUMA-split speedup or “NUMA activated” on this VM. Claim adaptive HAL + cache-aware affinity. Multi-NUMA bind is topology-gated (`NSA_NUMA_POLICY` / `NSA_LOCALITY_MODE`) and inactive when `numa_nodes==1`.
 
 ---
 

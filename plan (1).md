@@ -83,7 +83,7 @@ After research, all technical concepts will be mapped and merged into a single u
 - LAYER 1: HAOE — Heterogeneous Agentic Orchestration Engine (SVE2 task scheduler, 60-80% latency reduction)
 - LAYER 2: DIPA — Disaggregated Inference Proxy (prefill→GPU/high-core CPU, decode→ARM CPU, speculative decoding)
 - LAYER 3: AQR — Adaptive Quantization Router (per-agent-role quantization, codebook in vector registers)
-- LAYER 4: AWPP — Agentic Workload Pre-warm Predictor (PPO/GEPA RL, cold-start elimination, Mem0 patterns)
+- LAYER 4: AWPP — Agentic Workload Pre-warm Predictor (frequency/Markov predictive pre-warm on Arm; PPO Phase 2 from replay — not GEPA)
 - LAYER 5: MAKS — Multi-Agent KV-Cache Sharing (MTE-secured, 2x concurrent agents, 40-70% dedup)
 
 **ArmCascade Layers:**

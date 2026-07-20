@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from .aggregators import WindowAggregator
 from .buffer import AsyncMetricBuffer
-from .collectors import CollectorHub, PerformixCollector, PsutilCollector
+from .collectors import CollectorHub, NumaCollector, PerformixCollector, PsutilCollector
 from .config import RMFRuntimeConfig, load_rmf_config
 from .domains import register_all_domains
 from .exporters.base import build_exporter
@@ -60,6 +60,9 @@ class RuntimeMetricsFramework:
                 interval_s=self.config.collector_interval_s,
                 enabled=self.config.performix_enabled,
             )
+        )
+        self.collectors.add(
+            NumaCollector(self.registry, interval_s=max(15.0, self.config.collector_interval_s))
         )
 
         for name in self.config.exporters:

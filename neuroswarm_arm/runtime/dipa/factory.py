@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .aqr.quant_connector import AQRQuantConnector
+from .awpp.predictive_connector import PredictiveWarmConnector
 from .awpp.warm_connector import HeuristicWarmConnector
 from .backends.factory import BackendFactory
 from .backends.registry import BackendRegistry
@@ -84,6 +85,9 @@ def build_dipa(
     awpp: IWarmConnector | None = None,
     maks: IKVCacheConnector | None = None,
     reasoning_hook: IReasoningHook | None = None,
+    memory: Any | None = None,
+    tool_router: Any | None = None,
+    acr: Any | None = None,
     use_mock: bool = False,
     topology_cores: Sequence[int] | None = None,
     start: bool = True,
@@ -110,7 +114,17 @@ def build_dipa(
                 aqr = AQRQuantConnector(pick_fn=pick_quant)
             except Exception:
                 aqr = AQRQuantConnector()
-    warm = awpp or HeuristicWarmConnector()
+    if awpp is not None:
+        warm = awpp
+    else:
+        try:
+            warm = PredictiveWarmConnector(
+                memory=memory,
+                tool_router=tool_router,
+                acr=acr,
+            )
+        except Exception:
+            warm = HeuristicWarmConnector()
     kv_conn = KVConnector(maks or MAKSConnector())
     kv_loader = KVLoader(kv_conn)
     kv_writer = KVWriter(kv_conn)

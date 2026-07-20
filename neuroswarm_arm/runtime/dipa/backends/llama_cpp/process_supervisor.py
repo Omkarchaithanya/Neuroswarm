@@ -66,7 +66,14 @@ class ProcessSupervisor:
                 return self._meta[name]
             cmd = list(command)
             if numa_bind:
+                # Topology-gated: callers only pass numa_bind when nodes > 1.
                 cmd = list(numa_bind) + cmd
+                if "--numa" not in cmd:
+                    cmd.extend(["--numa", "isolate"])
+            elif env and env.get("NSA_TASKSET_CPUS"):
+                # Single-UMA cache-aware pin via taskset (Axion path).
+                cpus = str(env["NSA_TASKSET_CPUS"])
+                cmd = ["taskset", "-c", cpus] + cmd
             log_path = self.log_dir / f"{name}.log"
             log_f = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
             full_env = dict(os.environ)

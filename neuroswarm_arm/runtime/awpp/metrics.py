@@ -19,6 +19,7 @@ METRIC_HELP: dict[str, tuple[str, str]] = {
     "awpp_uncertainty": ("gauge", "Last prediction uncertainty."),
     "awpp_queue_depth": ("gauge", "Prewarm scheduler queue depth."),
     "awpp_cpu_time_ms": ("gauge", "AWPP CPU time spent warming (ms)."),
+    "awpp_budget_skips_total": ("counter", "Warm ops skipped under CPU/rate budget."),
     "awpp_memory_bytes": ("gauge", "Estimated warm-cache memory bytes."),
     "awpp_cache_hit_rate": ("gauge", "Warm-cache hit rate."),
     "awpp_policy_train_steps_total": ("counter", "Offline policy train steps."),

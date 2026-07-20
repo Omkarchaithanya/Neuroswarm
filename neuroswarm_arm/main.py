@@ -138,6 +138,8 @@ dipa = build_dipa(
     topology_cores=None,
     maks=maks_connector,
     reasoning_hook=rtg_hook,
+    memory=getattr(memory, "neuro", memory),
+    tool_router=tool_router,
 )
 armora = build_armora(
     dipa.engine,
@@ -211,6 +213,13 @@ acr_runtime = build_acr(
     okf=okf_runtime if cfg.okf_enabled else None,
     metrics_bridge=metrics,
 )
+# Late-bind ACR into AWPP predictor (DIPA builds before ACR)
+try:
+    _awpp_conn = getattr(dipa, "awpp", None)
+    if _awpp_conn is not None and hasattr(_awpp_conn, "bind_runtime"):
+        _awpp_conn.bind_runtime(acr=acr_runtime)
+except Exception:
+    pass
 
 gateway = AgentGateway(
     registry=registry,
@@ -352,7 +361,23 @@ def health() -> dict[str, object]:
             }
     except Exception as exc:  # noqa: BLE001
         mem_status = {"healthy": False, "error": str(exc)}
-    return {"status": "ok", "memory": mem_status}
+    numa_payload: dict[str, object] = {}
+    try:
+        from neuroswarm_arm.runtime.haoe.topology.numa_status import collect_numa_status
+
+        numa_payload = collect_numa_status().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        numa_payload = {"error": str(exc)}
+    awpp_payload: dict[str, object] = {}
+    try:
+        _conn = getattr(dipa, "awpp", None)
+        if _conn is not None and hasattr(_conn, "status"):
+            awpp_payload = dict(_conn.status())
+        else:
+            awpp_payload = {"status": "unavailable"}
+    except Exception as exc:  # noqa: BLE001
+        awpp_payload = {"error": str(exc)}
+    return {"status": "ok", "memory": mem_status, "numa": numa_payload, "awpp": awpp_payload}
 
 
 @app.get("/ready")
@@ -406,12 +431,20 @@ def ready() -> dict[str, object]:
         except Exception as exc:  # noqa: BLE001
             mem_details = {"error": str(exc)}
 
+        numa_info: dict[str, object] = {}
+        try:
+            from neuroswarm_arm.runtime.haoe.topology.numa_status import collect_numa_status
+
+            numa_info = collect_numa_status().to_dict()
+        except Exception as exc:  # noqa: BLE001
+            numa_info = {"error": str(exc)}
         system = {
             "arch": platform.machine(),
             "cpu_features": _cpu_features(),
             "expected_docker_network": bool(
                 os.getenv("NSA_TIER1_URL") or os.getenv("NSA_TIER2_URL") or os.getenv("NSA_TIER3_URL")
             ),
+            "numa": numa_info,
         }
         dipa_status = _safe("dipa", dipa.status)
         router_health = _safe("router", tool_router.health)
