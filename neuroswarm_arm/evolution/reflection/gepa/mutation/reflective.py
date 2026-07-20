@@ -63,6 +63,117 @@ class MockReflectionLM(ReflectionLM):
         return validate_text_components(out)
 
 
+class HttpReflectionLM(ReflectionLM):
+    """Teacher LM via OpenAI-compatible ``/v1/chat/completions`` (llama-server / tier)."""
+
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        model: str = "default",
+        timeout_s: float = 60.0,
+        max_tokens: int = 512,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.timeout_s = timeout_s
+        self.max_tokens = max_tokens
+        # http | mock_fallback — set after each propose() for deploy honesty.
+        self.last_teacher: str = "http"
+
+    def propose(
+        self,
+        candidate: Mapping[str, str],
+        reflective_dataset: Mapping[str, Sequence[Mapping[str, Any]]],
+        components_to_update: list[str],
+    ) -> dict[str, str]:
+        import json
+        import urllib.error
+        import urllib.request
+
+        lessons: list[str] = []
+        for _comp, rows in reflective_dataset.items():
+            for row in rows[:5]:
+                fb = str(row.get("Feedback") or row.get("feedback") or "")[:300]
+                if fb:
+                    lessons.append(fb)
+        lesson_block = " | ".join(lessons)[:800] or "improve clarity and reduce latency"
+        out = dict(candidate)
+        any_http = False
+        any_fallback = False
+        for comp in components_to_update:
+            base = out.get(comp, "You are a helpful assistant.")
+            user = (
+                f"Improve the following component '{comp}' for an ARM agent runtime.\n"
+                f"Lessons from telemetry:\n{lesson_block}\n\n"
+                f"Current text:\n{base}\n\n"
+                "Return ONLY the improved component text, no markdown fences. "
+                "Include the token GEPA-HTTP-TEACHER once if you rewrite successfully."
+            )
+            body = json.dumps(
+                {
+                    "model": self.model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You rewrite system prompts and policies. Output the new text only.",
+                        },
+                        {"role": "user", "content": user},
+                    ],
+                    "max_tokens": self.max_tokens,
+                    "temperature": 0.3,
+                }
+            ).encode("utf-8")
+            url = f"{self.base_url}/chat/completions"
+            if self.base_url.rstrip("/").endswith("chat/completions"):
+                url = self.base_url
+            elif not self.base_url.rstrip("/").endswith("/v1"):
+                url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
+            else:
+                url = f"{self.base_url.rstrip('/')}/chat/completions"
+            req = urllib.request.Request(
+                url,
+                data=body,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                    raw = json.loads(resp.read().decode("utf-8"))
+                text = (
+                    ((raw.get("choices") or [{}])[0].get("message") or {}).get("content")
+                    or ""
+                ).strip()
+                if text and "[GEPA lesson]:" not in text:
+                    out[comp] = text
+                    any_http = True
+                else:
+                    out[comp] = f"{base}\n\n[GEPA lesson]: {lesson_block}"
+                    any_fallback = True
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError):
+                # Fall back to mock-style tag so evolution still progresses.
+                out[comp] = f"{base}\n\n[GEPA lesson]: {lesson_block}"
+                any_fallback = True
+        if any_http and not any_fallback:
+            self.last_teacher = "http"
+        elif any_http and any_fallback:
+            self.last_teacher = "http_partial"
+        else:
+            self.last_teacher = "mock_fallback"
+        return validate_text_components(out)
+
+
+def build_reflection_lm(spec: str | None = None) -> ReflectionLM:
+    """Build teacher LM from ``NSA_AROP_GEPA_LM`` (mock | http URL)."""
+    import os
+
+    raw = (spec if spec is not None else os.getenv("NSA_AROP_GEPA_LM", "mock")).strip()
+    if not raw or raw.lower() in {"mock", "none", "0", "off"}:
+        return MockReflectionLM()
+    model = os.getenv("NSA_AROP_GEPA_LM_MODEL", "default")
+    return HttpReflectionLM(raw, model=model)
+
+
 class ReflectiveMutationEngine:
     """Produce a child TextCandidate from parent + ASI via ReflectionLM."""
 
@@ -94,11 +205,14 @@ class ReflectiveMutationEngine:
             rationale=rationale,
             components_updated=tuple(comps),
         )
+        teacher = getattr(self.lm, "last_teacher", None)
+        if teacher is None:
+            teacher = "mock" if type(self.lm).__name__ == "MockReflectionLM" else "unknown"
         return TextCandidate.create(
             proposed,
             version=f"v{self._version}",
             parent_ids=(parent.id,),
-            metadata={"strategy": "reflective_mutation"},
+            metadata={"strategy": "reflective_mutation", "teacher": teacher},
             mutation_history=parent.mutation_history + (event,),
             merge_history=parent.merge_history,
         )

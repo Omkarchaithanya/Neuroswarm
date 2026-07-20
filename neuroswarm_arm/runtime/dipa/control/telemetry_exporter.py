@@ -42,11 +42,22 @@ class TelemetryExporter:
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+            # Prefer an existing global provider (e.g. ROF) — do not overwrite.
+            existing = trace.get_tracer_provider()
+            if isinstance(existing, TracerProvider) and type(existing).__name__ != "ProxyTracerProvider":
+                self._tracer = trace.get_tracer(self.service_name)
+                return
+
+            # HTTP exporter expects full traces path when using collector :4318
+            endpoint = self.endpoint
+            if endpoint and not endpoint.rstrip("/").endswith("traces"):
+                endpoint = endpoint.rstrip("/") + "/v1/traces"
+
             provider = TracerProvider(
                 resource=Resource.create({"service.name": self.service_name})
             )
             provider.add_span_processor(
-                BatchSpanProcessor(OTLPSpanExporter(endpoint=self.endpoint))
+                BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint))
             )
             trace.set_tracer_provider(provider)
             self._tracer = trace.get_tracer(self.service_name)

@@ -7,18 +7,63 @@ image:
 
 service:
   port: 8000
+  type: NodePort
+  nodePort: 30080
+
+models:
+  # If hostPath is set, use hostPath instead of PVC (local kind / Axion node demos).
+  hostPath: "/models"
+  pvcSize: 20Gi
+  mountPath: /models
+
+# Host mounts for OKF corpus + durable work/ (swarm, performix snapshots)
+okf:
+  hostPath: ""
+  mountPath: /app/okf
+work:
+  hostPath: ""
+  mountPath: /app/work
+
+tiers:
+  tier1:
+    model: qwen2.5-0.5b-q4_k_m.gguf
+    threads: "2"
+    ctx: "4096"
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2Gi
+  tier2:
+    model: llama-3.2-3b-q5_k_m.gguf
+    threads: "3"
+    ctx: "4096"
+    resources:
+      limits:
+        cpu: "3"
+        memory: 6Gi
+  tier3:
+    model: llama-3.1-8b-q5_k_m.gguf
+    threads: "3"
+    ctx: "4096"
+    resources:
+      limits:
+        cpu: "3"
+        memory: 14Gi
 
 resources:
   gateway:
+    requests:
+      cpu: "250m"
+      memory: 512Mi
     limits:
       cpu: "1"
       memory: 1536Mi
-  tier1:
-    limits:
-      cpu: "2"
-      memory: 2Gi
 
 env:
+  NSA_TIER1_URL: "http://tier1:8080"
+  NSA_TIER2_URL: "http://tier2:8080"
+  NSA_TIER3_URL: "http://tier3:8080"
+  NSA_TOOL_METADATA_ROOT: "/app/templates/mcp-servers"
   NSA_REQUIRE_KLEIDIAI: "0"
   NSA_DIPA_KLEIDIAI: "1"
   NSA_DIPA_OTEL: "0"
@@ -27,8 +72,63 @@ env:
   NSA_DIPA_DECODE_BACKEND: "llama_cpp"
   NSA_DIPA_SGLANG_URL: "http://sglang-prefill:30000"
   NSA_DIPA_CHUNK_SIZE: "2048"
+  NSA_RMF_EXPORTERS: "prometheus,otlp"
+  NSA_RMF_PERFORMIX: "1"
+  NSA_RMF_PERFORMIX_PATH: "work/performix/snapshot.json"
+  NSA_AROP_PERFORMIX: "1"
+  NSA_AROP_REFLECTION: "hybrid"
+  NSA_MEM_PROVIDER: "mem0"
+  NSA_MEM_STORE: "/app/work/memory"
+  NSA_MEM_QDRANT_PATH: "/app/work/memory/qdrant"
+  NSA_MEM_QDRANT_URL: "http://qdrant:6333"
+  NSA_MEM_LLM: "none"
+  NSA_ASCR_TEXT_AGREE: "1"
+  NSA_ROF_EXPORTERS: "otlp,prometheus"
+
+qdrant:
+  enabled: true
+  image: qdrant/qdrant:v1.13.6
+  port: 6333
+  resources:
+    limits:
+      cpu: "500m"
+      memory: 512Mi
+    requests:
+      cpu: "100m"
+      memory: 256Mi
+
+observability:
+  # Default false on Axion — Prometheus/Grafana live on neuroswarm-obs Compose.
+  enabled: false
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    port: 9090
+    resources:
+      limits:
+        cpu: "500m"
+        memory: 512Mi
+  grafana:
+    image: grafana/grafana:11.4.0
+    port: 3000
+    adminUser: admin
+    adminPassword: neuroswarm
+    resources:
+      limits:
+        cpu: "500m"
+        memory: 512Mi
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
 
 sglangPrefill:
+  # Optional pd profile. Image must be multi-arch linux/arm64 with Arm Neoverse
+  # CPU engine (SGLANG_USE_CPU_ENGINE=1). Arm blog May 2026:
+  # https://developer.arm.com/community/arm-community-blogs/b/ai-blog/posts/bringing-sglang-high-performance-llm-inference-to-arm-neoverse
+  # Verify before demo: docker buildx imagetools inspect lmsysorg/sglang:latest
+  # If :latest drifts, pin a known multi-arch tag (e.g. v0.5.12-cu129-runtime).
   enabled: false
   image: lmsysorg/sglang:latest
   port: 30000

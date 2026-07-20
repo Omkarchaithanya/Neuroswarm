@@ -4,24 +4,12 @@ This is the recommended hackathon path for the $300 Google Cloud trial: use one 
 
 ## 1. Set Up Google Cloud
 
-Use `projectId`, not display name.
-
-Example from this project:
-
-- project name: `My First Project`
-- project ID: `project-5bcdea88-8805-4908-991`
-
-If you need to find it again:
+Use `projectId`, not display name. **Do not commit live project IDs** — use your own trial project.
 
 ```bash
 gcloud projects list --format="table(name,projectId,projectNumber)"
-```
-
-Then select exact ID:
-
-```bash
 gcloud auth login
-gcloud config set project project-5bcdea88-8805-4908-991
+gcloud config set project <YOUR_GCP_PROJECT_ID>
 gcloud services enable compute.googleapis.com artifactregistry.googleapis.com
 ```
 
@@ -29,7 +17,7 @@ Create a restricted firewall rule for demo ports. Replace `<your-public-ip>/32`;
 
 ```bash
 gcloud compute firewall-rules create neuroswarm-demo \
-  --allow tcp:8000,tcp:9090,tcp:3000 \
+  --allow tcp:80 \
   --source-ranges <your-public-ip>/32 \
   --target-tags neuroswarm-demo
 ```
@@ -177,13 +165,20 @@ Expected fields:
 Prometheus:
 
 ```text
-http://VM_EXTERNAL_IP:9090
+http://VM_EXTERNAL_IP/prometheus/
 ```
 
-Gateway metrics:
+Grafana:
+
+```text
+http://VM_EXTERNAL_IP/grafana/
+```
+
+Gateway (via proxy):
 
 ```bash
-curl http://127.0.0.1:8000/metrics
+curl http://127.0.0.1/health
+curl http://127.0.0.1/metrics
 ```
 
 ## 8. Benchmark Claims

@@ -1,0 +1,28 @@
+NeuroSwarm-Arm {{ .Release.Name }} installed.
+
+Gateway service: {{ include "neuroswarm-arm.fullname" . }}-gateway:{{ .Values.service.port }}
+
+1. Ensure GGUF models are available at {{ .Values.models.mountPath }} on the node/PVC:
+   - qwen2.5-0.5b-q4_k_m.gguf
+   - llama-3.2-3b-q5_k_m.gguf
+   - llama-3.1-8b-q5_k_m.gguf
+
+   For local demos with host models:
+     --set models.hostPath=/models
+
+2. Port-forward the gateway:
+   kubectl port-forward svc/{{ include "neuroswarm-arm.fullname" . }}-gateway {{ .Values.service.port }}:{{ .Values.service.port }}
+
+3. Health checks:
+   curl -fsS http://127.0.0.1:{{ .Values.service.port }}/health
+   curl -fsS http://127.0.0.1:{{ .Values.service.port }}/ready
+
+{{- if .Values.observability.enabled }}
+4. Observability:
+   kubectl port-forward svc/{{ include "neuroswarm-arm.fullname" . }}-prometheus {{ .Values.observability.prometheus.port }}:{{ .Values.observability.prometheus.port }}
+   kubectl port-forward svc/{{ include "neuroswarm-arm.fullname" . }}-grafana {{ .Values.observability.grafana.port }}:{{ .Values.observability.grafana.port }}
+   Grafana login: {{ .Values.observability.grafana.adminUser }} / {{ .Values.observability.grafana.adminPassword }}
+{{- end }}
+
+One-command rebuild + install:
+  bash scripts/deploy-k8s.sh

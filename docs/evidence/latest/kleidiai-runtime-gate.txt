@@ -1,0 +1,14 @@
+=== compose images ===
+NAME                                IMAGE                                          STATUS
+neuroswarm-arm-gateway-1            neuroswarm-arm-gateway:dev                     Up 9 hours (healthy)
+neuroswarm-arm-proxy-1              nginx:1.27-alpine                              Up 9 hours (healthy)
+neuroswarm-arm_arm-mcp_1            armlimited/arm-mcp:latest                      Up 4 seconds
+neuroswarm-arm_otel-collector_1     otel/opentelemetry-collector-contrib:0.114.0   Up 34 hours (unhealthy)
+neuroswarm-arm_performix-bridge_1   neuroswarm-arm-gateway:dev                     Up 11 hours (healthy)
+neuroswarm-arm_qdrant_1             qdrant/qdrant:v1.13.6                          Up 25 hours
+neuroswarm-arm_tier1_1              nexus-arm/llama-kleidiai:server                Up 7 minutes (healthy)
+neuroswarm-arm_tier2_1              nexus-arm/llama-kleidiai:server                Up 7 minutes (healthy)
+neuroswarm-arm_tier3_1              nexus-arm/llama-kleidiai:server                Up 7 minutes (healthy)
+
+=== kleidiai gate ===
+PASS: KleidiAI image present

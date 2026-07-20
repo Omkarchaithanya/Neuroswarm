@@ -22,7 +22,7 @@ class AROPConfig:
     haoe_snapshot: Path = field(default_factory=lambda: Path("work/haoe/performix_snapshot.json"))
     interval_seconds: int = 3600
     canary_percent: float = 10.0
-    reflection_strategy: str = "rule"  # rule|gepa|hybrid|offline_llm
+    reflection_strategy: str = "hybrid"  # rule|gepa|hybrid|offline_llm
     primary_metric: str = "reward_scalar"
     min_improvement: float = 0.01
     significance_alpha: float = 0.1
@@ -39,6 +39,7 @@ class AROPConfig:
     replay_max_episodes: int = 50
     bandit_enabled: bool = True
     mcp_performix_url: str = ""
+    gepa_lm: str = "mock"  # mock | http://tier2:8080/v1
 
 
 def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = None) -> AROPConfig:
@@ -52,7 +53,7 @@ def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = No
         haoe_snapshot=Path(os.getenv("NSA_AROP_HAOE_SNAPSHOT", "work/haoe/performix_snapshot.json")),
         interval_seconds=int(os.getenv("NSA_AROP_INTERVAL", "3600")),
         canary_percent=float(os.getenv("NSA_AROP_CANARY_PCT", "10")),
-        reflection_strategy=os.getenv("NSA_AROP_REFLECTION", "rule"),
+        reflection_strategy=os.getenv("NSA_AROP_REFLECTION", "hybrid"),
         primary_metric=os.getenv("NSA_AROP_PRIMARY_METRIC", "reward_scalar"),
         min_improvement=float(os.getenv("NSA_AROP_MIN_IMPROVEMENT", "0.01")),
         significance_alpha=float(os.getenv("NSA_AROP_ALPHA", "0.1")),
@@ -69,6 +70,7 @@ def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = No
         replay_max_episodes=int(os.getenv("NSA_AROP_REPLAY_EPISODES", "50")),
         bandit_enabled=_bool("NSA_AROP_BANDIT", "1"),
         mcp_performix_url=os.getenv("NSA_AROP_PERFORMIX_MCP", ""),
+        gepa_lm=os.getenv("NSA_AROP_GEPA_LM", "mock"),
     )
     cfg.work_dir.mkdir(parents=True, exist_ok=True)
     return cfg

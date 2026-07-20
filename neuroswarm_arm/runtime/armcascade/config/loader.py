@@ -82,6 +82,13 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
             "yes",
             "on",
         }
+    if v := os.environ.get("NSA_ASCR_TEXT_AGREE"):
+        out["text_agree_accept"] = v.strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
     return out
 
 

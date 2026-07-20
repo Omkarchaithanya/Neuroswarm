@@ -359,11 +359,17 @@ class RuntimeOptimizer:
         }
 
     def health(self) -> dict[str, Any]:
+        def _provider_healthy(provider: Any) -> bool:
+            h = provider.health()
+            if isinstance(h, dict):
+                return bool(h.get("healthy", True))
+            return bool(getattr(h, "healthy", True))
+
         return {
             "healthy": True,
             "plane": "arop",
             "providers": {
-                p.name: {"healthy": p.health().healthy} for p in self.aggregator.providers
+                p.name: {"healthy": _provider_healthy(p)} for p in self.aggregator.providers
             },
             "registry": self.registry.status(),
         }

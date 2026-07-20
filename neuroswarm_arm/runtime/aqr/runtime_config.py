@@ -65,7 +65,7 @@ def load_aqr_config(root: Path | None = None) -> AQRRuntimeConfig:
         quants=_load_yaml(cfg_root / "quants.yaml"),
         cascade_profiles=_load_yaml(cfg_root / "cascade_profiles.yaml"),
         discovery=_load_yaml(cfg_root / "discovery.yaml"),
-        model_dir=os.getenv("NSA_MODEL_DIR", ""),
-        hourly_cost_usd=float(os.getenv("NSA_VM_HOURLY_COST_USD", "0.05")),
+        model_dir=os.getenv("NSA_MODEL_DIR", "") or "",
+        hourly_cost_usd=float(os.getenv("NSA_VM_HOURLY_COST_USD") or "0.05"),
         otel_enabled=os.getenv("NSA_AQR_OTEL", "0") not in {"0", "false", "False"},
     )

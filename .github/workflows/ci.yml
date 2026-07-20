@@ -37,8 +37,19 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: Build ARM64 gateway image
         run: docker buildx build --platform linux/arm64 -f Dockerfile.arm64 -t neuroswarm-arm-gateway:${{ github.sha }} --load .
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: Lint neuroswarm-arm chart
+        run: helm lint ./helm/neuroswarm-arm
+      - name: Template chart (smoke)
+        run: helm template neuro ./helm/neuroswarm-arm --set models.hostPath=/models >/tmp/neuroswarm-helm.yaml && head -n 40 /tmp/neuroswarm-helm.yaml
       - name: Optional Artifact Registry push
         if: ${{ secrets.GCP_PROJECT_ID != '' && secrets.GCP_ARTIFACT_REGISTRY_IMAGE != '' }}
         run: |
           echo "Artifact Registry push is configured by secrets, but auth is intentionally not embedded in this repo."
           echo "Target image: ${{ secrets.GCP_ARTIFACT_REGISTRY_IMAGE }}:${{ github.sha }}"
+
+  # Llama KleidiAI image build is intentionally not in default CI (long native compile).
+  # Run locally: docker buildx build --platform linux/arm64 -f docker/Dockerfile.llama-kleidiai -t nexus-arm/llama-kleidiai:server --load .

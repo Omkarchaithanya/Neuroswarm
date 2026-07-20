@@ -25,15 +25,17 @@ wait_for_http() {
   local label="$2"
   local tries="${3:-30}"
   local sleep_s="${4:-2}"
-  local i
+  local i code body
   for ((i = 1; i <= tries; i++)); do
-    if curl -fsS "$url" >/dev/null; then
+    code="$(curl -sS -o /tmp/ns_wait_body.txt -w "%{http_code}" --max-time 5 "$url" 2>/dev/null || echo FAIL)"
+    body="$(head -c 120 /tmp/ns_wait_body.txt 2>/dev/null || true)"
+    if [[ "$code" == "200" ]]; then
       return 0
     fi
     sleep "$sleep_s"
   done
-  echo "Timed out waiting for $label at $url" >&2
-  exit 1
+  echo "Timed out waiting for $label at $url (last_code=$code body=${body:0:80})" >&2
+  return 1
 }
 
 if [[ "$(uname -m)" != "aarch64" ]]; then
@@ -114,12 +116,30 @@ for model in "${required_models[@]}"; do
   fi
 done
 
+# k3s Traefik often owns host :80; free it so Compose nginx is reachable.
+if [[ -x scripts/free-host-port80-for-compose.sh ]]; then
+  bash scripts/free-host-port80-for-compose.sh || true
+fi
+
 # --compatibility maps deploy.resources to cgroup limits on non-swarm Compose.
 "${DOCKER[@]}" compose --compatibility up --build -d
 "${DOCKER[@]}" compose ps
 
-wait_for_http "http://127.0.0.1:8000/health" "gateway health"
-wait_for_http "http://127.0.0.1:8000/ready" "gateway readiness"
+wait_for_http "http://127.0.0.1:8000/health" "gateway health" || exit 1
+wait_for_http "http://127.0.0.1:8000/ready" "gateway readiness" || exit 1
+
+# Refresh nginx upstream DNS after gateway recreate, then free :80 again if needed.
+"${DOCKER[@]}" compose restart proxy 2>/dev/null || true
+bash scripts/free-host-port80-for-compose.sh || true
+sleep 2
+
+if ! wait_for_http "http://127.0.0.1/health" "proxy health" 20 2; then
+  echo "WARN: proxy :80 still unhealthy — re-free Traefik and recreate proxy" >&2
+  bash scripts/free-host-port80-for-compose.sh || true
+  "${DOCKER[@]}" compose up -d --force-recreate proxy
+  wait_for_http "http://127.0.0.1/health" "proxy health" 30 2 || exit 1
+fi
+wait_for_http "http://127.0.0.1/ready" "proxy readiness" || exit 1
 
 health_json="$(curl -fsS http://127.0.0.1:8000/health)"
 ready_json="$(curl -fsS http://127.0.0.1:8000/ready)"
@@ -129,12 +149,28 @@ metrics_text="$(curl -fsS http://127.0.0.1:8000/metrics)"
 
 bash scripts/capture-evidence.sh
 
+# Optional Performix host path (skip with SKIP_PERFORMIX=1).
+if [[ "${SKIP_PERFORMIX:-0}" != "1" ]] && [[ -x scripts/install-performix.sh ]]; then
+  if ! command -v apx >/dev/null 2>&1; then
+    echo "==> Installing Arm Performix (apx)"
+    bash scripts/install-performix.sh || echo "WARN: install-performix failed (non-fatal)"
+  fi
+  if command -v apx >/dev/null 2>&1 && command -v crontab >/dev/null 2>&1; then
+    CRON_LINE="*/2 * * * * cd $PROJECT_ROOT && NSA_PERFORMIX_ALLOW_DEMO=0 bash scripts/refresh-performix-snapshot.sh >>work/performix/refresh.log 2>&1"
+    (crontab -l 2>/dev/null | grep -v refresh-performix-snapshot.sh; echo "$CRON_LINE") | crontab - || true
+    echo "==> performix refresh cron installed"
+  fi
+fi
+
 echo "$health_json"
 echo "$ready_json"
 echo "$route_json" >/dev/null
 echo "$chat_json" >/dev/null
 echo "$metrics_text" >/dev/null
 echo "Bootstrap complete."
-echo "Prometheus: http://<VM_EXTERNAL_IP>:9090"
-echo "Grafana: http://<VM_EXTERNAL_IP>:3000"
-echo "Gateway: http://<VM_EXTERNAL_IP>:8000"
+echo "Public API (axion): http://<AXION_EXTERNAL_IP>/"
+echo "  Gateway:     http://<AXION_EXTERNAL_IP>/health  /ready  /v1/chat/completions"
+echo "Observability (neuroswarm-obs):"
+echo "  Prometheus:  http://<OBS_EXTERNAL_IP>/prometheus/"
+echo "  Grafana:     http://<OBS_EXTERNAL_IP>/grafana/"
+echo "Private loopback on axion: gateway :8000; OTEL :4317/:4318/:8889"

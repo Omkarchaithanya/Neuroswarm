@@ -26,6 +26,8 @@ ALLOWED_LABELS: frozenset[str] = frozenset(
         "stage",
         "exporter",
         "error_class",
+        "function",
+        "event",
     }
 )
 
@@ -77,11 +79,12 @@ class LabelPolicy:
     ) -> dict[str, str]:
         if not labels:
             return {}
+        # Metric-def label_keys override the global allowlist when provided.
         permit = set(allowed_keys) if allowed_keys is not None else set(self.allowed)
         out: dict[str, str] = {}
         for raw_k, raw_v in labels.items():
             key = str(raw_k)
-            if key in self.forbidden or key not in self.allowed or key not in permit:
+            if key in self.forbidden or key not in permit:
                 self.dropped_labels += 1
                 continue
             out[key] = sanitize_label_value(str(raw_v))

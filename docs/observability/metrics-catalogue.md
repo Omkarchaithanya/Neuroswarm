@@ -49,3 +49,6 @@ Allowed labels: `tenant`, `agent`, `workflow`, `tier`, `backend`, `model`, `quan
 | `runtime_*` | ARMORA RCIS |
 | `neuroswarm_*` / `router_*` / `rtg_*` | MetricsStore |
 | `haoe_*` / `dipa_*` / `maks_*` / `kv_*` / `ascr_*` | Peer sources |
+
+ASCR Grafana: dashboard **ASCR / ArmCascade Overview** (`ascr-overview`) panels `ascr_acceptance_rate`, `ascr_speculation_gain`, `ascr_quality_cascade_total`, `dipa_cascade_hit_rate`. Speculation gain is forced to **0** in `text_agree` / quality-cascade modes (no logits).
+

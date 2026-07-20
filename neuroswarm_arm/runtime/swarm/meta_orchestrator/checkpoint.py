@@ -11,6 +11,7 @@ from .lifecycle import WorkflowLifecycle
 from .metrics import OrchestratorMetrics
 from .models import CheckpointHandle, WorkflowExecution
 from .serializer import dumps, loads
+from .workflow_state import WorkflowStatus
 from ._utils import new_id
 
 
@@ -33,6 +34,8 @@ class CheckpointCoordinator:
         self.lifecycle = lifecycle or WorkflowLifecycle()
 
     def create(self, execution: WorkflowExecution) -> CheckpointHandle:
+        # Mark checkpointed before dump so restore snapshots have a valid status.
+        self.lifecycle.mark_checkpointed(execution)
         snapshot_payload: dict[str, Any] = {
             "execution_json": dumps(execution, indent=None),
             "completed_nodes": list(execution.completed_nodes),
@@ -63,7 +66,6 @@ class CheckpointCoordinator:
         )
         execution.checkpoint_reference = checkpoint_id
         execution.metrics.checkpoint_count += 1
-        self.lifecycle.mark_checkpointed(execution)
         if self.metrics is not None:
             self.metrics.record_checkpoint()
         if self.events is not None:
@@ -93,6 +95,9 @@ class CheckpointCoordinator:
         if isinstance(payload, dict) and "execution_json" in payload:
             restored = loads(payload["execution_json"])
             restored.checkpoint_reference = checkpoint_id
+            # Older snapshots may still say RUNNING; normalize for restore.
+            if restored.status == WorkflowStatus.RUNNING:
+                restored.status = WorkflowStatus.CHECKPOINTED
             self.lifecycle.mark_restored(restored)
             try:
                 self.lifecycle.mark_ready(restored)
@@ -109,6 +114,8 @@ class CheckpointCoordinator:
             return restored
 
         execution.checkpoint_reference = checkpoint_id
+        if execution.status == WorkflowStatus.RUNNING:
+            execution.status = WorkflowStatus.CHECKPOINTED
         self.lifecycle.mark_restored(execution)
         if self.events is not None:
             self.events.emit(

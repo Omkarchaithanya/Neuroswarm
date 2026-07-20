@@ -67,6 +67,14 @@ class TurboVecIndex:
     def backend_name(self) -> str:
         return "turbovec" if self._using_turbovec else "turbovec+exact"
 
+    @property
+    def kernel_path(self) -> str:
+        return "turbovec" if self._using_turbovec else "numpy"
+
+    @property
+    def sve_kernels_active(self) -> bool:
+        return False
+
     def _prepare(self, vector: np.ndarray) -> np.ndarray:
         vec = np.asarray(vector, dtype=np.float32).reshape(-1)
         if vec.shape[0] != self.dims:

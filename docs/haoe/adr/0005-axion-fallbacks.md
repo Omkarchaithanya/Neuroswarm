@@ -21,3 +21,4 @@ Primary deploy target is GCP Axion `c4a-standard-8`: homogeneous CPUs, no expose
 - Production-correct behavior on Axion today
 - Feature detector still surfaces SVE2/etc. when present for future paths
 - Docs must not claim hardware acceleration that is not active
+- Router ANN: default `turbovec` (NEON/SIMD when the wheel provides it) with `exact`/`numpy` fallback. `SveDotIndex` is an API stub (`kernel_path=numpy_stub`). Do **not** set `nexus_hw_sve2_utilization` > 0 until real SVE kernels land. Mem0/Qdrant episodic memory is separate and not SVE-optimized.

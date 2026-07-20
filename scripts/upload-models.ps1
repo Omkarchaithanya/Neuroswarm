@@ -1,6 +1,6 @@
 param(
-  [string]$HostAlias = "neuroswarm-axion.us-central1-a.project-5bcdea88-8805-4908-991",
-  [string]$ProjectId = "project-5bcdea88-8805-4908-991",
+  [string]$HostAlias = "neuroswarm-axion.us-central1-a.$($env:GCP_PROJECT)",
+  [string]$ProjectId = "$($env:GCP_PROJECT)",
   [string]$Zone = "us-central1-a",
   [string]$InstanceName = "neuroswarm-axion",
   [string]$LocalModelDir = (Join-Path (Get-Location).Path "models"),

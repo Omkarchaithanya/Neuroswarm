@@ -1,2 +1,0 @@
-[console_scripts]
-okf = nexus_okf.cli.main:app

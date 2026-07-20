@@ -1,0 +1,1 @@
+{"status":"ok","memory":{"healthy":true,"provider":"mem0","details":{"primary":{"provider":"mem0","available":true,"error":null,"qdrant_path":"/app/work/memory/qdrant","healthy":true},"secondary":{"provider":"json_emergency","records":330,"owners":5,"root":"/app/work/memory/json","healthy":true}}}}

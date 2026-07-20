@@ -1,0 +1,160 @@
+{
+  "uid": "performix-overview",
+  "title": "Arm Performix Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "10s",
+  "tags": ["nexus", "performix", "arm"],
+  "description": "PMU=0 means no hardware counters (honest on many cloud Axion VMs). Multiple scrape jobs (gateway + otel) can show duplicate series — panels use max without (job, instance, ...) to collapse.",
+  "panels": [
+    {
+      "id": 100,
+      "type": "text",
+      "title": "How to read this board",
+      "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "**Prometheus** does not auto-graph APIs — open Graph and Execute `nexus_performix_ipc` or Status→Targets.\n\n**PMU available = 0** is expected without real hardware counters. **Code hotspots** need `nexus_performix_hotspot_pct{function=...}` from Performix snapshot / `apx` recipe.\n\nAPI docs: `http://<axion-ip>/docs` · Metrics: `GET /metrics`"
+      }
+    },
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Performix available",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(nexus_performix_available)", "legendFormat": "available"}],
+      "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "No"}, "1": {"text": "Yes"}}}]}}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "PMU available",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(nexus_performix_pmu_available)", "legendFormat": "pmu"}],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"type": "value", "options": {"0": {"text": "No HW"}, "1": {"text": "Yes"}}}]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "IPC",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(nexus_performix_ipc)", "legendFormat": "ipc"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Top hotspot %",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(nexus_performix_hotspot_top_pct)", "legendFormat": "top"}]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Hotspot count",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "max(nexus_performix_hotspot_count)", "legendFormat": "n"}]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "IPC / cycles / instructions (gauges)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_ipc)", "legendFormat": "ipc"},
+        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_cycles)", "legendFormat": "cycles"},
+        {"refId": "C", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_instructions)", "legendFormat": "instructions"}
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Cache / branch misses",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_cache_misses)", "legendFormat": "cache_misses"},
+        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_branch_misses)", "legendFormat": "branch_misses"}
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "CPU microarch top-down (frontend / backend bound)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_frontend_bound)", "legendFormat": "frontend_bound"},
+        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_backend_bound)", "legendFormat": "backend_bound"}
+      ]
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Code hotspots (top functions)",
+      "description": "Requires labeled series nexus_performix_hotspot_pct{function=...}. If empty: run apx / POST /arop/optimize or check GET /metrics.",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 15},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, max by (function) (nexus_performix_hotspot_pct))",
+          "legendFormat": "{{function}}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {"id": "labelsToFields", "options": {"valueLabel": "Value"}},
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true,
+              "host": true,
+              "service": true
+            },
+            "renameByName": {
+              "function": "Function",
+              "Value": "Hotspot %"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": {"show": false}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "auto"},
+          "noValue": "No hotspot series — run Performix recipe or check /metrics for nexus_performix_hotspot_pct"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "RPF runtime profiling (CPU / RSS)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 23},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"refId": "A", "expr": "max without (job, instance, host, service) (nexus_hw_cpu_usage)", "legendFormat": "cpu"},
+        {"refId": "B", "expr": "max without (job, instance, host, service) (nexus_memory_rss_bytes)", "legendFormat": "rss"}
+      ]
+    }
+  ]
+}

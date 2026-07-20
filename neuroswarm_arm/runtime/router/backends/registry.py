@@ -10,7 +10,22 @@ from .exact import ExactNumpyIndex
 from .faiss_backend import FaissIndex
 from .hnsw_backend import HnswlibIndex
 from .scann_backend import ScaNNIndex
+from .sve_dot import SveDotIndex
 from .usearch_backend import USearchIndex
+
+
+def kernel_path_for(index: Any) -> str:
+    """Honest kernel label for health/metrics (never claim SVE without real kernels)."""
+    if hasattr(index, "kernel_path"):
+        return str(getattr(index, "kernel_path"))
+    name = str(getattr(index, "backend_name", "unknown"))
+    if name == "turbovec":
+        return "turbovec"
+    if name in {"turbovec+exact", "exact"}:
+        return "numpy"
+    if name == "sve_dot":
+        return "numpy_stub"
+    return name
 
 
 def build_vector_index(
@@ -27,6 +42,8 @@ def build_vector_index(
         return TurboVecIndex(dims, metric=metric_enum, bit_width=bit_width, events=events)
     if name in {"exact", "numpy", "brute"}:
         return ExactNumpyIndex(dims, metric=metric_enum)
+    if name in {"sve", "sve_dot", "svedot"}:
+        return SveDotIndex(dims, metric=metric_enum)
     if name in {"faiss"}:
         return FaissIndex(dims, metric=metric_enum)
     if name in {"hnsw", "hnswlib"}:

@@ -1,3 +1,15 @@
-from .reflective import MockReflectionLM, ReflectionLM, ReflectiveMutationEngine
+from .reflective import (
+    HttpReflectionLM,
+    MockReflectionLM,
+    ReflectionLM,
+    ReflectiveMutationEngine,
+    build_reflection_lm,
+)
 
-__all__ = ["MockReflectionLM", "ReflectionLM", "ReflectiveMutationEngine"]
+__all__ = [
+    "HttpReflectionLM",
+    "MockReflectionLM",
+    "ReflectionLM",
+    "ReflectiveMutationEngine",
+    "build_reflection_lm",
+]

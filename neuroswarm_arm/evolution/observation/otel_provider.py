@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Callable
 
@@ -12,6 +13,24 @@ from neuroswarm_arm.evolution.models.observation import (
     RawObservation,
     TimeWindow,
 )
+
+_SAFE_METRIC_NAME = re.compile(r"[^a-zA-Z0-9_:]")
+
+
+def _arop_metric_name(key: str) -> str:
+    """Flatten labeled keys into a Prometheus-safe arop_metric name label.
+
+    Aggregate snapshots may contain keys like ``nexus_foo{bar="baz"}``. Embedding
+    those raw strings inside ``arop_metric{name="..."}`` breaks Prometheus scrapes.
+    """
+    text = str(key).strip()
+    if not text:
+        return "unknown"
+    # Drop already-exported labeled series from arop flatten (RMF already emits them).
+    if "{" in text:
+        text = text.split("{", 1)[0]
+    safe = _SAFE_METRIC_NAME.sub("_", text.replace("-", "_").replace(".", "_"))
+    return safe[:180] or "unknown"
 
 
 class InMemoryExportSink:
@@ -61,9 +80,21 @@ class PrometheusObservationProvider(ObservationProvider):
     def prometheus_text(self, metrics: dict[str, float] | None = None) -> str:
         m = metrics if metrics is not None else self.metrics()
         lines = ["# HELP arop_metric AROP aggregated metric", "# TYPE arop_metric gauge"]
-        for k, v in sorted(m.items()):
-            safe = k.replace("-", "_").replace(".", "_")
-            lines.append(f'arop_metric{{name="{safe}"}} {float(v)}')
+        # Collapse duplicate bases from labeled keys (keep max).
+        collapsed: dict[str, float] = {}
+        for k, v in m.items():
+            # Skip labeled series keys entirely — RMF already exports real series.
+            if "{" in str(k):
+                continue
+            safe = _arop_metric_name(k)
+            try:
+                val = float(v)
+            except (TypeError, ValueError):
+                continue
+            prev = collapsed.get(safe)
+            collapsed[safe] = val if prev is None else max(prev, val)
+        for safe, val in sorted(collapsed.items()):
+            lines.append(f'arop_metric{{name="{safe}"}} {val}')
         text = "\n".join(lines) + "\n"
         self._export_buffer.append(text)
         return text

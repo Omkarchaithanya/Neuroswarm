@@ -30,7 +30,7 @@ class PerformixProfilerProvider(BaseProfilerProvider):
         self,
         *,
         binary: str = "apx",
-        recipe: str = "code-hotspots",
+        recipe: str = "code_hotspots",
         output_dir: Path | None = None,
         enabled: bool = True,
     ) -> None:

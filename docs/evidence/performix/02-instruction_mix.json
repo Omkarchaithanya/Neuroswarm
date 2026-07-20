@@ -1,0 +1,2989 @@
+{
+  "source": "apx",
+  "recipe": "instruction_mix",
+  "captured_at": "2026-07-18T18:51:26.318182+00:00",
+  "available": 1.0,
+  "files": [
+    "_u/a3ce9477be31/log.json",
+    "_u/a3ce9477be31/categorization.json",
+    "_u/a3ce9477be31/metadata.json",
+    "_u/a3ce9477be31/manifest.json",
+    "_u/a3ce9477be31/source-code.json",
+    "_u/a3ce9477be31/user_messages/user_messages.json",
+    "_u/a3ce9477be31/recipe/version.json",
+    "_u/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-cluster.json",
+    "_u/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-cpus.json",
+    "_u/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-os.json",
+    "_u/a3ce9477be31/collector/sl-collect-target-pids/sl-collect-target-pids-pids.json",
+    "_u/a3ce9477be31/tool/neoprof/0/gator-log.txt",
+    "_u/a3ce9477be31/tool/neoprof/0/capture_log_err.txt",
+    "_u/a3ce9477be31/tool/neoprof/0/analysis_stderr.txt",
+    "_u/a3ce9477be31/tool/neoprof/0/capture_log.txt",
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpath_self_metrics.json",
+    "_u/a3ce9477be31/tool/neoprof/0/output/symbols.json",
+    "_u/a3ce9477be31/tool/neoprof/0/output/call_tree.json",
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpath_total_metrics.json",
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpaths-capture-metrics.csv",
+    "_u/a3ce9477be31/tool/neoprof/0/output/functions-capture-metrics.csv",
+    "_u/a3ce9477be31/tool/instruction_mix/0/static_instruction_mix.csv",
+    "_u/a3ce9477be31/tool/instruction_mix/0/instruction_mix_log.txt",
+    "unz/a3ce9477be31/log.json",
+    "unz/a3ce9477be31/categorization.json",
+    "unz/a3ce9477be31/metadata.json",
+    "unz/a3ce9477be31/manifest.json",
+    "unz/a3ce9477be31/source-code.json",
+    "unz/a3ce9477be31/user_messages/user_messages.json",
+    "unz/a3ce9477be31/recipe/version.json",
+    "unz/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-cluster.json",
+    "unz/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-cpus.json",
+    "unz/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-os.json",
+    "unz/a3ce9477be31/collector/sl-collect-target-pids/sl-collect-target-pids-pids.json",
+    "unz/a3ce9477be31/tool/neoprof/0/gator-log.txt",
+    "unz/a3ce9477be31/tool/neoprof/0/capture_log_err.txt",
+    "unz/a3ce9477be31/tool/neoprof/0/analysis_stderr.txt",
+    "unz/a3ce9477be31/tool/neoprof/0/capture_log.txt",
+    "unz/a3ce9477be31/tool/neoprof/0/output/callpath_self_metrics.json",
+    "unz/a3ce9477be31/tool/neoprof/0/output/symbols.json"
+  ],
+  "summary": {
+    "simd_related_count": 58460.0,
+    "total_count": 5976540.0,
+    "simd_share_approx": 0.009781579308429291,
+    "rows": 13,
+    "columns": [
+      "group",
+      "instruction_count",
+      "percentage"
+    ]
+  },
+  "raw_snippets": {
+    "_u/a3ce9477be31/log.json": "{\"message\":\"Starting run using Arm Performix Engine 1.19.0\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"DeploymentType\":1,\"Output\":\"\",\"Recipe Name\":\"instruction_mix\",\"Workload\":{\"RawCommand\":\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so\",\"Command\":[\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so\"],\"Environment\":null,\"WorkingDir\":\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib\",\"UseShell\":false}},\"message\":\"Recipe run starting\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"run_id\":{\"value\":\"a3ce9477be31\"}},\"message\":\"New run created at '/home/tejaswini2482_gmail_com/.local/share/apxd/runs/a3ce9477be31'\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Establishing connection to target\",\"stageNum\":1,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Establishing connection to target\",\"stageNum\":1,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Identifying target architecture\",\"stageNum\":2,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Identifying target architecture\",\"stageNum\":2,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Checking target platform support\",\"stageNum\":3,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Checking target platform support\",\"stageNum\":3,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"times",
+    "_u/a3ce9477be31/categorization.json": {
+      "group": "",
+      "tags": []
+    },
+    "_u/a3ce9477be31/metadata.json": {
+      "engine.version": "1.19.0",
+      "run.name": "instruction_mix_e31",
+      "run.start_time": "2026-07-18T18:47:34Z",
+      "run.end_time": "2026-07-18T18:47:43Z",
+      "run.recipe_name": "instruction_mix",
+      "run.parameters": {
+        "collect_dotnet_stacks": false,
+        "collect_java_stacks": false,
+        "mode": "both",
+        "sampling_freq": "normal"
+      },
+      "run.workload.type": "Launch",
+      "run.workload.cmdline": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so",
+      "run.workload.working_dir": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib",
+      "run.workload.env": null,
+      "run.workload.use_shell": false,
+      "run.workload.pid": -2,
+      "run.timeout": 40,
+      "run.result": "success",
+      "run.error": "",
+      "target.name": "localhost",
+      "target.config": {
+        "type": "local",
+        "value": {}
+      }
+    },
+    "_u/a3ce9477be31/manifest.json": {
+      "entries": [
+        {
+          "path": "metadata.json",
+          "component_type": {
+            "name": "metadata",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "categorization.json",
+          "component_type": {
+            "name": "categorization",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-os.json",
+          "component_type": {
+            "name": "sl-collect-target-info-os",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-cluster.json",
+          "component_type": {
+            "name": "sl-collect-target-info-cluster",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-cpus.json",
+          "component_type": {
+            "name": "sl-collect-target-info-cpus",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-pids/sl-collect-target-pids-pids.json",
+          "component_type": {
+            "name": "sl-collect-target-pids-pids",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "recipe/source/recipe.js",
+          "component_type": {
+            "name": "recipe",
+            "schema_version": "1.0.2"
+          }
+        },
+        {
+          "path": "recipe/version.json",
+          "component_type": {
+            "name": "version",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "source-code.json",
+          "component_type": {
+            "name": "source-code",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "log.json",
+          "component_type": {
+            "name": "log-json",
+            "schema_version": "0.1"
+          }
+        },
+        {
+          "path": "user_messages/user_messages.json",
+          "component_type": {
+            "name": "log-json",
+            "schema_version": "0.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/symbols.json",
+          "component_type": {
+            "name": "sl-collect-symbols",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/state.xml",
+          "component_type": {
+            "name": "state",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/sources-capture-periodic_sampling*",
+          "component_type": {
+            "name": "sl-collect-source-line-attribution",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/applications.xml",
+          "component_type": {
+            "name": "applications",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/disassembly-capture-periodic_sampling*",
+          "component_type": {
+            "name": "disassembly_capture_samples",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/disassembly-capture-metrics*",
+          "component_type": {
+            "name": "disassembly_capture_metrics",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/call_tree.json",
+          "component_type": {
+            "name": "sl-collect-call-tree",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpath_self_metrics.json",
+          "component_type": {
+            "name": "sl-collect-metrics",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpath_total_metrics.json",
+          "component_type": {
+            "name": "sl-collect-metrics",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpaths-capture-metrics.csv",
+          "component_type": {
+            "name": "sl-collect",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/functions-capture-metrics.csv",
+          "component_type": {
+            "name": "sl-collect-flat-functions-csv",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/capture_log_err.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/gator-log.txt",
+          "component_type": {
+            "name": "log-text-debug",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/capture_log.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/instruction_mix/0/static_instruction_mix.csv",
+          "component_type": {
+            "name": "static_instruction_mix",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/instruction_mix/0/instruction_mix_log.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/analysis.log",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/analysis_stderr.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        }
+      ],
+      "toolsUsed": [
+        {
+          "tool": "neoprof",
+          "version": "1.1.0",
+          "invocation": 0
+        },
+        {
+          "tool": "instruction_mix",
+          "version": "1.1.0",
+          "invocation": 0
+        }
+      ]
+    },
+    "_u/a3ce9477be31/source-code.json": {
+      "paths": null
+    },
+    "_u/a3ce9477be31/user_messages/user_messages.json": {
+      "message": "Workload exit signal: 4",
+      "severity": "warning",
+      "timestamp": "2026-07-18T18:47:35Z"
+    },
+    "_u/a3ce9477be31/recipe/version.json": {
+      "version": "1.0"
+    },
+    "_u/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-os.json": {
+      "os_family": 1,
+      "os_description": "Ubuntu 24.04.4 LTS",
+      "kernel_version": "6.17.0-1020-gcp"
+    },
+    "_u/a3ce9477be31/collector/sl-collect-target-pids/sl-collect-target-pids-pids.json": {
+      "processes": [
+        {
+          "pid": 1,
+          "name": "systemd",
+          "username": "root",
+          "command_line": "/sbin/init"
+        },
+        {
+          "pid": 2,
+          "name": "kthreadd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 3,
+          "name": "pool_workqueue_release",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 14,
+          "name": "ksoftirqd/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 16,
+          "name": "rcu_exp_par_gp_kthread_worker/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 17,
+          "name": "rcu_exp_gp_kthread_worker",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 18,
+          "name": "migration/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 19,
+          "name": "idle_inject/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 20,
+          "name": "cpuhp/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 21,
+          "name": "cpuhp/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 22,
+          "name": "idle_inject/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 23,
+          "name": "migration/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 24,
+          "name": "ksoftirqd/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 27,
+          "name": "cpuhp/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 28,
+          "name": "idle_inject/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 29,
+          "name": "migration/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 30,
+          "name": "ksoftirqd/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 33,
+          "name": "cpuhp/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 34,
+          "name": "idle_inject/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 35,
+          "name": "migration/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 36,
+          "name": "ksoftirqd/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 39,
+          "name": "cpuhp/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 40,
+          "name": "idle_inject/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 41,
+          "name": "migration/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 42,
+          "name": "ksoftirqd/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 45,
+          "name": "cpuhp/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 46,
+          "name": "idle_inject/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 47,
+          "name": "migration/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 48,
+          "name": "ksoftirqd/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 51,
+          "name": "cpuhp/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 52,
+          "name": "idle_inject/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 53,
+          "name": "migration/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 54,
+          "name": "ksoftirqd/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 57,
+          "name": "cpuhp/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 58,
+          "name": "idle_inject/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 59,
+          "name": "migration/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 60,
+          "name": "ksoftirqd/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 64,
+          "name": "kdevtmpfs",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 68,
+          "name": "kauditd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 69,
+          "name": "khungtaskd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 71,
+          "name": "oom_reaper",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 73,
+          "name": "kcompactd0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 74,
+          "name": "ksmd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 75,
+          "name": "khugepaged",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 80,
+          "name": "pr/ttyAMA-1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 87,
+          "name": "watchdogd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 90,
+          "name": "kswapd0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 91,
+          "name": "ecryptfs-kthread",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 93,
+          "name": "irq/16-ACPI:Ged",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 95,
+          "name": "hwrng",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 122,
+          "name": "jbd2/nvme0n1p1-8",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 167,
+          "name": "systemd-journal",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-journald"
+        },
+        {
+          "pid": 233,
+          "name": "multipathd",
+          "username": "root",
+          "command_line": "/sbin/multipathd -d -s"
+        },
+        {
+          "pid": 237,
+          "name": "systemd-udevd",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-udevd"
+        },
+        {
+          "pid": 248,
+          "name": "psimon",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 384,
+          "name": "jbd2/nvme0n1p16-8",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 480,
+          "name": "systemd-resolve",
+          "username": "systemd-resolve",
+          "command_line": "/usr/lib/systemd/systemd-resolved"
+        },
+        {
+          "pid": 635,
+          "name": "systemd-network",
+          "username": "systemd-network",
+          "command_line": "/usr/lib/systemd/systemd-networkd"
+        },
+        {
+          "pid": 679,
+          "name": "dbus-daemon",
+          "username": "messagebus",
+          "command_line": "@dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only"
+        },
+        {
+          "pid": 682,
+          "name": "google_osconfig",
+          "username": "root",
+          "command_line": "/usr/bin/google_osconfig_agent"
+        },
+        {
+          "pid": 686,
+          "name": "networkd-dispat",
+          "username": "root",
+          "command_line": "/usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers"
+        },
+        {
+          "pid": 691,
+          "name": "snapd",
+          "username": "root",
+          "command_line": "/snap/snapd/current/usr/lib/snapd/snapd"
+        },
+        {
+          "pid": 741,
+          "name": "containerd",
+          "username": "root",
+          "command_line": "/usr/bin/containerd"
+        },
+        {
+          "pid": 762,
+          "name": "chronyd",
+          "username": "_chrony",
+          "command_line": "/usr/sbin/chronyd -F 1"
+        },
+        {
+          "pid": 764,
+          "name": "unattended-upgr",
+          "username": "root",
+          "command_line": "/usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal"
+        },
+        {
+          "pid": 765,
+          "name": "chronyd",
+          "username": "_chrony",
+          "command_line": "/usr/sbin/chronyd -F 1"
+        },
+        {
+          "pid": 767,
+          "name": "rsyslogd",
+          "username": "syslog",
+          "command_line": "/usr/sbin/rsyslogd -n -iNONE"
+        },
+        {
+          "pid": 779,
+          "name": "agetty",
+          "username": "root",
+          "command_line": "/sbin/agetty -o -p -- \\u --keep-baud 115200,57600,38400,9600 - vt220"
+        },
+        {
+          "pid": 783,
+          "name": "agetty",
+          "username": "root",
+          "command_line": "/sbin/agetty -o -p -- \\u --noclear - linux"
+        },
+        {
+          "pid": 787,
+          "name": "polkitd",
+          "username": "polkitd",
+          "command_line": "/usr/lib/polkit-1/polkitd --no-debug"
+        },
+        {
+          "pid": 789,
+          "name": "google_guest_ag",
+          "username": "root",
+          "command_line": "/usr/bin/google_guest_agent"
+        },
+        {
+          "pid": 946,
+          "name": "dockerd",
+          "username": "root",
+          "command_line": "/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1190,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"
+        },
+        {
+          "pid": 1278,
+          "name": "systemd-logind",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-logind"
+        },
+        {
+          "pid": 1303,
+          "name": "cron",
+          "username": "root",
+          "command_line": "/usr/sbin/cron -f -P"
+        },
+        {
+          "pid": 1132432,
+          "name": "systemd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "/usr/lib/systemd/systemd --user"
+        },
+        {
+          "pid": 1132433,
+          "name": "(sd-pam)",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "(sd-pam)"
+        },
+        {
+          "pid": 1136677,
+          "name": "apx",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "apx daemon start --block --server-hostname 127.0.0.1 --server-port 9000 --auth-port 9001 --http-port 0 --http-chunk-bytes 1048576 --jobs 8 --data-dir /home/tejaswini2482_gmail_com/.local/share/apxd --log-level info --log-file /home/tejaswini2482_gmail_com/.local/state/apxd/2026-Jul-17_07-32-42.log --deployment-tools-dir --enable-render-db-sandbox=true"
+        },
+        {
+          "pid": 1147415,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 37a96d43d728ad48419edb58ce583ed8b11b6f62dc9b48e208499db688a37c41 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1147439,
+          "name": "otelcol-contrib",
+          "username": "",
+          "command_line": "/otelcol-contrib --config=/etc/otelcol/config.yaml"
+        },
+        {
+          "pid": 1147487,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 4317 -container-ip 172.18.0.7 -container-port 4317 -use-listen-fd"
+        },
+        {
+          "pid": 1147504,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 4318 -container-ip 172.18.0.7 -container-port 4318 -use-listen-fd"
+        },
+        {
+          "pid": 1147519,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8889 -container-ip 172.18.0.7 -container-port 8889 -use-listen-fd"
+        },
+        {
+          "pid": 1147527,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 8889 -container-ip 172.18.0.7 -container-port 8889 -use-listen-fd"
+        },
+        {
+          "pid": 1228301,
+          "name": "psimon",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 1228372,
+          "name": "k3s-server",
+          "username": "root",
+          "command_line": "/usr/local/bin/k3s server"
+        },
+        {
+          "pid": 1228474,
+          "name": "containerd",
+          "username": "root",
+          "command_line": "containerd "
+        },
+        {
+          "pid": 1229974,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 516f342133f3c06c2a45e3666000b758ddd539537bd7f529998ec204630ab9e2 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1229999,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230071,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 65beb3456f9fa23fb4bd5990558bb52cca2d410ae0ac4f7ecfe5a1b732cab9b8 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1230096,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230192,
+          "name": "coredns",
+          "username": "",
+          "command_line": "/coredns -conf /etc/coredns/Corefile"
+        },
+        {
+          "pid": 1230433,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id e6d71e8aa588627c9457fb0894b78af6970279afca2f1b037de7781bb57e8333 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1230464,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230495,
+          "name": "local-path-prov",
+          "username": "root",
+          "command_line": "local-path-provisioner start --config /etc/config/config.json"
+        },
+        {
+          "pid": 1230720,
+          "name": "metrics-server",
+          "username": "ubuntu",
+          "command_line": "/metrics-server --cert-dir=/tmp --secure-port=10250 --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --kubelet-use-node-status-port --metric-resolution=15s --tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+        },
+        {
+          "pid": 1232279,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id cb4a0b8d70b90528346c80c0347a60ba68e84d4dfc8c4f970e79febee7b47340 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1232302,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 7db9cd9ef5a80b38444e1ae56c63400e88478c3bbef74fb16bbd0c250b8aeafe -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1232365,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1232372,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1232450,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+        },
+        {
+          "pid": 1232457,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+        },
+        {
+          "pid": 1305126,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id ef575ce74ed7baa9517230af3b207a2d0a1dc8e0f44ef4de29c7ea9b2670c377 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1305152,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1305193,
+          "name": "bash",
+          "username": "root",
+          "command_line": "bash ./entrypoint.sh"
+        },
+        {
+          "pid": 1305208,
+          "name": "qdrant",
+          "username": "root",
+          "command_line": "./qdrant"
+        },
+        {
+          "pid": 1306000,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id f123f8796e0ad1eb1c3c9a90ccdb71d76e631b249b7cf479b93f01ca5608aae9 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1306025,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1306049,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.main"
+        },
+        {
+          "pid": 1344871,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 4f22781aa721caee97eb7ff5ece9fb13462ae64c2e6a88572cb7f4721b13d889 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1344954,
+          "name": "bash",
+          "username": "root",
+          "command_line": "bash ./entrypoint.sh"
+        },
+        {
+          "pid": 1345075,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 6333 -container-ip 172.18.0.3 -container-port 6333 -use-listen-fd"
+        },
+        {
+          "pid": 1345097,
+          "name": "qdrant",
+          "username": "root",
+          "command_line": "./qdrant"
+        },
+        {
+          "pid": 1749707,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id efee0ff9a46a5f13ab2bbc7bcd565681ddef6d1395ec7333ad0fa0a3c4b0620a -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1749814,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.evolution.performix_bridge"
+        },
+        {
+          "pid": 1853895,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id d6d82891115d65c64fead9778b0187a9a32a85c45e4dc2bb8d689dc0bdd48181 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1853919,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.main"
+        },
+        {
+          "pid": 1853953,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 8000 -container-ip 172.18.0.6 -container-port 8000 -use-listen-fd"
+        },
+        {
+          "pid": 1854201,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id b805e16d29fa3bd44c5d84c858b0801267acf54c79962400cf3d9090f0e0c1d4 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1854225,
+          "name": "nginx",
+          "username": "root",
+          "command_line": "nginx: master process nginx -g daemon off;"
+        },
+        {
+          "pid": 1854272,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 80 -container-ip 172.18.0.8 -container-port 80 -use-listen-fd"
+        },
+        {
+          "pid": 1854279,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 80 -container-ip 172.18.0.8 -container-port 80 -use-listen-fd"
+        },
+        {
+          "pid": 1854311,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854312,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854313,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854314,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854315,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854316,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854317,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854318,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 2214041,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: tejaswini2482_gmail_com [priv]"
+        },
+        {
+          "pid": 2214209,
+          "name": "sshd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sshd: tejaswini2482_gmail_com@pts/0"
+        },
+        {
+          "pid": 2214211,
+          "name": "bash",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "-bash"
+        },
+        {
+          "pid": 2225696,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 55ced5faad64432f47a20043fc4201a4264d5af0e6ecdc7fa4f3e8efd0bba596 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225698,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 159fdcc17f2560b4775f8d5c20c7fda0f08e4c00dd76fef6de743d5968ef34f4 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225708,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id e556f15c87d3fbf2aad2b776c4e4821f7d142c02c9723c119bf47f54d860ac8b -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225767,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+        },
+        {
+          "pid": 2225775,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.2-3b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
+        },
+        {
+          "pid": 2225782,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+        },
+        {
+          "pid": 2243213,
+          "name": "apx-agent",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "./apx-agent start --console-log"
+        },
+        {
+          "pid": 2243262,
+          "name": "sudo",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sudo -E -n /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-group-controller -- /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2243263,
+          "name": "apx-agent",
+          "username": "root",
+          "command_line": "/home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-group-controller -- /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2243272,
+          "name": "apx-agent",
+          "username": "root",
+          "command_line": "/home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2257081,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: tejaswini2482_gmail_com [priv]"
+        },
+        {
+          "pid": 2257139,
+          "name": "sshd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sshd: tejaswini2482_gmail_com@notty"
+        },
+        {
+          "pid": 2257141,
+          "name": "bash",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "bash scripts/_axion-imix-venv.sh"
+        },
+        {
+          "pid": 2257381,
+          "name": "packagekitd",
+          "username": "root",
+          "command_line": "/usr/libexec/packagekitd"
+        },
+        {
+          "pid": 2258048,
+          "name": "apx",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "apx recipe run instruction_mix --workload /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so --working-dir /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib --timeout 40 --deploy-tools --json"
+        }
+      ]
+    },
+    "_u/a3ce9477be31/tool/neoprof/0/gator-log.txt": "[290629.0079592] FINE: #2258103 (linux/Tracepoints.cpp:129): Reading /proc/mounts\n[290629.0080166] FINE: #2258103 (linux/Tracepoints.cpp:134):     '/dev/root / ext4 rw,relatime,discard,errors=remount-ro,commit=30 0 0'\n[290629.0080192] FINE: #2258103 (linux/Tracepoints.cpp:134):     'devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=16370736k,nr_inodes=4092684,mode=755,inode64 0 0'\n[290629.0080209] FINE: #2258103 (linux/Tracepoints.cpp:134):     'proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080222] FINE: #2258103 (linux/Tracepoints.cpp:134):     'sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080235] FINE: #2258103 (linux/Tracepoints.cpp:134):     'securityfs /sys/kernel/security securityfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080252] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /dev/shm tmpfs rw,nosuid,nodev,inode64 0 0'\n[290629.0080265] FINE: #2258103 (linux/Tracepoints.cpp:134):     'devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0'\n[290629.0080367] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /run tmpfs rw,nosuid,nodev,size=6557832k,nr_inodes=819200,mode=755,inode64 0 0'\n[290629.0080381] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k,inode64 0 0'\n[290629.0080394] FINE: #2258103 (linux/Tracepoints.cpp:134):     'cgroup2 /sys/fs/cgroup cgroup2 rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot 0 0'\n[290629.0080407] FINE: #2258103 (linux/Tracepoints.cpp:134):     'none /sys/fs/pstore pstore rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080420] FINE: #2258103 (linux/Tracepoints.cpp:134):     'efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080432] FINE: #2258103 (linux/Tracepoints.cpp:134):     'bpf /sys/fs/bpf bpf rw,nosuid,nodev,noexec,relatime,mode=700 0 0'\n[290629.0080659] FINE: #2258103 (linux/Tracepoints.cpp:134):     'systemd-1 /proc/sys/fs/bin",
+    "_u/a3ce9477be31/tool/neoprof/0/capture_log_err.txt": "Starting command: /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so...\nSuccessfully forked child process {pid: 2258147, command: '/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so'}\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 0 0x0 failed as core went offline\nWARN: Onlining cpu # 0 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 3 0x0 failed as core went offline\nWARN: Onlining cpu # 3 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 1 0x0 failed as core went offline\nWARN: Onlining cpu # 1 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 2 0x0 failed as core went offline\nWARN: Onlining cpu # 2 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 4 0x0 failed as core went offline\nWARN: Onlining cpu # 4 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 5 0x0 failed as core went offline\nWARN: Onlining cpu # 5 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 6 0x0 failed as core went offline\nWARN: Onlining cpu # 6 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 7 0x0 failed as core went offline\nWARN: Onlining cpu # 7 failed as not all cores came online\nERROR: Command exited with signal 4\nEnding capture...\n\n",
+    "_u/a3ce9477be31/tool/neoprof/0/analysis_stderr.txt": "Analyzing /tmp/apx-agent-716185070/capture.apc\nSPE report empty\nAnalysis successful\n",
+    "_u/a3ce9477be31/tool/neoprof/0/capture_log.txt": "time=\"2026-07-18T18:47:34Z\" level=info msg=\"writing child pid 2258103 to fd 3\"\ntime=\"2026-07-18T18:47:34Z\" level=info msg=\"Spawned process: [/home/tejaswini2482_gmail_com/.local/share/apx/tools/sl-collect/2.1.0-build-1/bin/sl-record -o /tmp/apx-agent-716185070/capture.apc -t 40 -C ARMv9_Neoverse_V2_metric_ipc --capture-log -M operation_mix -r normal -w /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib -A /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so]\"\ntime=\"2026-07-18T18:47:34Z\" level=info msg=\"waiting for child process 2258103\"\nStreamline Data Recorder v2.1.0 (Build 1241ae3 [neoprof])\nCopyright (c) 2010-2026 Arm Limited. All rights reserved.\n\ntime=\"2026-07-18T18:47:35Z\" level=info msg=\"child process 2258103 exited normally\"\ntime=\"2026-07-18T18:47:35Z\" level=info msg=\"sent SIGTERM to worker process group\" pgid=2258103\n",
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpath_self_metrics.json": {
+      "columns": [
+        {
+          "name": "Sample Count",
+          "units": "sample_counter"
+        },
+        {
+          "name": "Instructions Per Cycle",
+          "units": "number"
+        },
+        {
+          "name": "Barrier Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Branch Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Crypto Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Half Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Single Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Double Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Integer Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Acquire Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Release Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Floating Point Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Advanced SIMD Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "SVE Operations (Load/Store Inclusive) Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Cycles: CPU Cycles",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Executed): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DMB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DSB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (ISB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (immediate)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (indirect)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Crypto",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Advanced SIMD)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Floating-point)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Integer)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Double-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Half-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Single-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load (Acquire)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): SVE",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store (Release)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Percentage of Total Samples",
+          "units": "percent"
+        }
+      ],
+      "rows": []
+    },
+    "_u/a3ce9477be31/tool/neoprof/0/output/call_tree.json": {},
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpath_total_metrics.json": {
+      "columns": [
+        {
+          "name": "Sample Count",
+          "units": "sample_counter"
+        },
+        {
+          "name": "Instructions Per Cycle",
+          "units": "number"
+        },
+        {
+          "name": "Barrier Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Branch Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Crypto Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Half Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Single Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Double Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Integer Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Acquire Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Release Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Floating Point Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Advanced SIMD Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "SVE Operations (Load/Store Inclusive) Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Cycles: CPU Cycles",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Executed): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DMB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DSB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (ISB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (immediate)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (indirect)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Crypto",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Advanced SIMD)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Floating-point)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Integer)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Double-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Half-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Single-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load (Acquire)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): SVE",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store (Release)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Percentage of Total Samples",
+          "units": "percent"
+        }
+      ],
+      "rows": []
+    },
+    "_u/a3ce9477be31/tool/neoprof/0/output/callpaths-capture-metrics.csv": "\"Metrics: Sample Count (Total)\",\"Metrics: Sample Count (Self)\",\"General: Instructions Per Cycle (Total)\",\"General: Instructions Per Cycle (Self)\",\"Speculative Operation Mix: Barrier Operations Percentage (Total)\",\"Speculative Operation Mix: Barrier Operations Percentage (Self)\",\"Speculative Operation Mix: Branch Operations Percentage (Total)\",\"Speculative Operation Mix: Branch Operations Percentage (Self)\",\"Speculative Operation Mix: Crypto Operations Percentage (Total)\",\"Speculative Operation Mix: Crypto Operations Percentage (Self)\",\"Speculative Operation Mix: Half Precision Floating Point Percentage (Total)\",\"Speculative Operation Mix: Half Precision Floating Point Percentage (Self)\",\"Speculative Operation Mix: Single Precision Floating Point Percentage (Total)\",\"Speculative Operation Mix: Single Precision Floating Point Percentage (Self)\",\"Speculative Operation Mix: Double Precision Floating Point Percentage (Total)\",\"Speculative Operation Mix: Double Precision Floating Point Percentage (Self)\",\"Speculative Operation Mix: Integer Operations Percentage (Total)\",\"Speculative Operation Mix: Integer Operations Percentage (Self)\",\"Speculative Operation Mix: Load-Exclusive Instructions Percentage (Total)\",\"Speculative Operation Mix: Load-Exclusive Instructions Percentage (Self)\",\"Speculative Operation Mix: Load Operations Percentage (Total)\",\"Speculative Operation Mix: Load Operations Percentage (Self)\",\"Speculative Operation Mix: Load-Acquire Instructions Percentage (Total)\",\"Speculative Operation Mix: Load-Acquire Instructions Percentage (Self)\",\"Speculative Operation Mix: Store-Release Instructions Percentage (Total)\",\"Speculative Operation Mix: Store-Release Instructions Percentage (Self)\",\"Speculative Operation Mix: Floating Point Operations Percentage (Total)\",\"Speculative Operation Mix: Floating Point Operations Percentage (Self)\",\"Speculative Operation Mix: Advanced SIMD Operations Percentage (Total)\",\"Speculative Operation Mix: Advanced SIMD Operations Percen",
+    "_u/a3ce9477be31/tool/neoprof/0/output/functions-capture-metrics.csv": "\"Metrics: Sample Count\",\"General: Instructions Per Cycle\",\"Speculative Operation Mix: Barrier Operations Percentage\",\"Speculative Operation Mix: Branch Operations Percentage\",\"Speculative Operation Mix: Crypto Operations Percentage\",\"Speculative Operation Mix: Half Precision Floating Point Percentage\",\"Speculative Operation Mix: Single Precision Floating Point Percentage\",\"Speculative Operation Mix: Double Precision Floating Point Percentage\",\"Speculative Operation Mix: Integer Operations Percentage\",\"Speculative Operation Mix: Load-Exclusive Instructions Percentage\",\"Speculative Operation Mix: Load Operations Percentage\",\"Speculative Operation Mix: Load-Acquire Instructions Percentage\",\"Speculative Operation Mix: Store-Release Instructions Percentage\",\"Speculative Operation Mix: Floating Point Operations Percentage\",\"Speculative Operation Mix: Advanced SIMD Operations Percentage\",\"Speculative Operation Mix: Store Operations Percentage\",\"Speculative Operation Mix: Store-Exclusive Instructions Percentage\",\"Speculative Operation Mix: SVE Operations (Load/Store Inclusive) Percentage\",\"uid\",\"image\",\"symbol\",\"inlined from\"\n",
+    "_u/a3ce9477be31/tool/instruction_mix/0/static_instruction_mix.csv": "group,instruction_count,percentage\nScalable Vector Extension (SVE) Instructions,10253,0.34\nScalable Matrix Extension (SME) Instructions,48,0.0\nLoad and Store Instructions,826607,27.66\nBarrier Instructions,59,0.0\nBranch Instructions,679442,22.74\nControl Flow (Non-Branch) Instructions,47941,1.6\nInteger Instructions,1325704,44.36\nFloating Point Instructions,49713,1.66\nCryptographic Instructions,0,0.0\nAdvanced SIMD Instructions,48207,1.61\nReserved Instructions,3,0.0\nUnknown Instructions,293,0.01\nAll Instructions,2988270,100.0\n",
+    "_u/a3ce9477be31/tool/instruction_mix/0/instruction_mix_log.txt": "2026-07-18 18:47:38: Starting instruction mix version 0.4.5\n2026-07-18 18:47:38:   Parsing command line arguments\n2026-07-18 18:47:38:   Using csv as output format\n2026-07-18 18:47:38:   Disassembling 12 image(s) using resolver 'implicit-transitive'\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-common.so.0.0.1\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libmtmd.so.0.0.1\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama.so.0.0.1\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libggml.so.0.16.0\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libggml-cpu.so.0.16.0\n2026-07-18 18:47:38:     - /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libggml-base.so.0.16.0\n2026-07-18 18:47:38:     - /usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.33\n2026-07-18 18:47:38:     - /usr/lib/aarch64-linux-gnu/libm.so.6\n2026-07-18 18:47:38:     - /usr/lib/aarch64-linux-gnu/libgcc_s.so.1\n2026-07-18 18:47:38:     - /usr/lib/aarch64-linux-gnu/libc.so.6\n2026-07-18 18:47:38:     - /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1\n2026-07-18 18:47:38:   Performing static analysis on binary '/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so'\n2026-07-18 18:47:38:     - Invoking objdump disassembler\n2026-07-18 18:47:39:     - Found 585779 instructions in static binary\n2026-07-18 18:47:39:   Performing static analysis on binary '/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-common.so.0.0.1'\n2026-07-18 18:47:39:     - Invoking objdump disassembler\n2026-07-18 18:47:40:     - Found 674627 instructions in static binary\n2026-07-18 18:47:40:   Performing static analysis on binary '/hom",
+    "unz/a3ce9477be31/log.json": "{\"message\":\"Starting run using Arm Performix Engine 1.19.0\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"DeploymentType\":1,\"Output\":\"\",\"Recipe Name\":\"instruction_mix\",\"Workload\":{\"RawCommand\":\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so\",\"Command\":[\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so\"],\"Environment\":null,\"WorkingDir\":\"/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib\",\"UseShell\":false}},\"message\":\"Recipe run starting\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"run_id\":{\"value\":\"a3ce9477be31\"}},\"message\":\"New run created at '/home/tejaswini2482_gmail_com/.local/share/apxd/runs/a3ce9477be31'\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Establishing connection to target\",\"stageNum\":1,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Establishing connection to target\",\"stageNum\":1,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Identifying target architecture\",\"stageNum\":2,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Identifying target architecture\",\"stageNum\":2,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_start\",\"stageName\":\"Checking target platform support\",\"stageNum\":3,\"totalStagesCount\":14},\"message\":\"Stage started\",\"severity\":\"info\",\"timestamp\":\"2026-07-18T18:47:34Z\"}\n{\"context\":{\"event\":\"stage_end\",\"stageName\":\"Checking target platform support\",\"stageNum\":3,\"totalStagesCount\":14},\"message\":\"Stage completed successfully\",\"severity\":\"info\",\"times",
+    "unz/a3ce9477be31/categorization.json": {
+      "group": "",
+      "tags": []
+    },
+    "unz/a3ce9477be31/metadata.json": {
+      "engine.version": "1.19.0",
+      "run.name": "instruction_mix_e31",
+      "run.start_time": "2026-07-18T18:47:34Z",
+      "run.end_time": "2026-07-18T18:47:43Z",
+      "run.recipe_name": "instruction_mix",
+      "run.parameters": {
+        "collect_dotnet_stacks": false,
+        "collect_java_stacks": false,
+        "mode": "both",
+        "sampling_freq": "normal"
+      },
+      "run.workload.type": "Launch",
+      "run.workload.cmdline": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so",
+      "run.workload.working_dir": "/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib",
+      "run.workload.env": null,
+      "run.workload.use_shell": false,
+      "run.workload.pid": -2,
+      "run.timeout": 40,
+      "run.result": "success",
+      "run.error": "",
+      "target.name": "localhost",
+      "target.config": {
+        "type": "local",
+        "value": {}
+      }
+    },
+    "unz/a3ce9477be31/manifest.json": {
+      "entries": [
+        {
+          "path": "metadata.json",
+          "component_type": {
+            "name": "metadata",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "categorization.json",
+          "component_type": {
+            "name": "categorization",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-os.json",
+          "component_type": {
+            "name": "sl-collect-target-info-os",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-cluster.json",
+          "component_type": {
+            "name": "sl-collect-target-info-cluster",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-info/sl-collect-target-info-cpus.json",
+          "component_type": {
+            "name": "sl-collect-target-info-cpus",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "collector/sl-collect-target-pids/sl-collect-target-pids-pids.json",
+          "component_type": {
+            "name": "sl-collect-target-pids-pids",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "recipe/source/recipe.js",
+          "component_type": {
+            "name": "recipe",
+            "schema_version": "1.0.2"
+          }
+        },
+        {
+          "path": "recipe/version.json",
+          "component_type": {
+            "name": "version",
+            "schema_version": "1.0.0"
+          }
+        },
+        {
+          "path": "source-code.json",
+          "component_type": {
+            "name": "source-code",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "log.json",
+          "component_type": {
+            "name": "log-json",
+            "schema_version": "0.1"
+          }
+        },
+        {
+          "path": "user_messages/user_messages.json",
+          "component_type": {
+            "name": "log-json",
+            "schema_version": "0.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/symbols.json",
+          "component_type": {
+            "name": "sl-collect-symbols",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/state.xml",
+          "component_type": {
+            "name": "state",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/sources-capture-periodic_sampling*",
+          "component_type": {
+            "name": "sl-collect-source-line-attribution",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/applications.xml",
+          "component_type": {
+            "name": "applications",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/disassembly-capture-periodic_sampling*",
+          "component_type": {
+            "name": "disassembly_capture_samples",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/disassembly-capture-metrics*",
+          "component_type": {
+            "name": "disassembly_capture_metrics",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/call_tree.json",
+          "component_type": {
+            "name": "sl-collect-call-tree",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpath_self_metrics.json",
+          "component_type": {
+            "name": "sl-collect-metrics",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpath_total_metrics.json",
+          "component_type": {
+            "name": "sl-collect-metrics",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/callpaths-capture-metrics.csv",
+          "component_type": {
+            "name": "sl-collect",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/output/functions-capture-metrics.csv",
+          "component_type": {
+            "name": "sl-collect-flat-functions-csv",
+            "schema_version": "1.1"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/capture_log_err.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/gator-log.txt",
+          "component_type": {
+            "name": "log-text-debug",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/capture_log.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/instruction_mix/0/static_instruction_mix.csv",
+          "component_type": {
+            "name": "static_instruction_mix",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/instruction_mix/0/instruction_mix_log.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/analysis.log",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        },
+        {
+          "path": "tool/neoprof/0/analysis_stderr.txt",
+          "component_type": {
+            "name": "log-text",
+            "schema_version": "1.0"
+          }
+        }
+      ],
+      "toolsUsed": [
+        {
+          "tool": "neoprof",
+          "version": "1.1.0",
+          "invocation": 0
+        },
+        {
+          "tool": "instruction_mix",
+          "version": "1.1.0",
+          "invocation": 0
+        }
+      ]
+    },
+    "unz/a3ce9477be31/source-code.json": {
+      "paths": null
+    },
+    "unz/a3ce9477be31/user_messages/user_messages.json": {
+      "message": "Workload exit signal: 4",
+      "severity": "warning",
+      "timestamp": "2026-07-18T18:47:35Z"
+    },
+    "unz/a3ce9477be31/recipe/version.json": {
+      "version": "1.0"
+    },
+    "unz/a3ce9477be31/collector/sl-collect-target-info/sl-collect-target-info-os.json": {
+      "os_family": 1,
+      "os_description": "Ubuntu 24.04.4 LTS",
+      "kernel_version": "6.17.0-1020-gcp"
+    },
+    "unz/a3ce9477be31/collector/sl-collect-target-pids/sl-collect-target-pids-pids.json": {
+      "processes": [
+        {
+          "pid": 1,
+          "name": "systemd",
+          "username": "root",
+          "command_line": "/sbin/init"
+        },
+        {
+          "pid": 2,
+          "name": "kthreadd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 3,
+          "name": "pool_workqueue_release",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 14,
+          "name": "ksoftirqd/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 16,
+          "name": "rcu_exp_par_gp_kthread_worker/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 17,
+          "name": "rcu_exp_gp_kthread_worker",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 18,
+          "name": "migration/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 19,
+          "name": "idle_inject/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 20,
+          "name": "cpuhp/0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 21,
+          "name": "cpuhp/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 22,
+          "name": "idle_inject/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 23,
+          "name": "migration/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 24,
+          "name": "ksoftirqd/1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 27,
+          "name": "cpuhp/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 28,
+          "name": "idle_inject/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 29,
+          "name": "migration/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 30,
+          "name": "ksoftirqd/2",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 33,
+          "name": "cpuhp/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 34,
+          "name": "idle_inject/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 35,
+          "name": "migration/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 36,
+          "name": "ksoftirqd/3",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 39,
+          "name": "cpuhp/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 40,
+          "name": "idle_inject/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 41,
+          "name": "migration/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 42,
+          "name": "ksoftirqd/4",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 45,
+          "name": "cpuhp/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 46,
+          "name": "idle_inject/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 47,
+          "name": "migration/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 48,
+          "name": "ksoftirqd/5",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 51,
+          "name": "cpuhp/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 52,
+          "name": "idle_inject/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 53,
+          "name": "migration/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 54,
+          "name": "ksoftirqd/6",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 57,
+          "name": "cpuhp/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 58,
+          "name": "idle_inject/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 59,
+          "name": "migration/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 60,
+          "name": "ksoftirqd/7",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 64,
+          "name": "kdevtmpfs",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 68,
+          "name": "kauditd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 69,
+          "name": "khungtaskd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 71,
+          "name": "oom_reaper",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 73,
+          "name": "kcompactd0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 74,
+          "name": "ksmd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 75,
+          "name": "khugepaged",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 80,
+          "name": "pr/ttyAMA-1",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 87,
+          "name": "watchdogd",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 90,
+          "name": "kswapd0",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 91,
+          "name": "ecryptfs-kthread",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 93,
+          "name": "irq/16-ACPI:Ged",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 95,
+          "name": "hwrng",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 122,
+          "name": "jbd2/nvme0n1p1-8",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 167,
+          "name": "systemd-journal",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-journald"
+        },
+        {
+          "pid": 233,
+          "name": "multipathd",
+          "username": "root",
+          "command_line": "/sbin/multipathd -d -s"
+        },
+        {
+          "pid": 237,
+          "name": "systemd-udevd",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-udevd"
+        },
+        {
+          "pid": 248,
+          "name": "psimon",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 384,
+          "name": "jbd2/nvme0n1p16-8",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 480,
+          "name": "systemd-resolve",
+          "username": "systemd-resolve",
+          "command_line": "/usr/lib/systemd/systemd-resolved"
+        },
+        {
+          "pid": 635,
+          "name": "systemd-network",
+          "username": "systemd-network",
+          "command_line": "/usr/lib/systemd/systemd-networkd"
+        },
+        {
+          "pid": 679,
+          "name": "dbus-daemon",
+          "username": "messagebus",
+          "command_line": "@dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only"
+        },
+        {
+          "pid": 682,
+          "name": "google_osconfig",
+          "username": "root",
+          "command_line": "/usr/bin/google_osconfig_agent"
+        },
+        {
+          "pid": 686,
+          "name": "networkd-dispat",
+          "username": "root",
+          "command_line": "/usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers"
+        },
+        {
+          "pid": 691,
+          "name": "snapd",
+          "username": "root",
+          "command_line": "/snap/snapd/current/usr/lib/snapd/snapd"
+        },
+        {
+          "pid": 741,
+          "name": "containerd",
+          "username": "root",
+          "command_line": "/usr/bin/containerd"
+        },
+        {
+          "pid": 762,
+          "name": "chronyd",
+          "username": "_chrony",
+          "command_line": "/usr/sbin/chronyd -F 1"
+        },
+        {
+          "pid": 764,
+          "name": "unattended-upgr",
+          "username": "root",
+          "command_line": "/usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal"
+        },
+        {
+          "pid": 765,
+          "name": "chronyd",
+          "username": "_chrony",
+          "command_line": "/usr/sbin/chronyd -F 1"
+        },
+        {
+          "pid": 767,
+          "name": "rsyslogd",
+          "username": "syslog",
+          "command_line": "/usr/sbin/rsyslogd -n -iNONE"
+        },
+        {
+          "pid": 779,
+          "name": "agetty",
+          "username": "root",
+          "command_line": "/sbin/agetty -o -p -- \\u --keep-baud 115200,57600,38400,9600 - vt220"
+        },
+        {
+          "pid": 783,
+          "name": "agetty",
+          "username": "root",
+          "command_line": "/sbin/agetty -o -p -- \\u --noclear - linux"
+        },
+        {
+          "pid": 787,
+          "name": "polkitd",
+          "username": "polkitd",
+          "command_line": "/usr/lib/polkit-1/polkitd --no-debug"
+        },
+        {
+          "pid": 789,
+          "name": "google_guest_ag",
+          "username": "root",
+          "command_line": "/usr/bin/google_guest_agent"
+        },
+        {
+          "pid": 946,
+          "name": "dockerd",
+          "username": "root",
+          "command_line": "/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1190,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"
+        },
+        {
+          "pid": 1278,
+          "name": "systemd-logind",
+          "username": "root",
+          "command_line": "/usr/lib/systemd/systemd-logind"
+        },
+        {
+          "pid": 1303,
+          "name": "cron",
+          "username": "root",
+          "command_line": "/usr/sbin/cron -f -P"
+        },
+        {
+          "pid": 1132432,
+          "name": "systemd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "/usr/lib/systemd/systemd --user"
+        },
+        {
+          "pid": 1132433,
+          "name": "(sd-pam)",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "(sd-pam)"
+        },
+        {
+          "pid": 1136677,
+          "name": "apx",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "apx daemon start --block --server-hostname 127.0.0.1 --server-port 9000 --auth-port 9001 --http-port 0 --http-chunk-bytes 1048576 --jobs 8 --data-dir /home/tejaswini2482_gmail_com/.local/share/apxd --log-level info --log-file /home/tejaswini2482_gmail_com/.local/state/apxd/2026-Jul-17_07-32-42.log --deployment-tools-dir --enable-render-db-sandbox=true"
+        },
+        {
+          "pid": 1147415,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 37a96d43d728ad48419edb58ce583ed8b11b6f62dc9b48e208499db688a37c41 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1147439,
+          "name": "otelcol-contrib",
+          "username": "",
+          "command_line": "/otelcol-contrib --config=/etc/otelcol/config.yaml"
+        },
+        {
+          "pid": 1147487,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 4317 -container-ip 172.18.0.7 -container-port 4317 -use-listen-fd"
+        },
+        {
+          "pid": 1147504,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 4318 -container-ip 172.18.0.7 -container-port 4318 -use-listen-fd"
+        },
+        {
+          "pid": 1147519,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8889 -container-ip 172.18.0.7 -container-port 8889 -use-listen-fd"
+        },
+        {
+          "pid": 1147527,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 8889 -container-ip 172.18.0.7 -container-port 8889 -use-listen-fd"
+        },
+        {
+          "pid": 1228301,
+          "name": "psimon",
+          "username": "root",
+          "command_line": ""
+        },
+        {
+          "pid": 1228372,
+          "name": "k3s-server",
+          "username": "root",
+          "command_line": "/usr/local/bin/k3s server"
+        },
+        {
+          "pid": 1228474,
+          "name": "containerd",
+          "username": "root",
+          "command_line": "containerd "
+        },
+        {
+          "pid": 1229974,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 516f342133f3c06c2a45e3666000b758ddd539537bd7f529998ec204630ab9e2 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1229999,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230071,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 65beb3456f9fa23fb4bd5990558bb52cca2d410ae0ac4f7ecfe5a1b732cab9b8 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1230096,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230192,
+          "name": "coredns",
+          "username": "",
+          "command_line": "/coredns -conf /etc/coredns/Corefile"
+        },
+        {
+          "pid": 1230433,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id e6d71e8aa588627c9457fb0894b78af6970279afca2f1b037de7781bb57e8333 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1230464,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1230495,
+          "name": "local-path-prov",
+          "username": "root",
+          "command_line": "local-path-provisioner start --config /etc/config/config.json"
+        },
+        {
+          "pid": 1230720,
+          "name": "metrics-server",
+          "username": "ubuntu",
+          "command_line": "/metrics-server --cert-dir=/tmp --secure-port=10250 --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --kubelet-use-node-status-port --metric-resolution=15s --tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+        },
+        {
+          "pid": 1232279,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id cb4a0b8d70b90528346c80c0347a60ba68e84d4dfc8c4f970e79febee7b47340 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1232302,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id 7db9cd9ef5a80b38444e1ae56c63400e88478c3bbef74fb16bbd0c250b8aeafe -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1232365,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1232372,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1232450,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+        },
+        {
+          "pid": 1232457,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+        },
+        {
+          "pid": 1305126,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id ef575ce74ed7baa9517230af3b207a2d0a1dc8e0f44ef4de29c7ea9b2670c377 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1305152,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1305193,
+          "name": "bash",
+          "username": "root",
+          "command_line": "bash ./entrypoint.sh"
+        },
+        {
+          "pid": 1305208,
+          "name": "qdrant",
+          "username": "root",
+          "command_line": "./qdrant"
+        },
+        {
+          "pid": 1306000,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/var/lib/rancher/k3s/data/b4eeae897955d118fb5be5c1e661efd21ba6890bc05bdfecc61ae53071383c28/bin/containerd-shim-runc-v2 -namespace k8s.io -id f123f8796e0ad1eb1c3c9a90ccdb71d76e631b249b7cf479b93f01ca5608aae9 -address /run/k3s/containerd/containerd.sock"
+        },
+        {
+          "pid": 1306025,
+          "name": "pause",
+          "username": "",
+          "command_line": "/pause"
+        },
+        {
+          "pid": 1306049,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.main"
+        },
+        {
+          "pid": 1344871,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 4f22781aa721caee97eb7ff5ece9fb13462ae64c2e6a88572cb7f4721b13d889 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1344954,
+          "name": "bash",
+          "username": "root",
+          "command_line": "bash ./entrypoint.sh"
+        },
+        {
+          "pid": 1345075,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 6333 -container-ip 172.18.0.3 -container-port 6333 -use-listen-fd"
+        },
+        {
+          "pid": 1345097,
+          "name": "qdrant",
+          "username": "root",
+          "command_line": "./qdrant"
+        },
+        {
+          "pid": 1749707,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id efee0ff9a46a5f13ab2bbc7bcd565681ddef6d1395ec7333ad0fa0a3c4b0620a -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1749814,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.evolution.performix_bridge"
+        },
+        {
+          "pid": 1853895,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id d6d82891115d65c64fead9778b0187a9a32a85c45e4dc2bb8d689dc0bdd48181 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1853919,
+          "name": "python",
+          "username": "root",
+          "command_line": "python -m neuroswarm_arm.main"
+        },
+        {
+          "pid": 1853953,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 127.0.0.1 -host-port 8000 -container-ip 172.18.0.6 -container-port 8000 -use-listen-fd"
+        },
+        {
+          "pid": 1854201,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id b805e16d29fa3bd44c5d84c858b0801267acf54c79962400cf3d9090f0e0c1d4 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 1854225,
+          "name": "nginx",
+          "username": "root",
+          "command_line": "nginx: master process nginx -g daemon off;"
+        },
+        {
+          "pid": 1854272,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 80 -container-ip 172.18.0.8 -container-port 80 -use-listen-fd"
+        },
+        {
+          "pid": 1854279,
+          "name": "docker-proxy",
+          "username": "root",
+          "command_line": "/usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 80 -container-ip 172.18.0.8 -container-port 80 -use-listen-fd"
+        },
+        {
+          "pid": 1854311,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854312,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854313,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854314,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854315,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854316,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854317,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 1854318,
+          "name": "nginx",
+          "username": "messagebus",
+          "command_line": "nginx: worker process"
+        },
+        {
+          "pid": 2214041,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: tejaswini2482_gmail_com [priv]"
+        },
+        {
+          "pid": 2214209,
+          "name": "sshd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sshd: tejaswini2482_gmail_com@pts/0"
+        },
+        {
+          "pid": 2214211,
+          "name": "bash",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "-bash"
+        },
+        {
+          "pid": 2225696,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 55ced5faad64432f47a20043fc4201a4264d5af0e6ecdc7fa4f3e8efd0bba596 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225698,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id 159fdcc17f2560b4775f8d5c20c7fda0f08e4c00dd76fef6de743d5968ef34f4 -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225708,
+          "name": "containerd-shim",
+          "username": "root",
+          "command_line": "/usr/bin/containerd-shim-runc-v2 -namespace moby -id e556f15c87d3fbf2aad2b776c4e4821f7d142c02c9723c119bf47f54d860ac8b -address /run/containerd/containerd.sock"
+        },
+        {
+          "pid": 2225767,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+        },
+        {
+          "pid": 2225775,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.2-3b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
+        },
+        {
+          "pid": 2225782,
+          "name": "llama-server",
+          "username": "root",
+          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+        },
+        {
+          "pid": 2243213,
+          "name": "apx-agent",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "./apx-agent start --console-log"
+        },
+        {
+          "pid": 2243262,
+          "name": "sudo",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sudo -E -n /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-group-controller -- /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2243263,
+          "name": "apx-agent",
+          "username": "root",
+          "command_line": "/home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-group-controller -- /home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2243272,
+          "name": "apx-agent",
+          "username": "root",
+          "command_line": "/home/tejaswini2482_gmail_com/.local/share/apx/tools/apx-agent/1.19.0/apx-agent start-root-worker --ipc-socket /tmp/ipc-680004952/ipc.sock"
+        },
+        {
+          "pid": 2257081,
+          "name": "sshd",
+          "username": "root",
+          "command_line": "sshd: tejaswini2482_gmail_com [priv]"
+        },
+        {
+          "pid": 2257139,
+          "name": "sshd",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "sshd: tejaswini2482_gmail_com@notty"
+        },
+        {
+          "pid": 2257141,
+          "name": "bash",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "bash scripts/_axion-imix-venv.sh"
+        },
+        {
+          "pid": 2257381,
+          "name": "packagekitd",
+          "username": "root",
+          "command_line": "/usr/libexec/packagekitd"
+        },
+        {
+          "pid": 2258048,
+          "name": "apx",
+          "username": "tejaswini2482_gmail_com",
+          "command_line": "apx recipe run instruction_mix --workload /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so --working-dir /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib --timeout 40 --deploy-tools --json"
+        }
+      ]
+    },
+    "unz/a3ce9477be31/tool/neoprof/0/gator-log.txt": "[290629.0079592] FINE: #2258103 (linux/Tracepoints.cpp:129): Reading /proc/mounts\n[290629.0080166] FINE: #2258103 (linux/Tracepoints.cpp:134):     '/dev/root / ext4 rw,relatime,discard,errors=remount-ro,commit=30 0 0'\n[290629.0080192] FINE: #2258103 (linux/Tracepoints.cpp:134):     'devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=16370736k,nr_inodes=4092684,mode=755,inode64 0 0'\n[290629.0080209] FINE: #2258103 (linux/Tracepoints.cpp:134):     'proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080222] FINE: #2258103 (linux/Tracepoints.cpp:134):     'sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080235] FINE: #2258103 (linux/Tracepoints.cpp:134):     'securityfs /sys/kernel/security securityfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080252] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /dev/shm tmpfs rw,nosuid,nodev,inode64 0 0'\n[290629.0080265] FINE: #2258103 (linux/Tracepoints.cpp:134):     'devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0'\n[290629.0080367] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /run tmpfs rw,nosuid,nodev,size=6557832k,nr_inodes=819200,mode=755,inode64 0 0'\n[290629.0080381] FINE: #2258103 (linux/Tracepoints.cpp:134):     'tmpfs /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k,inode64 0 0'\n[290629.0080394] FINE: #2258103 (linux/Tracepoints.cpp:134):     'cgroup2 /sys/fs/cgroup cgroup2 rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot 0 0'\n[290629.0080407] FINE: #2258103 (linux/Tracepoints.cpp:134):     'none /sys/fs/pstore pstore rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080420] FINE: #2258103 (linux/Tracepoints.cpp:134):     'efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0'\n[290629.0080432] FINE: #2258103 (linux/Tracepoints.cpp:134):     'bpf /sys/fs/bpf bpf rw,nosuid,nodev,noexec,relatime,mode=700 0 0'\n[290629.0080659] FINE: #2258103 (linux/Tracepoints.cpp:134):     'systemd-1 /proc/sys/fs/bin",
+    "unz/a3ce9477be31/tool/neoprof/0/capture_log_err.txt": "Starting command: /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so...\nSuccessfully forked child process {pid: 2258147, command: '/home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so'}\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 0 0x0 failed as core went offline\nWARN: Onlining cpu # 0 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 3 0x0 failed as core went offline\nWARN: Onlining cpu # 3 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 1 0x0 failed as core went offline\nWARN: Onlining cpu # 1 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 2 0x0 failed as core went offline\nWARN: Onlining cpu # 2 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 4 0x0 failed as core went offline\nWARN: Onlining cpu # 4 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 5 0x0 failed as core went offline\nWARN: Onlining cpu # 5 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 6 0x0 failed as core went offline\nWARN: Onlining cpu # 6 failed as not all cores came online\nWARN: ... failed 2 No such file or directory\nWARN: Core online prepare 7 0x0 failed as core went offline\nWARN: Onlining cpu # 7 failed as not all cores came online\nERROR: Command exited with signal 4\nEnding capture...\n\n",
+    "unz/a3ce9477be31/tool/neoprof/0/analysis_stderr.txt": "Analyzing /tmp/apx-agent-716185070/capture.apc\nSPE report empty\nAnalysis successful\n",
+    "unz/a3ce9477be31/tool/neoprof/0/capture_log.txt": "time=\"2026-07-18T18:47:34Z\" level=info msg=\"writing child pid 2258103 to fd 3\"\ntime=\"2026-07-18T18:47:34Z\" level=info msg=\"Spawned process: [/home/tejaswini2482_gmail_com/.local/share/apx/tools/sl-collect/2.1.0-build-1/bin/sl-record -o /tmp/apx-agent-716185070/capture.apc -t 40 -C ARMv9_Neoverse_V2_metric_ipc --capture-log -M operation_mix -r normal -w /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib -A /home/tejaswini2482_gmail_com/neuroswarm-arm/work/llama-opt/lib/libllama-server-impl.so]\"\ntime=\"2026-07-18T18:47:34Z\" level=info msg=\"waiting for child process 2258103\"\nStreamline Data Recorder v2.1.0 (Build 1241ae3 [neoprof])\nCopyright (c) 2010-2026 Arm Limited. All rights reserved.\n\ntime=\"2026-07-18T18:47:35Z\" level=info msg=\"child process 2258103 exited normally\"\ntime=\"2026-07-18T18:47:35Z\" level=info msg=\"sent SIGTERM to worker process group\" pgid=2258103\n",
+    "unz/a3ce9477be31/tool/neoprof/0/output/callpath_self_metrics.json": {
+      "columns": [
+        {
+          "name": "Sample Count",
+          "units": "sample_counter"
+        },
+        {
+          "name": "Instructions Per Cycle",
+          "units": "number"
+        },
+        {
+          "name": "Barrier Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Branch Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Crypto Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Half Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Single Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Double Precision Floating Point Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Integer Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Load-Acquire Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Release Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Floating Point Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Advanced SIMD Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store Operations Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Store-Exclusive Instructions Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "SVE Operations (Load/Store Inclusive) Percentage",
+          "units": "percent"
+        },
+        {
+          "name": "Cycles: CPU Cycles",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Executed): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): All",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DMB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (DSB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Barrier (ISB)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (immediate)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Branch (indirect)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Crypto",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Advanced SIMD)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Floating-point)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Data Processing (Integer)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Double-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Half-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Floating Point, Single-Precision (all)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load (Acquire)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Load-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): SVE",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store (Release)",
+          "units": "number_percent"
+        },
+        {
+          "name": "Instructions (Speculated): Store-Exclusive",
+          "units": "number_percent"
+        },
+        {
+          "name": "Percentage of Total Samples",
+          "units": "percent"
+        }
+      ],
+      "rows": []
+    }
+  },
+  "static_instruction_mix_csv": "/tmp/apx-imix-impl2/_u/a3ce9477be31/tool/instruction_mix/0/static_instruction_mix.csv",
+  "instruction_mix_rows": [
+    {
+      "group": "Scalable Vector Extension (SVE) Instructions",
+      "instruction_count": "10253",
+      "percentage": "0.34"
+    },
+    {
+      "group": "Scalable Matrix Extension (SME) Instructions",
+      "instruction_count": "48",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Load and Store Instructions",
+      "instruction_count": "826607",
+      "percentage": "27.66"
+    },
+    {
+      "group": "Barrier Instructions",
+      "instruction_count": "59",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Branch Instructions",
+      "instruction_count": "679442",
+      "percentage": "22.74"
+    },
+    {
+      "group": "Control Flow (Non-Branch) Instructions",
+      "instruction_count": "47941",
+      "percentage": "1.6"
+    },
+    {
+      "group": "Integer Instructions",
+      "instruction_count": "1325704",
+      "percentage": "44.36"
+    },
+    {
+      "group": "Floating Point Instructions",
+      "instruction_count": "49713",
+      "percentage": "1.66"
+    },
+    {
+      "group": "Cryptographic Instructions",
+      "instruction_count": "0",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Advanced SIMD Instructions",
+      "instruction_count": "48207",
+      "percentage": "1.61"
+    },
+    {
+      "group": "Reserved Instructions",
+      "instruction_count": "3",
+      "percentage": "0.0"
+    },
+    {
+      "group": "Unknown Instructions",
+      "instruction_count": "293",
+      "percentage": "0.01"
+    },
+    {
+      "group": "All Instructions",
+      "instruction_count": "2988270",
+      "percentage": "100.0"
+    }
+  ],
+  "instruction_mix_column_totals": {
+    "instruction_count": 5976540.0,
+    "_simd_hint_instruction_count": 58460.0,
+    "percentage": 199.98,
+    "_simd_hint_percentage": 1.9500000000000002
+  },
+  "csv_preview": [
+    "group,instruction_count,percentage",
+    "Scalable Vector Extension (SVE) Instructions,10253,0.34",
+    "Scalable Matrix Extension (SME) Instructions,48,0.0",
+    "Load and Store Instructions,826607,27.66",
+    "Barrier Instructions,59,0.0",
+    "Branch Instructions,679442,22.74",
+    "Control Flow (Non-Branch) Instructions,47941,1.6",
+    "Integer Instructions,1325704,44.36",
+    "Floating Point Instructions,49713,1.66",
+    "Cryptographic Instructions,0,0.0",
+    "Advanced SIMD Instructions,48207,1.61",
+    "Reserved Instructions,3,0.0",
+    "Unknown Instructions,293,0.01",
+    "All Instructions,2988270,100.0"
+  ]
+}

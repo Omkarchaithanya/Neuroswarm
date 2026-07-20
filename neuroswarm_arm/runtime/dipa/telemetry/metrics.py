@@ -59,6 +59,14 @@ class DIPAMetrics:
     def observe(self, name: str, value: float) -> None:
         self.set(name, value)
 
+    def describe(self, name: str, metric_type: str, help_text: str) -> None:
+        """Forward ASCR/DIPA metric descriptions to the root MetricsStore/RMF."""
+        if self.bridge is not None and hasattr(self.bridge, "describe"):
+            try:
+                self.bridge.describe(name, metric_type, help_text)
+            except Exception:
+                pass
+
     def record_inference(
         self,
         *,

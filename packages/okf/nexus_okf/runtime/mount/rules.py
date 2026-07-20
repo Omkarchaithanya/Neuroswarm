@@ -5,10 +5,10 @@ from typing import Any
 
 DEFAULT_MOUNTS = {
     "research": ["domains/research", "tools/", "policies/"],
-    "planner": ["domains/planning", "policies/", "playbooks/", "metrics/"],
-    "coding": ["domains/coding", "tools/", "playbooks/"],
+    "planner": ["domains/planning", "domains/deploy", "policies/", "playbooks/", "metrics/"],
+    "coding": ["domains/coding", "domains/architecture/router.md", "tools/", "playbooks/"],
     "reviewer": ["domains/review", "policies/", "playbooks/"],
-    "architect": ["domains/architecture", "policies/", "agents/", "ontology/", "playbooks/"],
+    "architect": ["domains/architecture", "domains/deploy", "policies/", "agents/", "ontology/", "playbooks/"],
 }
 
 

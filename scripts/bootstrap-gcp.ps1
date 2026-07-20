@@ -57,7 +57,7 @@ try {
 if (-not $firewallExists) {
   Invoke-Gcloud -Args @(
     "compute", "firewall-rules", "create", $FirewallRuleName,
-    "--allow", "tcp:8000,tcp:9090,tcp:3000",
+    "--allow", "tcp:80",
     "--source-ranges", $SourceRanges,
     "--target-tags", $FirewallRuleName,
     "--project", $ProjectId
@@ -66,7 +66,7 @@ if (-not $firewallExists) {
   Write-Host "Firewall rule already exists. Updating allowed ports and source ranges."
   Invoke-Gcloud -Args @(
     "compute", "firewall-rules", "update", $FirewallRuleName,
-    "--allow", "tcp:8000,tcp:9090,tcp:3000",
+    "--allow", "tcp:80",
     "--source-ranges", $SourceRanges,
     "--target-tags", $FirewallRuleName,
     "--project", $ProjectId

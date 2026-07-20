@@ -11,7 +11,8 @@ ASCR_METRIC_HELP: dict[str, tuple[str, str]] = {
     "ascr_draft_tps": ("gauge", "Draft tokens per second."),
     "ascr_verifier_tps": ("gauge", "Verifier tokens per second."),
     "ascr_effective_tps": ("gauge", "Effective accepted tokens per second."),
-    "ascr_speculation_gain": ("gauge", "Estimated target forwards saved."),
+    "ascr_speculation_gain": ("gauge", "Estimated target forwards saved (0 in text-agree)."),
+    "ascr_text_agreement": ("gauge", "Text-agreement score when logits unavailable."),
     "ascr_saved_forward_passes": ("counter", "Saved target forward passes."),
     "ascr_saved_verifier_calls": ("counter", "Saved verifier calls via early accept."),
     "ascr_cpu_utilization": ("gauge", "CPU utilization snapshot."),
@@ -68,6 +69,8 @@ class ASCRMetrics:
         cpu: float = 0.5,
         cache_hit: float = 0.0,
         kv_reuse: float = 0.0,
+        logits_available: bool = True,
+        text_agreement: float | None = None,
     ) -> None:
         self.inc("ascr_rounds_total")
         self._accepted += accepted_tokens
@@ -85,14 +88,19 @@ class ASCRMetrics:
             self.set("ascr_effective_tps", accepted_tokens / elapsed_s)
             self.set("ascr_verifier_tps", accepted_tokens / elapsed_s)
 
-        # Speculation gain: fraction of draft accepted without full reject.
-        gain = accepted_tokens / max(1, draft_tokens) if draft_tokens else 0.0
-        self.set("ascr_speculation_gain", gain)
-        if accepted_tokens > 0 and draft_tokens > accepted_tokens:
-            # Partial accept still saved some target work vs full regen.
-            self.inc("ascr_saved_forward_passes", 0.5)
-        elif accepted_tokens == draft_tokens and draft_tokens > 0:
-            self.inc("ascr_saved_forward_passes", 1.0)
+        interim = mode in {"quality_cascade", "text_agree"} or not logits_available
+        if text_agreement is not None:
+            self.set("ascr_text_agreement", float(text_agreement))
+        # Honesty: do not inflate speculative gain without logits / true speculation.
+        if interim:
+            self.set("ascr_speculation_gain", 0.0)
+        else:
+            gain = accepted_tokens / max(1, draft_tokens) if draft_tokens else 0.0
+            self.set("ascr_speculation_gain", gain)
+            if accepted_tokens > 0 and draft_tokens > accepted_tokens:
+                self.inc("ascr_saved_forward_passes", 0.5)
+            elif accepted_tokens == draft_tokens and draft_tokens > 0:
+                self.inc("ascr_saved_forward_passes", 1.0)
 
         self.set("ascr_cpu_utilization", cpu)
         self.set("ascr_numa_locality", numa_locality)

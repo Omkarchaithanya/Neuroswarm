@@ -76,7 +76,7 @@ def load_rmf_config() -> RMFRuntimeConfig:
         flush_batch=_env_int("NSA_RMF_FLUSH_BATCH", 2048),
         cardinality_max=_env_int("NSA_RMF_CARDINALITY_MAX", 2048),
         performix_enabled=_env_bool("NSA_RMF_PERFORMIX", False),
-        performix_path=os.getenv("NSA_RMF_PERFORMIX_PATH", "work/haoe/performix_snapshot.json"),
+        performix_path=os.getenv("NSA_RMF_PERFORMIX_PATH", "work/performix/snapshot.json"),
         collector_interval_s=_env_float("NSA_RMF_COLLECTOR_INTERVAL_S", 5.0),
         otlp_endpoint=os.getenv("NSA_RMF_OTLP_ENDPOINT", ""),
         otlp_insecure=_env_bool("NSA_RMF_OTLP_INSECURE", True),

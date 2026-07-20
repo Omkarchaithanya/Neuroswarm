@@ -237,6 +237,12 @@ class KVRuntimeManager:
 
     def status(self) -> dict[str, Any]:
         pressure = self.pressure_snapshot()
+        if hasattr(pressure, "to_dict") and callable(pressure.to_dict):
+            pressure_payload: Any = pressure.to_dict()
+        elif isinstance(pressure, dict):
+            pressure_payload = pressure
+        else:
+            pressure_payload = {"value": str(pressure)}
         return {
             "ok": True,
             "sessions": len(self.block_manager.sessions),
@@ -244,7 +250,7 @@ class KVRuntimeManager:
             "providers": self.providers.list_providers(),
             "sharing_backend": self.sharing.name,
             "scheduler_pending": self.scheduler.pending,
-            "pressure": pressure.to_dict(),
+            "pressure": pressure_payload,
             "block_size_tokens": self.config.block_size_tokens,
             "numa_node": self.block_manager.numa_policy.preferred,
             "numa_multi_node": self.block_manager.numa_policy.multi_node,

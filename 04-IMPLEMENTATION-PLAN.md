@@ -1,41 +1,58 @@
-# Implementation Plan — Component by Component
+# Implementation Plan — Close-the-Loop (remaining window)
 
-> Every line of code you need to write, in the order you need to write it. 39 days, one week per layer.
+> **Status:** Architecture is largely built. Remaining work is evidence + honesty, not new planes.  
+> **Primary host:** GCP Axion `c4a-standard-8` (not Graviton5 fantasy).  
+> **Canonical schedule:** see Close Evidence Loop plan — P0 Jul 18–24 … submit **Aug 13**.
 
 ---
 
-## Week 1 (Jul 6–12) — Foundation
+## P0 this week — make evidence true
 
-**Goal:** Stand up Graviton5 + working llama.cpp + KleidiAI + Arm Performix MCP end-to-end.
+```bash
+# On Axion aarch64
+uname -m                          # aarch64
+numactl --hardware                # expect 1 NUMA node on c4a-standard-8 — OK under Option A
+bash scripts/deploy-kleidiai-tiers.sh
+bash scripts/capture-evidence.sh
+bash performix_capture.sh         # needs apx + Arm Developer account
+```
+
+**Pass gates:** KleidiAI image in `compose ps`; non-empty metrics; `run_all` not skipped; Performix `instruction_mix` present.
+
+Historical week-by-week blueprint below is retained for reference but **HW targets override to Axion**. Whenever you see `m9g` / “confirm 2 NUMA nodes”, substitute: detect topology and record it; do not require 2 nodes for demo.
+
+---
+
+## Week 1 (historical) — Foundation
+
+**Goal:** Stand up **Axion** + KleidiAI llama.cpp + Arm Performix end-to-end.
 
 ### Day 1-2: Provision & verify
 
 ```bash
-# Launch Graviton5 (or fallback to Graviton4 if m9g not yet in your region)
-aws ec2 run-instances \
-  --image-id ami-0abcdef1234567890 \  # Ubuntu 24.04 ARM64
-  --instance-type m9g.4xlarge \
-  --region us-east-1 \
-  --key-name my-key
+# Primary: GCP Axion (already provisioned as neuroswarm-axion / c4a-standard-8)
+# Optional scale-up later: Graviton4/5 multi-NUMA — not required for submit
 
-ssh ubuntu@<ip>
+ssh <axion-host>
 uname -m                          # aarch64
-grep -E '^(Features|sve2|i8mm|dotprod|bf16|asimd)' /proc/cpuinfo | sort -u
+grep -E 'sve|sve2|i8mm|bf16|asimd' /proc/cpuinfo | head
 lscpu | grep -E '(Model name|Socket|Core|Thread|NUMA)'
-numactl --hardware                # confirm 2 NUMA nodes
+numactl --hardware                # record actual NUMA count (1 on c4a-standard-8)
 ```
 
 ### Day 3-4: Build llama.cpp + KleidiAI
 
-Use the Dockerfile from `03-TECH-STACK.md`. Verify:
+Use `docker/Dockerfile.llama-kleidiai` + `scripts/deploy-kleidiai-tiers.sh`. Verify:
 
 ```bash
-./llama-cli --version
-# Should report: built with KleidiAI, OpenMP, ARMv9.2
+docker compose ps   # IMAGE = nexus-arm/llama-kleidiai:server
+# strings / image proof → benchmarks/results/kleidiai-image-proof.txt
+```
 
-# Quick smoke test
-./llama-cli -m /models/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf \
-  -p "Hello, world" -n 64 -t 16
+# Quick smoke test (inside tier or via gateway)
+curl -s http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
 
 # Confirm I8MM activation
 APX_LOG=debug ./llama-bench -m /models/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf -t 16
@@ -44,29 +61,24 @@ APX_LOG=debug ./llama-bench -m /models/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf -t 16
 ### Day 5-6: Install Arm Performix + MCP
 
 ```bash
-# Download Arm Performix (free, requires Arm Developer account)
-wget https://developer.arm.com/-/media/Files/downloads/performix/latest/performix-cli-linux-arm64.tar.gz
-tar xzf performix-cli-linux-arm64.tar.gz -C /opt/
+# On Axion (primary — not Windows GUI):
+bash scripts/install-performix.sh
+# Current CLI: prepare 0-arg; recipe with --deploy-tools; export by run_id
+apx target prepare
+apx recipe run code_hotspots --system-wide --timeout 60 --deploy-tools --json
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 PERFORMIX_DURATION=60 \
+  bash scripts/refresh-performix-snapshot.sh
+# Expect work/performix/snapshot.json source=apx
 
-# Run system characterization
-/opt/performix/bin/apx recipe run system-characterization \
-  --target ssh://ubuntu@localhost \
-  --output ./benchmarks/sys-char.json
+# Product MCP = performix-bridge (HTTP), not arm/mcp:
+export NSA_AROP_PERFORMIX_MCP=http://performix-bridge:8090
+docker compose --profile performix up -d --build performix-bridge gateway
 
-# Install Arm MCP server (Docker)
-docker pull arm/mcp:latest
-docker run -d --name arm-mcp -p 8080:8080 \
-  -e ARM_PERFORMIX_TARGET=ssh://ubuntu@localhost \
-  arm/mcp:latest
-
-# Test the MCP server from Python
-pip install mcp-client
-python -c "
-from mcp import MCPClient
-c = MCPClient('http://localhost:8080')
-print(c.list_tools())  # should show apx_recipe_run, kb_search, etc.
-"
+# Optional IDE-only Arm MCP (armlimited/arm-mcp) — see .cursor/mcp.json.example
+docker pull armlimited/arm-mcp:latest
 ```
+
+Windows Performix desktop app is **optional** (SSH Targets → Axion for interactive UI). Not required for Neuroswarm automation.
 
 ### Day 7: First cascade prototype
 
@@ -479,8 +491,10 @@ Self-evolving, cost-optimized multi-agent AI runtime for Arm Neoverse.
 ## Quick start (90 seconds)
 
 ```bash
-helm install neuro oci://registry-1.docker.io/neuroswarm/chart \
-  --set graviton.instanceType=m9g.4xlarge
+# Axion / Option A (primary demo host) — not Graviton5 fantasy
+helm install neuro ./helm/neuroswarm-arm \
+  --set topology.profile=axion-c4a
+# Multi-socket Neoverse (optional scale-up) activates NUMA/CXL paths when detected
 ```
 
 Open http://localhost:3000 → Grafana dashboard.
@@ -506,14 +520,13 @@ See [docs/migrate-from-gpu.md](docs/migrate-from-gpu.md).
 ### Day 33-34: Final Performix benchmarks
 
 ```bash
-# Baseline run (single llama.cpp, no cascade)
-apx recipe run code-hotspots --binary /usr/local/bin/llama-server --output baseline.json
-
-# Optimized run (full NeuroSwarm-Arm)
-apx recipe run code-hotspots --binary /usr/local/bin/neuroswarm-router --output optimized.json
-
-# Generate comparison report
-apx recipe compare --baseline baseline.json --optimized optimized.json --output COMPARISON.md
+# On Axion host (current apx CLI):
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 PERFORMIX_DURATION=60 \
+  bash scripts/refresh-performix-snapshot.sh
+# Inspect: work/performix/snapshot.json → source=apx, non-empty hotspots
+# Optional second pass after cascade load for before/after comparison artifacts
+python3 scripts/performix_normalize_export.py --help 2>/dev/null || true
+apx recipe compare --help   # flags vary by apx build; prefer exported run dirs
 ```
 
 ### Day 35: Demo video
@@ -543,11 +556,12 @@ Use the content from `01-PROBLEM-STATEMENT.md` directly:
 ### Day 38: Final dry-run
 
 ```bash
-# Fresh clone test on a new Graviton5 instance
-git clone https://github.com/<you>/neuroswarm-arm.git
-cd neuroswarm-arm
-./install.sh
-# Time it — must complete in <90 seconds
+# Fresh clone test on Axion (c4a-standard-8) or any aarch64 host
+git clone https://github.com/SkandaGanesha1/Neuroswarm.git
+cd Neuroswarm
+# Follow docs/setup.md — KleidiAI tiers + compose
+bash scripts/deploy-kleidiai-tiers.sh
+# Helm path: time `helm install` — target <90 seconds when cluster is ready
 ```
 
 ### Day 39: Submit
@@ -560,7 +574,7 @@ Submit Aug 13, leaving Aug 14 as buffer. **Do not** wait until Aug 14 — judges
 
 | Risk | Probability | Mitigation |
 |---|---|---|
-| Graviton5 not available in region | Medium | Fall back to Graviton4 c8g.4xlarge — all code paths work |
+| Multi-NUMA Neoverse not available | Medium | Stay on GCP Axion c4a-standard-8; Option A degrades (1 NUMA) — do not claim live NUMA-split |
 | Arm Performix MCP server has bugs | Medium | Manual Performix CLI as fallback, MCP integration is a feature not a dependency |
 | Cascade acceptance rate low on real queries | Low | Self-speculation (no draft model) as fallback |
 | Mem0 namespace issues | Low | Local fallback to plain FAISS + Mem0 self-hosted |

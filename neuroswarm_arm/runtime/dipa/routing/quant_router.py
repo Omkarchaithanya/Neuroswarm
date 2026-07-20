@@ -41,6 +41,8 @@ class QuantRouter:
             quant = available[0] if available else (plan.quant or "Q5_K_M")
 
         plan.quant = str(quant)
-        plan.metadata.setdefault("quant", {})
+        existing = plan.metadata.get("quant")
+        if not isinstance(existing, dict):
+            plan.metadata["quant"] = {"aqr_preferred": existing} if existing else {}
         plan.metadata["quant"]["resolved"] = plan.quant
         return plan.quant

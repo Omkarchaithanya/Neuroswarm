@@ -1,6 +1,6 @@
 param(
-  [string]$HostAlias = "neuroswarm-axion.us-central1-a.project-5bcdea88-8805-4908-991",
-  [string]$ProjectId = "project-5bcdea88-8805-4908-991",
+  [string]$HostAlias = "neuroswarm-axion.us-central1-a.$($env:GCP_PROJECT)",
+  [string]$ProjectId = "$($env:GCP_PROJECT)",
   [string]$Zone = "us-central1-a",
   [string]$InstanceName = "neuroswarm-axion",
   [string]$RemotePath = "",
@@ -92,6 +92,9 @@ try {
   }
 
   Copy-ToRemote -Staging $staging
+
+  # Windows robocopy keeps CRLF; bash scripts need LF on the VM.
+  Invoke-Remote "find '$RemotePath/scripts' -name '*.sh' -print0 2>/dev/null | xargs -0 -r sed -i 's/\r`$//' ; true"
 } finally {
   Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue
 }

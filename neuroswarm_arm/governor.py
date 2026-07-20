@@ -31,11 +31,23 @@ class ReasoningGovernor:
     def prompt(self, plan: PlanState) -> str:
         cap = self.cap(plan)
         if self.rtg is not None:
-            return self.rtg.prompt(cap)
-        return (
-            f"You may reason for up to {cap} tokens before producing a tool call. "
-            "If your chosen tool confidence is >= 0.85, commit immediately."
-        )
+            base = self.rtg.prompt(cap)
+        else:
+            base = (
+                f"You may reason for up to {cap} tokens before producing a tool call. "
+                "If your chosen tool confidence is >= 0.85, commit immediately."
+            )
+        try:
+            from neuroswarm_arm.evolution.reflection.gepa.active_prompt import (
+                load_active_system_prompt,
+            )
+
+            evolved = load_active_system_prompt()
+            if evolved:
+                return f"{base}\n\n# GEPA evolved system prompt\n{evolved}"
+        except Exception:
+            pass
+        return base
 
     def admit(self, plan: PlanState, **kwargs: Any) -> dict[str, Any]:
         if self.rtg is None:
@@ -47,10 +59,21 @@ class ReasoningGovernor:
             k: v for k, v in kwargs.items() if k in TelemetryFrame.__dataclass_fields__
         })
         state = self.rtg.admit(frame)
+        system = self.rtg.prompt(state.budget.initial_tokens)
+        try:
+            from neuroswarm_arm.evolution.reflection.gepa.active_prompt import (
+                load_active_system_prompt,
+            )
+
+            evolved = load_active_system_prompt()
+            if evolved:
+                system = f"{system}\n\n# GEPA evolved system prompt\n{evolved}"
+        except Exception:
+            pass
         return {
             "session_id": state.session_id,
             "thinking_token_cap": state.budget.initial_tokens,
-            "system_prompt": self.rtg.prompt(state.budget.initial_tokens),
+            "system_prompt": system,
         }
 
     @staticmethod
