@@ -302,17 +302,6 @@ if cfg.okf_enabled:
     except Exception:
         pass
 
-# Durable long-horizon workflows (Meta Orchestrator + checkpoint + experience)
-from .runtime.swarm.api import (
-    WorkflowService,
-    create_experience_router,
-    create_workflow_router,
-)
-
-workflow_service = WorkflowService(Path("work/swarm"))
-app.include_router(create_workflow_router(workflow_service))
-app.include_router(create_experience_router(workflow_service))
-
 
 @app.on_event("shutdown")
 def _shutdown_runtime() -> None:
@@ -357,96 +346,65 @@ def health() -> dict[str, object]:
 
 @app.get("/ready")
 def ready() -> dict[str, object]:
-    """Always HTTP 200 — use body status ready|degraded so bootstrap curl -fsS never 500s."""
+    models = {
+        "tier1": {"path": cfg.model_tier1, "exists": Path(cfg.model_tier1).exists()},
+        "tier2": {"path": cfg.model_tier2, "exists": Path(cfg.model_tier2).exists()},
+        "tier3": {"path": cfg.model_tier3, "exists": Path(cfg.model_tier3).exists()},
+    }
     try:
-        models = {
-            "tier1": {"path": cfg.model_tier1, "exists": Path(cfg.model_tier1).exists()},
-            "tier2": {"path": cfg.model_tier2, "exists": Path(cfg.model_tier2).exists()},
-            "tier3": {"path": cfg.model_tier3, "exists": Path(cfg.model_tier3).exists()},
-        }
-        try:
-            health_payload = dipa.health()
-            backends = health_payload.get("backends", health_payload) if isinstance(health_payload, dict) else {}
-        except Exception:
-            backends = {}
-        llama_ready = {
-            name: str(info.get("state", "unknown")) == "healthy"
-            for name, info in backends.items()
-            if isinstance(info, dict) and name.startswith("tier")
-        }
-        for tier in ("tier1", "tier2", "tier3"):
-            llama_ready.setdefault(tier, False)
-        try:
-            tools_indexed = len(registry.as_list())
-        except Exception:
-            tools_indexed = 0
-        reasons: list[str] = []
-        for tier, model in models.items():
-            if not model["exists"]:
-                reasons.append(f"{tier} model missing: {model['path']}")
-        for tier, is_ready in llama_ready.items():
-            if not is_ready:
-                reasons.append(f"{tier} llama server unavailable")
-        if tools_indexed == 0:
-            reasons.append(f"no tools indexed from {cfg.tool_metadata_root}")
+        health_payload = dipa.health()
+        backends = health_payload.get("backends", health_payload)
+    except Exception:
+        backends = {}
+    llama_ready = {
+        name: str(info.get("state", "unknown")) == "healthy"
+        for name, info in backends.items()
+        if isinstance(info, dict) and name.startswith("tier")
+    }
+    for tier in ("tier1", "tier2", "tier3"):
+        llama_ready.setdefault(tier, False)
+    tools_indexed = len(registry.as_list())
+    reasons: list[str] = []
+    for tier, model in models.items():
+        if not model["exists"]:
+            reasons.append(f"{tier} model missing: {model['path']}")
+    for tier, is_ready in llama_ready.items():
+        if not is_ready:
+            reasons.append(f"{tier} llama server unavailable")
+    if tools_indexed == 0:
+        reasons.append(f"no tools indexed from {cfg.tool_metadata_root}")
 
-        def _safe(label: str, fn):
-            try:
-                return fn()
-            except Exception as exc:  # noqa: BLE001
-                reasons.append(f"{label}: {exc}")
-                return {"error": str(exc)}
-
-        mem_details: dict[str, object] = {}
-        try:
-            neuro = getattr(memory, "neuro", memory)
-            if hasattr(neuro, "health"):
-                hs = neuro.health()
-                mem_details = getattr(hs, "details", {}) or {}
-        except Exception as exc:  # noqa: BLE001
-            mem_details = {"error": str(exc)}
-
-        system = {
-            "arch": platform.machine(),
-            "cpu_features": _cpu_features(),
-            "expected_docker_network": bool(
-                os.getenv("NSA_TIER1_URL") or os.getenv("NSA_TIER2_URL") or os.getenv("NSA_TIER3_URL")
-            ),
-        }
-        dipa_status = _safe("dipa", dipa.status)
-        router_health = _safe("router", tool_router.health)
-        kv_status = _safe("kv", kv_runtime.status)
-        haoe_status = _safe("haoe", haoe.status)
-        rtg_status = _safe("rtg", rtg.status)
-        okf_status = _safe("okf", okf_runtime.status) if cfg.okf_enabled else {"enabled": False}
-        acr_status = _safe("acr", acr_runtime.health)
-        arop_status = _safe("arop", arop.health)
-        return {
-            "status": "ready" if not reasons else "degraded",
-            "system": system,
-            "models": models,
-            "llama": llama_ready,
-            "dipa": dipa_status,
-            "tools": {
-                "indexed_count": tools_indexed,
-                "metadata_root": str(cfg.tool_metadata_root),
-                "router": router_health,
-            },
-            "kv": kv_status,
-            "haoe": haoe_status,
-            "rtg": rtg_status,
-            "okf": okf_status,
-            "acr": acr_status,
-            "arop": arop_status,
-            "memory": mem_details,
-            "reasons": reasons,
-        }
-    except Exception as exc:  # noqa: BLE001
-        return {
-            "status": "degraded",
-            "reasons": [f"ready_handler: {exc}"],
-            "error": str(exc),
-        }
+    system = {
+        "arch": platform.machine(),
+        "cpu_features": _cpu_features(),
+        "expected_docker_network": bool(
+            os.getenv("NSA_TIER1_URL") or os.getenv("NSA_TIER2_URL") or os.getenv("NSA_TIER3_URL")
+        ),
+    }
+    return {
+        "status": "ready" if not reasons else "degraded",
+        "system": system,
+        "models": models,
+        "llama": llama_ready,
+        "dipa": dipa.status(),
+        "tools": {
+            "indexed_count": tools_indexed,
+            "metadata_root": str(cfg.tool_metadata_root),
+            "router": tool_router.health(),
+        },
+        "kv": kv_runtime.status(),
+        "haoe": haoe.status(),
+        "rtg": rtg.status(),
+        "okf": okf_runtime.status() if cfg.okf_enabled else {"enabled": False},
+        "acr": acr_runtime.health(),
+        "arop": arop.health(),
+        "memory": (
+            getattr(memory, "neuro", memory).health().details
+            if hasattr(getattr(memory, "neuro", memory), "health")
+            else {}
+        ),
+        "reasons": reasons,
+    }
 
 
 def _cpu_features() -> list[str]:
@@ -501,18 +459,7 @@ def export_metrics(request: Request) -> Response:
             arop_txt = prom.prometheus_text(dict(snap.aggregate))
     except Exception:
         arop_txt = ""
-    # Never append after OpenMetrics `# EOF` — Prometheus rejects "unexpected data after # EOF".
-    core = body.rstrip()
-    if core.endswith("# EOF"):
-        core = core[: -len("# EOF")].rstrip()
-    extras = f"{mem}{arop_txt}".strip()
-    if extras:
-        payload = f"{core}\n{extras}\n"
-    else:
-        payload = f"{core}\n"
-    if "openmetrics" in ctype or "openmetrics" in accept:
-        payload = f"{payload.rstrip()}\n# EOF\n"
-    return Response(content=payload, media_type=ctype)
+    return Response(content=body + mem + arop_txt, media_type=ctype)
 
 
 @app.post("/v1/chat/completions")

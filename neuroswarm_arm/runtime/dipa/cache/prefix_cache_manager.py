@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Mapping
 
+from neuroswarm_arm.runtime.dipa.cache.semantic_cache import SemanticCache
 from neuroswarm_arm.runtime.dipa.interfaces.pd import IPrefixCache
 
 
@@ -15,24 +16,38 @@ class PrefixCacheManager(IPrefixCache):
         sglang_backend: Any | None = None,
         maks: Any | None = None,
         metrics: Any | None = None,
+        semantic: SemanticCache | None = None,
     ) -> None:
         self.sglang_backend = sglang_backend
         self.maks = maks
         self.metrics = metrics
+        self.semantic = semantic or SemanticCache()
         self._hits = 0
         self._misses = 0
         self._hit_tokens = 0
         self._total_tokens = 0
         self._warmed: set[str] = set()
+        self._semantic_hits = 0
 
     def lookup(self, prefix_key: str) -> Mapping[str, Any]:
         key = _hash(prefix_key)
         warmed = key in self._warmed
+        semantic_kv = self.semantic.lookup(prefix_key)
+        if semantic_kv:
+            self._semantic_hits += 1
         return {
             "key": key,
             "warmed": warmed,
             "hit_ratio": self.hit_ratio,
+            "semantic_kv_id": semantic_kv,
+            "semantic_hit_ratio": self.semantic.hit_ratio,
         }
+
+    def lookup_semantic(self, prompt: str) -> str | None:
+        return self.semantic.lookup(prompt)
+
+    def record_semantic_store(self, prompt: str, kv_id: str) -> str:
+        return self.semantic.store(prompt, kv_id)
 
     def record_hit(self, prefix_key: str, hit_tokens: int, total_tokens: int) -> None:
         total = max(0, int(total_tokens))
@@ -106,6 +121,8 @@ class PrefixCacheManager(IPrefixCache):
             "total_tokens": float(self._total_tokens),
             "hit_ratio": float(self.hit_ratio),
             "warmed": float(len(self._warmed)),
+            "semantic_hits": float(self._semantic_hits),
+            "semantic_hit_ratio": float(self.semantic.hit_ratio),
         }
 
 

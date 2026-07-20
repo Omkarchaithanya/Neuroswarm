@@ -166,8 +166,6 @@ class AgentGateway:
             if profile_session_id and self.rpf is not None:
                 try:
                     profile = self.rpf.finalize_sync(profile_session_id)
-                    # Best-effort phase timings from response metrics happen in cost path;
-                    # record envelope correlation if present on request attrs.
                     del profile
                 except Exception:
                     pass
@@ -251,6 +249,7 @@ class AgentGateway:
                 },
                 extensions={"source": "AgentGateway"},
             )
+
             def _finalize_cost() -> ChatResponse:
                 prediction = self.rcis.predict_sync(context)
                 self.rcis.open_session(context, prediction=prediction)
@@ -293,7 +292,6 @@ class AgentGateway:
                 )
                 if self.rpf is not None and getattr(getattr(self.rpf, "config", None), "enabled", False):
                     try:
-                        # Enrich last active session phases if signal bus has a hint
                         sid = getattr(self.rpf.signal_bus, "_session_hint", "") or ""
                         if sid:
                             self.rpf.record_phase(

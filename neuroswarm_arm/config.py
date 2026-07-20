@@ -42,4 +42,3 @@ def get_config() -> AppConfig:
     cfg.kv_store.mkdir(parents=True, exist_ok=True)
     cfg.benchmarks_dir.mkdir(parents=True, exist_ok=True)
     return cfg
-
