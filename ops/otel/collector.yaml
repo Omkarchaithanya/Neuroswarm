@@ -1,5 +1,7 @@
 # OpenTelemetry Collector on neuroswarm-axion
-# Receives OTLP from gateway + scrapes /metrics; remote_writes to neuroswarm-obs Prometheus.
+# OTLP for traces (+ optional app metrics). Gateway Prometheus metrics are
+# scraped once by neuroswarm-obs (10.128.0.2:80) — do NOT scrape gateway here
+# or obs will ingest the same series via remote_write + direct scrape.
 
 receivers:
   otlp:
@@ -8,20 +10,6 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: neuroswarm-gateway
-          scrape_interval: 10s
-          scrape_timeout: 8s
-          metrics_path: /metrics
-          honor_timestamps: false
-          static_configs:
-            - targets:
-                - gateway:8000
-              labels:
-                service: neuroswarm-gateway
 
 processors:
   batch:
@@ -37,15 +25,11 @@ processors:
         action: upsert
 
 exporters:
+  # Optional: non-gateway OTLP metrics only. Gateway /metrics stay on obs scrape.
   prometheusremotewrite:
     endpoint: ${env:OBS_PROMETHEUS_REMOTE_WRITE}
     tls:
       insecure: true
-    resource_to_telemetry_conversion:
-      enabled: true
-
-  prometheus:
-    endpoint: 0.0.0.0:8889
     resource_to_telemetry_conversion:
       enabled: true
 
@@ -55,9 +39,9 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [otlp, prometheus]
+      receivers: [otlp]
       processors: [batch, resource]
-      exporters: [prometheusremotewrite, prometheus]
+      exporters: [prometheusremotewrite]
     traces:
       receivers: [otlp]
       processors: [batch, resource]

@@ -29,6 +29,29 @@ class ExecutionPipeline:
     def __init__(self, runtime: DIPARuntime) -> None:
         self.runtime = runtime
 
+    @staticmethod
+    def apply_high_confidence_thinking_cap(req: InferenceRequest) -> None:
+        """When semantic routing is high-confidence, hard-cap thinking tokens."""
+        high_conf = bool(
+            getattr(req, "tool_high_confidence", False)
+            or req.baggage.get("tool_high_confidence")
+        )
+        if not high_conf:
+            return
+        import os
+
+        budget = int(
+            req.baggage.get("high_conf_thinking_budget")
+            or os.getenv("NSA_ROUTER_HIGH_CONF_THINKING_BUDGET", "256")
+            or 256
+        )
+        current = req.thinking_token_cap
+        if current is None or int(current) > budget:
+            req.thinking_token_cap = budget
+        req.max_tokens = min(int(req.max_tokens), budget)
+        req.baggage["tool_high_confidence"] = True
+        req.baggage["high_conf_thinking_budget"] = budget
+
     def run(self, req: InferenceRequest) -> InferenceResponse:
         ctx = ExecutionContext(request=req, ids=req.ids)
         session = ExecutionSession(ctx=ctx, session_id=req.session_id or "")
@@ -133,6 +156,9 @@ class ExecutionPipeline:
             force_msg = str(rtg_meta.get("force_close_message") or "")
             if force_msg:
                 req.baggage["rtg_force_close_message"] = force_msg
+
+        # Pillar 2 high-confidence: hard-cap thinking budget when router is sure.
+        self.apply_high_confidence_thinking_cap(req)
 
         # classify / intent already embedded in plan
         ctx.mark(ExecutionPhase.CLASSIFIED)

@@ -15,14 +15,19 @@ host: GCP Axion c4a-standard-8 (Neoverse-V2)
 | `05-cpu_microarchitecture.json` | OK recipe export (system-wide under load; PMU rows may be empty on this host) |
 | `06-memory_access.json` | OK recipe export (system-wide under load; SPE often empty on this host) |
 | `COMPARISON.md` | Kleidi vs stock side-by-side |
-| `snapshot.json` | OK Grafana/RMF (`source=apx`, hotspots present) |
+| `snapshot.json` | OK Grafana/RMF (`source=apx`, hotspots present; post dual-stack fix) |
+| `screenshots/` | PromQL evidence charts (single `job=neuroswarm-gateway`) |
+| `SYMBOLS.md` | DWARF present; apx Unknown honesty |
 | `00-recipe-list.txt` | OK live `apx recipe list` (7 recipes including `system_utilization`) |
 
 ## Honesty notes
 
+> **CONTAMINATED (pre-fix):** Captures `01–06` and screenshots taken while **Compose + k3s** both ran on the same 8-vCPU Axion box (and/or system-wide idle `apx`) are **not** judge-facing evidence. Re-run after single-stack + PID-scoped load.
+
 - Prefer **03 vs 04** for judge-facing SIMD claims (live Kleidi tiers + stock baseline).
 - `instruction_mix --param mode=dynamic` / PID attach returned **0 attributed samples** here (SPE empty / gator warnings). Captures use `mode=both` on the **deployed** `libggml-cpu` while decode load runs.
 - Reproduce: `bash scripts/capture-performix-dynamic.sh` (or `_remote_performix_capture.sh` on Axion).
+- Snapshot refresh: `PERFORMIX_PID=<llama>` or auto-detect; never cron `--system-wide` unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`.
 
 ## Reproduce
 

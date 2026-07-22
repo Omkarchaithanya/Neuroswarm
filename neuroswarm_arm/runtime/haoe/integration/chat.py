@@ -62,6 +62,7 @@ def build_chat_handlers(
         "tool_names": [],
         "tool_schemas": [],
         "tool_confidence": 0.0,
+        "tool_high_confidence": False,
         "tool_prompt_block": "",
         "session_id": getattr(request, "session_id", None) or f"chat-{uuid4().hex[:16]}",
         "response": None,
@@ -181,13 +182,23 @@ def build_chat_handlers(
                 prompt_block = semantic_router.prompt_block(result)
             except Exception:
                 prompt_block = ""
+        high_conf = bool(getattr(result, "high_confidence", False))
+        thinking_budget = None
+        cfg = getattr(semantic_router, "config", None)
+        if cfg is not None:
+            thinking_budget = int(getattr(cfg, "high_conf_thinking_budget", 256) or 256)
         state["tool_names"] = names
         state["tool_schemas"] = schemas
         state["tool_confidence"] = float(result.confidence_top1)
+        state["tool_high_confidence"] = high_conf
+        state["high_conf_thinking_budget"] = thinking_budget
         state["tool_prompt_block"] = prompt_block
         ctx.baggage["tool_names"] = names
         ctx.baggage["tool_schemas"] = schemas
         ctx.baggage["tool_confidence"] = float(result.confidence_top1)
+        ctx.baggage["tool_high_confidence"] = high_conf
+        if thinking_budget is not None:
+            ctx.baggage["high_conf_thinking_budget"] = thinking_budget
         ctx.baggage["tool_prompt_block"] = prompt_block
         ctx.baggage["routing_result"] = result.to_dict() if hasattr(result, "to_dict") else result
         return names
@@ -264,13 +275,23 @@ def build_chat_handlers(
         req = request
         if hasattr(request, "model_copy"):
             req = request.model_copy(update={"session_id": session_id})
-        response = engine.handle(
-            req,
-            tool_names,
-            tool_schemas=state.get("tool_schemas") or None,
-            tool_confidence=state.get("tool_confidence"),
-            tool_prompt_block=state.get("tool_prompt_block") or None,
-        )
+        handle_kwargs: dict[str, Any] = {
+            "tool_schemas": state.get("tool_schemas") or None,
+            "tool_confidence": state.get("tool_confidence"),
+            "tool_prompt_block": state.get("tool_prompt_block") or None,
+        }
+        if state.get("tool_high_confidence"):
+            handle_kwargs["tool_high_confidence"] = True
+            budget = state.get("high_conf_thinking_budget")
+            if budget is not None:
+                handle_kwargs["high_conf_thinking_budget"] = int(budget)
+        try:
+            response = engine.handle(req, tool_names, **handle_kwargs)
+        except TypeError:
+            # Cascade / older adapters may not accept high-conf kwargs.
+            handle_kwargs.pop("tool_high_confidence", None)
+            handle_kwargs.pop("high_conf_thinking_budget", None)
+            response = engine.handle(req, tool_names, **handle_kwargs)
         state["response"] = response
         ctx.baggage["response"] = response
         _memory_writeback(ctx, response)

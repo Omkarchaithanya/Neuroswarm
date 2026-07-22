@@ -15,6 +15,7 @@ captured_at: 2026-07-18
 - [x] SGLang arm64 manifest verified (`SGLANG-ARM64.md`)
 - [x] Helm lint/template/apply timed (`HELM-TIMING.md`)
 - [x] MCP 6/6 templates (`MCP-TEMPLATES.md`)
+- [x] Layer scorecard vs pitch (`LAYER_SCORECARD.md`, `layer-verify/`, 2026-07-21)
 
 ## Reproduce
 
@@ -25,4 +26,6 @@ bash scripts/capture-evidence.sh
 sudo apt-get install -y python3-venv
 NSA_PERFORMIX_ALLOW_DEMO=0 bash performix_capture.sh
 bash scripts/verify-sglang-arm64.sh
+# Live pitch-vs-reality matrix on Axion Compose:
+bash scripts/layer-live-verify.sh http://127.0.0.1
 ```

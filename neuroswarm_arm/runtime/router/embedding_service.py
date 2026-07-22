@@ -1,10 +1,11 @@
-"""Embedding service: BGE-small, MiniLM, ONNX INT8, hash fallback."""
+"""Embedding service: BGE-small, MiniLM, ONNX INT8, hash fallback (opt-in)."""
 
 from __future__ import annotations
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import os
 from typing import Any, Iterator
 
 import numpy as np
@@ -25,6 +26,13 @@ KNOWN_MODELS = {
     "e5-small-v2": 384,
 }
 
+_HASH_REMEDIATION = (
+    "No real embedding backend available (Sentence-Transformers / ONNX). "
+    "Install sentence-transformers and download the encoder, or set "
+    "NSA_ROUTER_ONNX=1 with NSA_ROUTER_ONNX_PATH + tokenizer. "
+    "For local tests only, set NSA_ROUTER_ALLOW_HASH=1."
+)
+
 
 def _hash_embed(text: str, dims: int) -> np.ndarray:
     vec = np.zeros(dims, dtype=np.float32)
@@ -33,6 +41,11 @@ def _hash_embed(text: str, dims: int) -> np.ndarray:
         vec[i % dims] += ((ord(ch) + digest[i % len(digest)]) % 31) / 31.0
     norm = float(np.linalg.norm(vec)) or 1.0
     return vec / norm
+
+
+def _allow_hash() -> bool:
+    raw = os.getenv("NSA_ROUTER_ALLOW_HASH", "")
+    return raw in {"1", "true", "True", "yes", "YES"}
 
 
 class EmbeddingService:
@@ -44,11 +57,13 @@ class EmbeddingService:
         metrics: RouterMetrics | None = None,
         workers: int = 2,
         fallback_dims: int = 64,
+        allow_hash: bool | None = None,
     ) -> None:
         self.spec = spec or EmbeddingSpec()
         self.cache = cache
         self.metrics = metrics
         self.fallback_dims = fallback_dims
+        self._allow_hash = _allow_hash() if allow_hash is None else bool(allow_hash)
         self._model: Any = None
         self._onnx: Any = None
         self._tokenizer: Any = None
@@ -69,10 +84,19 @@ class EmbeddingService:
         if self.spec.use_onnx:
             if self._try_onnx():
                 return
+            # use_onnx requested but session/tokenizer failed inside _try_onnx (raises)
+            # or onnx_path missing — do not silently label hash as ONNX.
+            raise EmbeddingError(
+                "NSA_ROUTER_ONNX=1 but ONNX session could not be loaded. "
+                "Set NSA_ROUTER_ONNX_PATH to a valid model and provide a tokenizer "
+                f"(NSA_ROUTER_TOKENIZER_PATH or encoder '{self.spec.model_name}')."
+            )
         if self._try_sentence_transformers():
             return
         self._backend = "hash"
         self._dims = self._dims or self.fallback_dims
+        if not self._allow_hash:
+            raise EmbeddingError(_HASH_REMEDIATION)
 
     def _try_sentence_transformers(self) -> bool:
         try:
@@ -86,26 +110,57 @@ class EmbeddingService:
             self._model = None
             return False
 
+    def _load_tokenizer(self) -> Any:
+        try:
+            from transformers import AutoTokenizer  # type: ignore
+        except Exception as exc:
+            raise EmbeddingError(
+                "ONNX embedding requires transformers.AutoTokenizer. "
+                "Install transformers or unset NSA_ROUTER_ONNX."
+            ) from exc
+        tok_id = (
+            self.spec.tokenizer_path
+            or os.getenv("NSA_ROUTER_TOKENIZER_PATH")
+            or self.spec.model_name
+        )
+        try:
+            return AutoTokenizer.from_pretrained(tok_id)
+        except Exception as exc:
+            raise EmbeddingError(
+                f"Failed to load ONNX tokenizer from '{tok_id}'. "
+                "Set NSA_ROUTER_TOKENIZER_PATH to a local HF tokenizer directory "
+                "or HF model id. Hash-encode under the ONNX label is not allowed."
+            ) from exc
+
     def _try_onnx(self) -> bool:
+        path = self.spec.onnx_path or os.getenv("NSA_ROUTER_ONNX_PATH")
+        if not path:
+            return False
         try:
             import onnxruntime as ort  # type: ignore
-
-            path = self.spec.onnx_path
-            if not path:
-                return False
+        except Exception as exc:
+            raise EmbeddingError(
+                "NSA_ROUTER_ONNX=1 requires onnxruntime. Install onnxruntime."
+            ) from exc
+        try:
             sess_options = ort.SessionOptions()
             sess_options.intra_op_num_threads = 2
             providers = ["CPUExecutionProvider"]
             self._onnx = ort.InferenceSession(path, sess_options=sess_options, providers=providers)
-            # dims from model output
             out = self._onnx.get_outputs()[0]
             shape = out.shape
             self._dims = int(shape[-1]) if shape and isinstance(shape[-1], int) else self.spec.dims
+            self._tokenizer = self._load_tokenizer()
             self._backend = "onnx-int8" if self.spec.use_int8 else "onnx"
             return True
-        except Exception:
+        except EmbeddingError:
             self._onnx = None
-            return False
+            self._tokenizer = None
+            raise
+        except Exception as exc:
+            self._onnx = None
+            self._tokenizer = None
+            raise EmbeddingError(f"Failed to load ONNX embedding model at '{path}': {exc}") from exc
 
     def encode(self, text: str, *, normalize: bool | None = None) -> np.ndarray:
         timer = self.metrics.timer() if self.metrics else None
@@ -133,21 +188,24 @@ class EmbeddingService:
         if self._model is not None:
             arr = self._model.encode(text, normalize_embeddings=False)
             return np.asarray(arr, dtype=np.float32).reshape(-1)
+        if not self._allow_hash:
+            raise EmbeddingError(_HASH_REMEDIATION)
         return _hash_embed(text, self.dims)
 
     def _encode_onnx(self, text: str) -> np.ndarray:
-        # Minimal ONNX path: hash-bucket features if no tokenizer wired.
-        # Production deployments should ship tokenizer + onnx model via NSA_ROUTER_ONNX_PATH.
-        if self._tokenizer is not None:
-            try:
-                inputs = self._tokenizer(text, return_tensors="np", padding=True, truncation=True)
-                feeds = {k: v for k, v in inputs.items()}
-                outs = self._onnx.run(None, feeds)
-                return np.asarray(outs[0], dtype=np.float32).reshape(-1)[: self.dims]
-            except Exception as exc:
-                raise EmbeddingError(f"onnx encode failed: {exc}") from exc
-        # Deterministic projection from text into model dims for warm-path testing.
-        return _hash_embed(text, self.dims)
+        if self._tokenizer is None:
+            raise EmbeddingError(
+                "ONNX backend has no tokenizer; refusing hash fallback under ONNX label."
+            )
+        try:
+            inputs = self._tokenizer(text, return_tensors="np", padding=True, truncation=True)
+            feeds = {k: v for k, v in inputs.items()}
+            outs = self._onnx.run(None, feeds)
+            return np.asarray(outs[0], dtype=np.float32).reshape(-1)[: self.dims]
+        except EmbeddingError:
+            raise
+        except Exception as exc:
+            raise EmbeddingError(f"onnx encode failed: {exc}") from exc
 
     def encode_batch(self, texts: list[str], *, normalize: bool | None = None) -> np.ndarray:
         if not texts:

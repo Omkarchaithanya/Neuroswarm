@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import logging
 import threading
 from typing import Any
 
@@ -15,6 +16,8 @@ from .backends.exact import ExactNumpyIndex
 from .models import MetricKind
 from .router_events import RouterEventBus, RouterEventKind
 from .similarity import l2_normalize
+
+_LOG = logging.getLogger(__name__)
 
 
 class TurboVecIndex:
@@ -53,9 +56,19 @@ class TurboVecIndex:
 
             self._tv = IdMapIndex(dim=self.dims, bit_width=self.bit_width)
             self._using_turbovec = True
-        except Exception:
+            _LOG.info(
+                "TurboVecIndex: turbovec active (dims=%s bit_width=%s)",
+                self.dims,
+                self.bit_width,
+            )
+        except Exception as exc:
             self._tv = None
             self._using_turbovec = False
+            _LOG.info(
+                "TurboVecIndex: turbovec unavailable (%s); using exact-numpy fallback (dims=%s)",
+                exc.__class__.__name__,
+                self.dims,
+            )
             if self._events is not None:
                 self._events.emit(
                     RouterEventKind.BACKEND_FALLBACK,

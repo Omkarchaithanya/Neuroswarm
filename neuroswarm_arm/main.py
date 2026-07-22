@@ -510,10 +510,10 @@ def export_metrics(request: Request) -> Response:
     if not rmf.check_auth(request.headers.get("Authorization")):
         raise HTTPException(status_code=401, detail="unauthorized")
     accept = request.headers.get("Accept", "")
-    if "openmetrics" in accept:
-        body, ctype = rmf.export("openmetrics")
-    else:
-        body, ctype = rmf.export("prometheus")
+    # When we merge memory/arop extras, classic Prometheus text avoids OpenMetrics
+    # `# EOF` mid-stream (Prometheus: "unexpected data after # EOF").
+    want_om = "openmetrics" in accept
+    body, ctype = rmf.export("openmetrics" if want_om else "prometheus")
     mem = ""
     try:
         neuro = getattr(memory, "neuro", None)
@@ -534,17 +534,18 @@ def export_metrics(request: Request) -> Response:
             arop_txt = prom.prometheus_text(dict(snap.aggregate))
     except Exception:
         arop_txt = ""
-    # Never append after OpenMetrics `# EOF` — Prometheus rejects "unexpected data after # EOF".
-    core = body.rstrip()
-    if core.endswith("# EOF"):
-        core = core[: -len("# EOF")].rstrip()
+    # Strip every OpenMetrics EOF marker before merge — RMF may already emit one.
+    core = "\n".join(ln for ln in body.splitlines() if ln.strip() != "# EOF").rstrip()
     extras = f"{mem}{arop_txt}".strip()
     if extras:
         payload = f"{core}\n{extras}\n"
     else:
         payload = f"{core}\n"
-    if "openmetrics" in ctype or "openmetrics" in accept:
+    if want_om:
         payload = f"{payload.rstrip()}\n# EOF\n"
+        ctype = "application/openmetrics-text; version=1.0.0; charset=utf-8"
+    else:
+        ctype = "text/plain; version=0.0.4; charset=utf-8"
     return Response(content=payload, media_type=ctype)
 
 

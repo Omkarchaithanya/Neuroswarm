@@ -94,7 +94,7 @@ ArmPerformix*.tar
 ArmPerformix*.tar.gz
 ArmPerformix*.tgz
 
-# Generic large binaries / archives
+# Generic large binaries / archives / native libs
 *.exe
 *.msi
 *.dmg
@@ -113,6 +113,25 @@ ArmPerformix*.tgz
 *.xz
 *.bz2
 *.whl
+*.so
+*.dylib
+*.dll
+*.o
+*.a
+*.lib
+*.wasm
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.flac
+# Raw model / weight blobs beyond common ML extensions above
+*.weights
+*.gguf.*
+*.safetensors.index.json.bak
 
 # Large data / dumps / snapshots (runtime artifacts)
 *.sqlite
@@ -140,3 +159,6 @@ work/arop/
 # Cursor local (keep only the checked-in example via negation)
 .cursor/*
 !.cursor/mcp.json.example
+# Observability nginx basic-auth (generated; never commit secrets)
+ops/nginx/obs.htpasswd
+

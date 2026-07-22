@@ -1,0 +1,825 @@
+# HELP admit_reject Auto-registered gauge admit_reject
+# TYPE admit_reject gauge
+admit_reject 0.0
+# HELP admit_total Auto-registered gauge admit_total
+# TYPE admit_total gauge
+admit_total 0.0
+# HELP ascr_cache_hit Cache hit ratio.
+# TYPE ascr_cache_hit gauge
+ascr_cache_hit 0.0
+# HELP ascr_cpu_utilization CPU utilization snapshot.
+# TYPE ascr_cpu_utilization gauge
+ascr_cpu_utilization 0.5
+# HELP ascr_draft_tps Draft tokens per second.
+# TYPE ascr_draft_tps gauge
+ascr_draft_tps 1.3894141805812457
+# HELP ascr_effective_tps Effective accepted tokens per second.
+# TYPE ascr_effective_tps gauge
+ascr_effective_tps 1.3894141805812457
+# HELP ascr_escalations_total Escalation edge traversals.
+# TYPE ascr_escalations_total counter
+ascr_escalations_total 7.0
+# HELP ascr_kv_reuse KV reuse ratio.
+# TYPE ascr_kv_reuse gauge
+ascr_kv_reuse 0.0
+# HELP ascr_numa_locality NUMA locality score.
+# TYPE ascr_numa_locality gauge
+ascr_numa_locality 1.0
+# HELP ascr_rejection_rate Rejection rate.
+# TYPE ascr_rejection_rate gauge
+ascr_rejection_rate 0.0
+# HELP ascr_rollback_rate Partial rollback / reject rate.
+# TYPE ascr_rollback_rate gauge
+ascr_rollback_rate 0.0
+# HELP ascr_verifier_tps Verifier tokens per second.
+# TYPE ascr_verifier_tps gauge
+ascr_verifier_tps 1.3894141805812457
+# HELP awpp_entropy Auto-registered gauge awpp_entropy
+# TYPE awpp_entropy gauge
+awpp_entropy 0.6881388137135884
+# HELP awpp_false_positives_total Auto-registered gauge awpp_false_positives_total
+# TYPE awpp_false_positives_total gauge
+awpp_false_positives_total 2.0
+# HELP awpp_uncertainty Auto-registered gauge awpp_uncertainty
+# TYPE awpp_uncertainty gauge
+awpp_uncertainty 0.44999999999999996
+# HELP awpp_warm_latency_ms Auto-registered gauge awpp_warm_latency_ms
+# TYPE awpp_warm_latency_ms gauge
+awpp_warm_latency_ms 21.587498020380735
+# HELP dipa_backend_utilization Backend utilization estimate.
+# TYPE dipa_backend_utilization gauge
+dipa_backend_utilization 0.0
+# HELP dipa_cascade_tier_transitions_total Cascade tier escalations.
+# TYPE dipa_cascade_tier_transitions_total counter
+dipa_cascade_tier_transitions_total 14.0
+# HELP dipa_decode_tps Decode tokens per second.
+# TYPE dipa_decode_tps gauge
+dipa_decode_tps 1.3830476068312976
+# HELP dipa_last_tier Auto-registered gauge dipa_last_tier
+# TYPE dipa_last_tier gauge
+dipa_last_tier 3.0
+# HELP dipa_latency_ms End-to-end inference latency (ms).
+# TYPE dipa_latency_ms gauge
+dipa_latency_ms 13737.777287024073
+# HELP dipa_numa_locality NUMA locality score (1.0 = local).
+# TYPE dipa_numa_locality gauge
+dipa_numa_locality 1.0
+# HELP dipa_prefill_tps Prefill tokens per second.
+# TYPE dipa_prefill_tps gauge
+dipa_prefill_tps 0.6551278137621935
+# HELP dipa_quant_usage_total Quantization selections.
+# TYPE dipa_quant_usage_total counter
+dipa_quant_usage_total 8.0
+# HELP dipa_requests_total Total DIPA inference requests.
+# TYPE dipa_requests_total counter
+dipa_requests_total 8.0
+# HELP dipa_tokens_per_sec Overall tokens per second.
+# TYPE dipa_tokens_per_sec gauge
+dipa_tokens_per_sec 1.3830476068312976
+# HELP dipa_ttft_ms Time to first token (ms).
+# TYPE dipa_ttft_ms gauge
+dipa_ttft_ms 2734.9656086065806
+# HELP haoe_workflow_latency_ms Last workflow latency in milliseconds.
+# TYPE haoe_workflow_latency_ms gauge
+haoe_workflow_latency_ms 20686.653155018575
+# HELP haoe_workflows_total Total workflows executed.
+# TYPE haoe_workflows_total counter
+haoe_workflows_total 8.0
+haoe_workflows_total 7.0
+# HELP kv_blocks_shared Physical KV blocks with refcount > 1
+# TYPE kv_blocks_shared gauge
+kv_blocks_shared 2.0
+# HELP kv_blocks_total Total physical KV blocks
+# TYPE kv_blocks_total gauge
+kv_blocks_total 3.0
+# HELP kv_checkpoint_latency Last checkpoint latency in milliseconds
+# TYPE kv_checkpoint_latency gauge
+kv_checkpoint_latency 1.016900991089642
+# HELP kv_compression_ratio Average compression ratio
+# TYPE kv_compression_ratio gauge
+kv_compression_ratio 1.0
+# HELP kv_dedup_ratio Content deduplication hit ratio
+# TYPE kv_dedup_ratio gauge
+kv_dedup_ratio 0.45454545454545453
+# HELP kv_evictions Blocks demoted under memory pressure
+# TYPE kv_evictions gauge
+kv_evictions 0.0
+# HELP kv_fragmentation Fragmentation proxy 0..1
+# TYPE kv_fragmentation gauge
+kv_fragmentation 0.6666666666666666
+# HELP kv_hit_rate Prefix hit rate 0..1
+# TYPE kv_hit_rate gauge
+kv_hit_rate 0.0
+# HELP kv_migration_count Completed block migrations
+# TYPE kv_migration_count gauge
+kv_migration_count 0.0
+# HELP kv_miss_rate Prefix miss rate 0..1
+# TYPE kv_miss_rate gauge
+kv_miss_rate 0.0
+# HELP kv_ram_usage RAM tier usage in bytes
+# TYPE kv_ram_usage gauge
+kv_ram_usage 155.0
+# HELP kv_reference_count Sum of reference counts across physical blocks
+# TYPE kv_reference_count gauge
+kv_reference_count 8.0
+# HELP kv_reuse_ratio Prefix reuse ratio
+# TYPE kv_reuse_ratio gauge
+kv_reuse_ratio 0.0
+# HELP kv_storage_usage Total storage usage in bytes
+# TYPE kv_storage_usage gauge
+kv_storage_usage 155.0
+# HELP maks_allocation_latency_ms maks allocation latency ms
+# TYPE maks_allocation_latency_ms gauge
+maks_allocation_latency_ms 0.2109613175773621
+# HELP maks_cache_miss maks cache miss
+# TYPE maks_cache_miss counter
+maks_cache_miss 16.0
+maks_cache_miss 14.0
+# HELP maks_cold_pages maks_cold_pages
+# TYPE maks_cold_pages gauge
+maks_cold_pages 0.0
+# HELP maks_compression_ratio maks compression ratio
+# TYPE maks_compression_ratio gauge
+maks_compression_ratio 1.0
+# HELP maks_dedup_ratio maks dedup ratio
+# TYPE maks_dedup_ratio gauge
+maks_dedup_ratio 0.0
+# HELP maks_fragmentation maks_fragmentation
+# TYPE maks_fragmentation gauge
+maks_fragmentation 0.0
+# HELP maks_hot_pages maks_hot_pages
+# TYPE maks_hot_pages gauge
+maks_hot_pages 7.0
+# HELP maks_lookup_latency maks_lookup_latency
+# TYPE maks_lookup_latency gauge
+maks_lookup_latency 0.3767023136489869
+# HELP maks_lookup_latency_ms Auto-registered gauge maks_lookup_latency_ms
+# TYPE maks_lookup_latency_ms gauge
+maks_lookup_latency_ms 0.3767023136489869
+# HELP maks_memory_usage_bytes maks memory usage bytes
+# TYPE maks_memory_usage_bytes gauge
+maks_memory_usage_bytes 10925.0
+# HELP maks_memory_used maks_memory_used
+# TYPE maks_memory_used gauge
+maks_memory_used 10925.0
+# HELP maks_pressure maks_pressure
+# TYPE maks_pressure gauge
+maks_pressure 2.0349398255348206e-05
+# HELP maks_provider_usage maks_provider_usage
+# TYPE maks_provider_usage gauge
+maks_provider_usage 10925.0
+# HELP maks_provider_usage_bytes maks provider usage bytes
+# TYPE maks_provider_usage_bytes gauge
+maks_provider_usage_bytes 10925.0
+# HELP maks_reference_count maks_reference_count
+# TYPE maks_reference_count gauge
+maks_reference_count 7.0
+# HELP maks_reuse_ratio maks reuse ratio
+# TYPE maks_reuse_ratio gauge
+maks_reuse_ratio 0.0
+# HELP maks_shared_pages maks_shared_pages
+# TYPE maks_shared_pages gauge
+maks_shared_pages 0.0
+# HELP maks_tier_distribution maks_tier_distribution
+# TYPE maks_tier_distribution gauge
+maks_tier_distribution 7000000.0
+# HELP maks_warm_pages maks_warm_pages
+# TYPE maks_warm_pages gauge
+maks_warm_pages 0.0
+# HELP neuroswarm_last_thinking_token_cap Last thinking token cap
+# TYPE neuroswarm_last_thinking_token_cap gauge
+neuroswarm_last_thinking_token_cap 1294.0
+# HELP neuroswarm_numa_bind_planned 1 if numactl bind argv is planned for managed llama tiers
+# TYPE neuroswarm_numa_bind_planned gauge
+neuroswarm_numa_bind_planned{topology="single_uma"} 0.0
+# HELP nexus_ascr_acceptance_rate Token/prefix acceptance rate
+# TYPE nexus_ascr_acceptance_rate gauge
+nexus_ascr_acceptance_rate 1.0
+# HELP nexus_ascr_quality_cascade_total Requests in quality-cascade mode
+# TYPE nexus_ascr_quality_cascade_total counter
+nexus_ascr_quality_cascade_total 7.0
+# HELP nexus_ascr_rounds_total ASCR propose/verify rounds
+# TYPE nexus_ascr_rounds_total counter
+nexus_ascr_rounds_total 7.0
+# HELP nexus_ascr_speculation_gain Speculative gain (0 when text-agree interim)
+# TYPE nexus_ascr_speculation_gain gauge
+nexus_ascr_speculation_gain 0.0
+# HELP nexus_awpp_budget_skips_total AWPP warms skipped under CPU/rate budget
+# TYPE nexus_awpp_budget_skips_total gauge
+nexus_awpp_budget_skips_total 2.0
+# HELP nexus_awpp_confidence Last AWPP prediction confidence
+# TYPE nexus_awpp_confidence gauge
+nexus_awpp_confidence 0.55
+# HELP nexus_awpp_cpu_time_ms AWPP warm CPU time in rolling window (ms)
+# TYPE nexus_awpp_cpu_time_ms gauge
+nexus_awpp_cpu_time_ms 21.634166012518108
+# HELP nexus_awpp_prediction_accuracy Rolling AWPP prediction accuracy
+# TYPE nexus_awpp_prediction_accuracy gauge
+nexus_awpp_prediction_accuracy 0.6666666666666666
+# HELP nexus_awpp_predictions_total AWPP predictions
+# TYPE nexus_awpp_predictions_total gauge
+nexus_awpp_predictions_total 1.0
+# HELP nexus_awpp_warm_success_total AWPP successful warms
+# TYPE nexus_awpp_warm_success_total gauge
+nexus_awpp_warm_success_total 1.0
+# HELP nexus_dipa_cascade_hit_rate Tier-1 finish fraction
+# TYPE nexus_dipa_cascade_hit_rate gauge
+nexus_dipa_cascade_hit_rate 0.125
+# HELP nexus_haoe_queue_depth HAOE queue depth
+# TYPE nexus_haoe_queue_depth gauge
+nexus_haoe_queue_depth 0.0
+# HELP nexus_haoe_worker_utilization Worker utilization 0..1
+# TYPE nexus_haoe_worker_utilization gauge
+nexus_haoe_worker_utilization 0.0
+# HELP nexus_hw_context_switches_total Context switches
+# TYPE nexus_hw_context_switches_total gauge
+nexus_hw_context_switches_total 664869.0
+# HELP nexus_hw_cpu_usage CPU usage ratio 0..1
+# TYPE nexus_hw_cpu_usage gauge
+nexus_hw_cpu_usage 0.434
+# HELP nexus_hw_cross_numa_applicable 1 if cross-NUMA penalties can apply (nodes>1), else 0
+# TYPE nexus_hw_cross_numa_applicable gauge
+nexus_hw_cross_numa_applicable{topology="single_uma"} 0.0
+# HELP nexus_hw_memory_usage_bytes Process memory usage bytes
+# TYPE nexus_hw_memory_usage_bytes gauge
+nexus_hw_memory_usage_bytes 285892608.0
+# HELP nexus_hw_numa_nodes Guest NUMA node count (1 = single UMA / Axion C4A)
+# TYPE nexus_hw_numa_nodes gauge
+nexus_hw_numa_nodes{topology="single_uma"} 1.0
+# HELP nexus_hw_thread_count Thread count
+# TYPE nexus_hw_thread_count gauge
+nexus_hw_thread_count 37.0
+# HELP nexus_kv_cache_bytes KV cache bytes
+# TYPE nexus_kv_cache_bytes gauge
+nexus_kv_cache_bytes 10779.0
+# HELP nexus_memory_rss_bytes RSS memory bytes
+# TYPE nexus_memory_rss_bytes gauge
+nexus_memory_rss_bytes 285892608.0
+# HELP nexus_performix_available 1 if Performix available else 0
+# TYPE nexus_performix_available gauge
+nexus_performix_available 1.0
+# HELP nexus_performix_backend_bound Top-down backend bound ratio 0..1
+# TYPE nexus_performix_backend_bound gauge
+nexus_performix_backend_bound 0.0
+# HELP nexus_performix_branch_misses Branch misses
+# TYPE nexus_performix_branch_misses gauge
+nexus_performix_branch_misses 0.0
+# HELP nexus_performix_cache_misses Cache misses
+# TYPE nexus_performix_cache_misses gauge
+nexus_performix_cache_misses 0.0
+# HELP nexus_performix_cycles CPU cycles
+# TYPE nexus_performix_cycles gauge
+nexus_performix_cycles 0.0
+# HELP nexus_performix_frontend_bound Top-down frontend bound ratio 0..1
+# TYPE nexus_performix_frontend_bound gauge
+nexus_performix_frontend_bound 0.0
+# HELP nexus_performix_hotspot_count Number of hotspots in last recipe
+# TYPE nexus_performix_hotspot_count gauge
+nexus_performix_hotspot_count 0.0
+# HELP nexus_performix_hotspot_pct Per-function hotspot percent
+# TYPE nexus_performix_hotspot_pct gauge
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x000728d0"} 100.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x000819a0"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00081a30"} 100.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00081dd0"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00082070"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x000821c4"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00083960"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00084550"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x0008a2c0"} 50.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x0008a580"} 100.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x00094da4"} 100.0
+nexus_performix_hotspot_pct{function="Unknown_symbol___0x000a1cc0"} 50.0
+nexus_performix_hotspot_pct{function="_Unknown_code_in__vdso__"} 0.143
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libc.so.6_"} 100.0
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libggml-base.so.0.17.0_"} 0.681
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libggml-cpu.so.0.17.0_"} 79.047
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libllama-common.so.0.0.1_"} 0.466
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libllama-server-impl.so_"} 50.0
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libllama.so.0.0.1_"} 0.394
+nexus_performix_hotspot_pct{function="_Unknown_code_in_libomp.so.5_"} 12.393
+nexus_performix_hotspot_pct{function="__close"} 100.0
+nexus_performix_hotspot_pct{function="__expf_finite"} 1.97
+nexus_performix_hotspot_pct{function="__pthread_key_create"} 33.333
+nexus_performix_hotspot_pct{function="__pthread_mutex_unlock"} 50.0
+nexus_performix_hotspot_pct{function="__sched_yield"} 3.188
+nexus_performix_hotspot_pct{function="__towctrans"} 100.0
+nexus_performix_hotspot_pct{function="_pthread_cleanup_pop"} 50.0
+nexus_performix_hotspot_pct{function="accept4"} 100.0
+nexus_performix_hotspot_pct{function="argz_append"} 50.0
+nexus_performix_hotspot_pct{function="clock_gettime"} 50.0
+nexus_performix_hotspot_pct{function="clock_gettime_plt"} 100.0
+nexus_performix_hotspot_pct{function="creat"} 33.333
+nexus_performix_hotspot_pct{function="getaddrinfo"} 1.062
+nexus_performix_hotspot_pct{function="getnameinfo"} 100.0
+nexus_performix_hotspot_pct{function="getpeername"} 50.0
+nexus_performix_hotspot_pct{function="iswxdigit"} 100.0
+nexus_performix_hotspot_pct{function="localeconv"} 100.0
+nexus_performix_hotspot_pct{function="malloc"} 50.0
+nexus_performix_hotspot_pct{function="memchr_plt"} 50.0
+nexus_performix_hotspot_pct{function="poll"} 100.0
+nexus_performix_hotspot_pct{function="pthread_cond_clockwait"} 50.0
+nexus_performix_hotspot_pct{function="pthread_getschedparam"} 100.0
+nexus_performix_hotspot_pct{function="pthread_key_delete"} 100.0
+nexus_performix_hotspot_pct{function="pthread_mutex_lock"} 100.0
+nexus_performix_hotspot_pct{function="recv"} 100.0
+nexus_performix_hotspot_pct{function="send"} 100.0
+nexus_performix_hotspot_pct{function="setsockopt"} 100.0
+nexus_performix_hotspot_pct{function="shutdown"} 100.0
+nexus_performix_hotspot_pct{function="std__chrono___V2__steady_clock__now__"} 100.0
+# HELP nexus_performix_hotspot_top_pct Top hotspot percent of samples
+# TYPE nexus_performix_hotspot_top_pct gauge
+nexus_performix_hotspot_top_pct 0.0
+# HELP nexus_performix_instructions Retired instructions
+# TYPE nexus_performix_instructions gauge
+nexus_performix_instructions 0.0
+# HELP nexus_performix_ipc Instructions per cycle
+# TYPE nexus_performix_ipc gauge
+nexus_performix_ipc 0.0
+# HELP nexus_performix_pmu_available 1 if real PMU path available else 0
+# TYPE nexus_performix_pmu_available gauge
+nexus_performix_pmu_available 0.0
+# HELP nexus_performix_snapshot_age_seconds Seconds since Performix snapshot.json mtime (top-down panels are last capture)
+# TYPE nexus_performix_snapshot_age_seconds gauge
+nexus_performix_snapshot_age_seconds 111.92665719985962
+# HELP nexus_request_active In-flight requests
+# TYPE nexus_request_active gauge
+nexus_request_active 0.0
+# HELP nexus_request_completed_total Completed requests
+# TYPE nexus_request_completed_total counter
+nexus_request_completed_total{agent_type="gateway",reasoning="false",request_type="http",status="ok",streaming="false"} 8.0
+# HELP nexus_request_duration_seconds End-to-end request latency
+# TYPE nexus_request_duration_seconds histogram
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.005",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.01",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.025",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.05",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.1",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.25",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="0.5",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="1.0",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="2.5",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="5.0",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="10.0",reasoning="false",request_type="http",status="ok",streaming="false"} 0.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="30.0",reasoning="false",request_type="http",status="ok",streaming="false"} 1.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="60.0",reasoning="false",request_type="http",status="ok",streaming="false"} 2.0
+nexus_request_duration_seconds_bucket{agent_type="gateway",le="+Inf",reasoning="false",request_type="http",status="ok",streaming="false"} 8.0
+nexus_request_duration_seconds_sum{agent_type="gateway",reasoning="false",request_type="http",status="ok",streaming="false"} 831.2070713671274
+nexus_request_duration_seconds_count{agent_type="gateway",reasoning="false",request_type="http",status="ok",streaming="false"} 8.0
+# HELP nexus_request_total Total runtime requests
+# TYPE nexus_request_total counter
+nexus_request_total{agent_type="gateway",reasoning="false",request_type="http",status="ok",streaming="false"} 8.0
+# HELP nexus_rmf_build_info RMF build metadata
+# TYPE nexus_rmf_build_info gauge
+nexus_rmf_build_info 1
+# HELP router_ann_latency_ms ANN latency ms
+# TYPE router_ann_latency_ms gauge
+router_ann_latency_ms 0.08770602289587259
+# HELP router_avg_confidence Router avg confidence
+# TYPE router_avg_confidence gauge
+router_avg_confidence 0.4103913515090942
+# HELP router_avg_prompt_reduction Average prompt size reduction ratio.
+# TYPE router_avg_prompt_reduction gauge
+router_avg_prompt_reduction 0.5062222222222222
+# HELP router_avg_token_reduction Router avg token reduction
+# TYPE router_avg_token_reduction gauge
+router_avg_token_reduction 0.5062222222222222
+# HELP router_avg_tools_returned Average tools returned per route.
+# TYPE router_avg_tools_returned gauge
+router_avg_tools_returned 3.0
+# HELP router_cache_hit_ratio Router cache hit ratio
+# TYPE router_cache_hit_ratio gauge
+router_cache_hit_ratio 0.9285714285714286
+# HELP router_embedding_cache_size Embedding cache entry count.
+# TYPE router_embedding_cache_size gauge
+router_embedding_cache_size 9.0
+# HELP router_embedding_latency_ms Embedding latency ms
+# TYPE router_embedding_latency_ms gauge
+router_embedding_latency_ms 0.03675196785479784
+# HELP router_index_size Router index size
+# TYPE router_index_size gauge
+router_index_size 6.0
+# HELP router_requests_total Router requests
+# TYPE router_requests_total counter
+router_requests_total 30.0
+# HELP router_rerank_latency_ms Rerank latency ms
+# TYPE router_rerank_latency_ms gauge
+router_rerank_latency_ms 0.057819008361548185
+# HELP router_routing_latency_ms Router latency ms
+# TYPE router_routing_latency_ms gauge
+router_routing_latency_ms 0.3929120139218867
+# HELP router_tools_registered Tools registered
+# TYPE router_tools_registered gauge
+router_tools_registered 6.0
+# HELP router_topk_accuracy_rolling Rolling top-k accuracy.
+# TYPE router_topk_accuracy_rolling gauge
+router_topk_accuracy_rolling 0.0
+# HELP router_turbovec_search_ms Last TurboVec/ANN search time ms.
+# TYPE router_turbovec_search_ms gauge
+router_turbovec_search_ms 0.08770602289587259
+# HELP rtg_action_decrease_budget_total Auto-registered counter rtg_action_decrease_budget_total
+# TYPE rtg_action_decrease_budget_total counter
+rtg_action_decrease_budget_total 7.0
+# HELP rtg_admits_total RTG admits
+# TYPE rtg_admits_total counter
+rtg_admits_total 8.0
+# HELP rtg_budget_remaining RTG budget remaining
+# TYPE rtg_budget_remaining gauge
+rtg_budget_remaining 256.0
+# HELP rtg_completions_total RTG completions
+# TYPE rtg_completions_total counter
+rtg_completions_total 7.0
+# HELP rtg_decisions_total RTG decisions
+# TYPE rtg_decisions_total counter
+rtg_decisions_total 7.0
+# HELP rtg_last_confidence RTG confidence
+# TYPE rtg_last_confidence gauge
+rtg_last_confidence 0.259125
+# HELP rtg_last_initial_budget RTG initial budget
+# TYPE rtg_last_initial_budget gauge
+rtg_last_initial_budget 1294.0
+# HELP rtg_last_session_tokens Auto-registered gauge rtg_last_session_tokens
+# TYPE rtg_last_session_tokens gauge
+rtg_last_session_tokens 19.0
+# HELP rtg_thinking_tokens RTG thinking tokens
+# TYPE rtg_thinking_tokens gauge
+rtg_thinking_tokens 19.0
+# HELP uptime_s Auto-registered gauge uptime_s
+# TYPE uptime_s gauge
+uptime_s 1342.0988087654114
+# HELP budget_admit_total Budget admission decisions
+# TYPE budget_admit_total counter
+budget_admit_total{result="accept"} 8.0
+# TYPE budget_remaining gauge
+budget_remaining{dim="completion_tokens",scope="request"} 2048.0
+budget_remaining{dim="concurrency",scope="request"} 4.0
+budget_remaining{dim="cost_usd",scope="request"} 0.02
+budget_remaining{dim="cpu_seconds",scope="request"} 120.0
+budget_remaining{dim="energy_joules",scope="request"} 50.0
+budget_remaining{dim="kv_bytes",scope="request"} 2147483648.0
+budget_remaining{dim="latency_ms",scope="request"} 4000.0
+budget_remaining{dim="memory_bytes",scope="request"} 8589934592.0
+budget_remaining{dim="prompt_tokens",scope="request"} 1200.0
+budget_remaining{dim="reasoning_tokens",scope="request"} 128.0
+budget_remaining{dim="retries",scope="request"} 2.0
+budget_remaining{dim="streaming_ms",scope="request"} 60000.0
+budget_remaining{dim="tokens_total",scope="request"} 3376.0
+budget_remaining{dim="tool_calls",scope="request"} 8.0
+# HELP runtime_cost_total Cumulative estimated runtime cost (optimization signal)
+# TYPE runtime_cost_total counter
+runtime_cost_total 0.012674646877093134
+# HELP runtime_cost_per_token Last observed cost per token
+# TYPE runtime_cost_per_token gauge
+# HELP runtime_cpu_seconds Last observed CPU seconds
+# TYPE runtime_cpu_seconds gauge
+# HELP runtime_memory_bytes Last observed peak memory bytes
+# TYPE runtime_memory_bytes gauge
+# HELP runtime_energy_estimate Last observed energy joules
+# TYPE runtime_energy_estimate gauge
+# HELP runtime_kv_reuse Last KV reuse ratio
+# TYPE runtime_kv_reuse gauge
+# HELP runtime_spec_acceptance Last speculative acceptance ratio
+# TYPE runtime_spec_acceptance gauge
+# HELP runtime_planner_prediction_error Prediction error by dimension
+# TYPE runtime_planner_prediction_error gauge
+runtime_backend_cost{backend="llama.cpp"} 0.001566364643773704
+runtime_backend_cost{backend="tier2"} 0.0064282008132226735
+runtime_backend_cost{backend="tier3"} 0.004680081420096757
+runtime_model_cost{model="cascade"} 0.012674646877093134
+runtime_quant_cost{quant="Q4_0"} 0.012674646877093134
+runtime_cost_per_token 5.393807790258212e-05
+runtime_cpu_seconds 0.0
+runtime_energy_estimate 0.0
+runtime_kv_reuse 0.0
+runtime_memory_bytes 286547968.0
+runtime_planner_accuracy 0.0
+runtime_planner_prediction_error{dim="cost"} 0.0014924321812722994
+runtime_planner_prediction_error{dim="energy"} 0.0
+runtime_planner_prediction_error{dim="latency"} -12535.736482011853
+runtime_planner_prediction_error{dim="memory"} 36939694.08000001
+runtime_spec_acceptance 0.0
+runtime_tokens_per_dollar 12580.563767900674
+runtime_tokens_per_watt 1.2572373862696442
+# HELP kv_blocks_shared Physical KV blocks with refcount > 1
+# TYPE kv_blocks_shared gauge
+kv_blocks_shared 2.0
+# HELP kv_blocks_total Total physical KV blocks
+# TYPE kv_blocks_total gauge
+kv_blocks_total 3.0
+# HELP kv_checkpoint_latency Last checkpoint latency in milliseconds
+# TYPE kv_checkpoint_latency gauge
+kv_checkpoint_latency 1.016900991089642
+# HELP kv_compression_ratio Average compression ratio
+# TYPE kv_compression_ratio gauge
+kv_compression_ratio 1.0
+# HELP kv_dedup_ratio Content deduplication hit ratio
+# TYPE kv_dedup_ratio gauge
+kv_dedup_ratio 0.45454545454545453
+# HELP kv_evictions Blocks demoted under memory pressure
+# TYPE kv_evictions counter
+kv_evictions 0.0
+# HELP kv_fragmentation Fragmentation proxy 0..1
+# TYPE kv_fragmentation gauge
+kv_fragmentation 0.6666666666666666
+# HELP kv_hit_rate Prefix hit rate 0..1
+# TYPE kv_hit_rate gauge
+kv_hit_rate 0.0
+# HELP kv_migration_count Completed block migrations
+# TYPE kv_migration_count counter
+kv_migration_count 0.0
+# HELP kv_miss_rate Prefix miss rate 0..1
+# TYPE kv_miss_rate gauge
+kv_miss_rate 0.0
+# HELP kv_prefix_hits Prefix cache hits
+# TYPE kv_prefix_hits counter
+kv_prefix_hits 0.0
+# HELP kv_prefix_misses Prefix cache misses
+# TYPE kv_prefix_misses counter
+kv_prefix_misses 0.0
+# HELP kv_ram_usage RAM tier usage in bytes
+# TYPE kv_ram_usage gauge
+kv_ram_usage 155.0
+# HELP kv_reference_count Sum of reference counts across physical blocks
+# TYPE kv_reference_count gauge
+kv_reference_count 8.0
+# HELP kv_restore_latency Last restore latency in milliseconds
+# TYPE kv_restore_latency gauge
+kv_restore_latency 0.0
+# HELP kv_reuse_ratio Prefix reuse ratio
+# TYPE kv_reuse_ratio gauge
+kv_reuse_ratio 0.0
+# HELP kv_storage_usage Total storage usage in bytes
+# TYPE kv_storage_usage gauge
+kv_storage_usage 155.0
+neuroswarm_acr_cache_miss 7.0
+neuroswarm_acr_understanding_total 7.0
+neuroswarm_acr_planning_total 7.0
+neuroswarm_acr_retrieval_total 7.0
+neuroswarm_acr_scoring_total 7.0
+neuroswarm_acr_compression_total 7.0
+neuroswarm_acr_assembly_total 7.0
+neuroswarm_acr_build_context 7.0
+neuroswarm_acr_evolution_total 16.0
+neuroswarm_acr_cache_hit 1.0
+neuroswarm_acr_last_compression_ratio 0.17827868852459017
+neuroswarm_acr_last_token_reduction 0.8217213114754098
+neuroswarm_acr_last_information_retained 0.7333333333333333
+neuroswarm_acr_cache_hit_ratio 0.125
+neuroswarm_acr_understanding_avg_ms 0.1724125717633537
+neuroswarm_acr_planning_avg_ms 0.04761472311136978
+neuroswarm_acr_retrieval_avg_ms 16.63679986294093
+neuroswarm_acr_scoring_avg_ms 0.09129157323124153
+neuroswarm_acr_compression_avg_ms 0.2478885663939374
+neuroswarm_acr_assembly_avg_ms 0.09690786412517939
+neuroswarm_acr_evolution_avg_ms 14.660798129625618
+# HELP nexus_backend_selected_total Backend selection counts
+# TYPE nexus_backend_selected_total counter
+nexus_backend_selected_total 0.0
+# HELP nexus_completion_tokens Completion tokens generated
+# TYPE nexus_completion_tokens counter
+nexus_completion_tokens 0.0
+# HELP nexus_cost_estimate Cost estimate dollars
+# TYPE nexus_cost_estimate gauge
+nexus_cost_estimate 0.0
+# HELP nexus_cpu_seconds CPU seconds last request
+# TYPE nexus_cpu_seconds gauge
+nexus_cpu_seconds 0.0
+# HELP nexus_energy_estimate Energy estimate joules
+# TYPE nexus_energy_estimate gauge
+nexus_energy_estimate 0.0
+# HELP nexus_inference_duration_seconds Inference duration seconds
+# TYPE nexus_inference_duration_seconds histogram
+nexus_inference_duration_seconds 0.0
+# HELP nexus_memory_bytes Memory bytes last request
+# TYPE nexus_memory_bytes gauge
+nexus_memory_bytes 0.0
+# HELP nexus_peak_memory_bytes Peak memory bytes last request
+# TYPE nexus_peak_memory_bytes gauge
+nexus_peak_memory_bytes 0.0
+# HELP nexus_planner_duration_seconds Planner stage duration seconds
+# TYPE nexus_planner_duration_seconds histogram
+nexus_planner_duration_seconds 0.0
+# HELP nexus_planner_prediction_error Planner prediction absolute error
+# TYPE nexus_planner_prediction_error gauge
+nexus_planner_prediction_error 0.0
+# HELP nexus_prompt_tokens Prompt tokens processed
+# TYPE nexus_prompt_tokens counter
+nexus_prompt_tokens 0.0
+# HELP nexus_queue_wait_seconds Queue wait seconds
+# TYPE nexus_queue_wait_seconds histogram
+nexus_queue_wait_seconds 0.0
+# HELP nexus_reasoning_tokens Reasoning tokens consumed
+# TYPE nexus_reasoning_tokens counter
+nexus_reasoning_tokens 0.0
+# HELP nexus_request_latency_seconds End-to-end request latency seconds
+# TYPE nexus_request_latency_seconds histogram
+nexus_request_latency_seconds 0.0
+# TYPE nexus_request_latency_seconds_count gauge
+nexus_request_latency_seconds_count 12898.0
+# TYPE nexus_request_latency_seconds_last gauge
+nexus_request_latency_seconds_last 20.70158229104709
+# TYPE nexus_request_latency_seconds_sum gauge
+nexus_request_latency_seconds_sum 932.7361316815368
+# HELP nexus_requests_total Total runtime requests observed by ROF
+# TYPE nexus_requests_total counter
+nexus_requests_total{outcome="ok"} 12898.0
+nexus_requests_total{outcome="started"} 8.0
+# HELP nexus_routing_duration_seconds Routing stage duration seconds
+# TYPE nexus_routing_duration_seconds histogram
+nexus_routing_duration_seconds 0.0
+# HELP nexus_streaming_duration_seconds Streaming duration seconds
+# TYPE nexus_streaming_duration_seconds histogram
+nexus_streaming_duration_seconds 0.0
+# HELP nexus_streaming_ttft_seconds Time to first token seconds
+# TYPE nexus_streaming_ttft_seconds histogram
+nexus_streaming_ttft_seconds 0.0
+# HELP rof_events_emitted_total Runtime events emitted
+# TYPE rof_events_emitted_total counter
+rof_events_emitted_total{subsystem="rof"} 25805.0
+# HELP rof_export_failures_total Exporter failures
+# TYPE rof_export_failures_total counter
+rof_export_failures_total 0.0
+# HELP rof_export_latency_seconds Last export batch latency seconds
+# TYPE rof_export_latency_seconds gauge
+rof_export_latency_seconds 2.755300374701619e-05
+# HELP rof_logs_emitted_total Structured log records emitted
+# TYPE rof_logs_emitted_total counter
+rof_logs_emitted_total 0.0
+# HELP rof_metric_label_drops_total Forbidden/high-cardinality labels dropped
+# TYPE rof_metric_label_drops_total counter
+rof_metric_label_drops_total 0.0
+# HELP rof_spans_dropped_total Spans dropped due to backpressure or sampling
+# TYPE rof_spans_dropped_total counter
+rof_spans_dropped_total 0.0
+# HELP rof_spans_exported_total Spans successfully exported
+# TYPE rof_spans_exported_total counter
+rof_spans_exported_total{exporter="otlp"} 12965.0
+neuroswarm_memory_retrieval_latency_total 17.0
+neuroswarm_memory_search_total 17.0
+neuroswarm_memory_remember_latency_total 87.0
+neuroswarm_memory_remember_total 87.0
+neuroswarm_memory_remember_type_reasoning 7.0
+neuroswarm_memory_remember_type_success 8.0
+neuroswarm_memory_remember_type_execution 8.0
+neuroswarm_memory_remember_type_tool 24.0
+neuroswarm_memory_remember_type_workflow 8.0
+neuroswarm_memory_remember_type_reflection 24.0
+neuroswarm_memory_reflection_latency_total 8.0
+neuroswarm_memory_reflect_total 8.0
+neuroswarm_memory_remember_type_evolution 8.0
+neuroswarm_memory_healthy 1.0
+neuroswarm_memory_cache_hit_rate 0.0
+neuroswarm_memory_retrieval_latency_avg_ms 6.654960527906523
+neuroswarm_memory_remember_latency_avg_ms 7.340889105616116
+neuroswarm_memory_reflection_latency_avg_ms 47.625036364479456
+# HELP arop_metric AROP aggregated metric
+# TYPE arop_metric gauge
+arop_metric{name="admit_reject"} 0.0
+arop_metric{name="admit_total"} 0.0
+arop_metric{name="ascr_cache_hit"} 0.0
+arop_metric{name="ascr_cpu_utilization"} 0.5
+arop_metric{name="ascr_draft_tps"} 1.3894141805812457
+arop_metric{name="ascr_effective_tps"} 1.3894141805812457
+arop_metric{name="ascr_escalations_total"} 7.0
+arop_metric{name="ascr_kv_reuse"} 0.0
+arop_metric{name="ascr_numa_locality"} 1.0
+arop_metric{name="ascr_rejection_rate"} 0.0
+arop_metric{name="ascr_rollback_rate"} 0.0
+arop_metric{name="ascr_verifier_tps"} 1.3894141805812457
+arop_metric{name="awpp_entropy"} 0.6881388137135884
+arop_metric{name="awpp_false_positives_total"} 3.0
+arop_metric{name="awpp_uncertainty"} 0.44999999999999996
+arop_metric{name="awpp_warm_latency_ms"} 21.587498020380735
+arop_metric{name="cpu_percent"} 5.88
+arop_metric{name="dipa_backend_utilization"} 0.0
+arop_metric{name="dipa_cascade_tier_transitions_total"} 14.0
+arop_metric{name="dipa_decode_tps"} 1.3830476068312976
+arop_metric{name="dipa_last_tier"} 3.0
+arop_metric{name="dipa_latency_ms"} 13737.777287024073
+arop_metric{name="dipa_numa_locality"} 1.0
+arop_metric{name="dipa_prefill_tps"} 0.6551278137621935
+arop_metric{name="dipa_quant_usage_total"} 8.0
+arop_metric{name="dipa_requests_total"} 8.0
+arop_metric{name="dipa_tokens_per_sec"} 1.3830476068312976
+arop_metric{name="dipa_ttft_ms"} 2734.9656086065806
+arop_metric{name="execution_ms"} 29158.093576901592
+arop_metric{name="haoe_workflow_latency_ms"} 20686.653155018575
+arop_metric{name="haoe_workflows_total"} 8.0
+arop_metric{name="ipc"} 0.0
+arop_metric{name="kv_blocks_shared"} 2.0
+arop_metric{name="kv_blocks_total"} 3.0
+arop_metric{name="kv_checkpoint_latency"} 1.016900991089642
+arop_metric{name="kv_compression_ratio"} 1.0
+arop_metric{name="kv_dedup_ratio"} 0.45454545454545453
+arop_metric{name="kv_evictions"} 0.0
+arop_metric{name="kv_fragmentation"} 0.6666666666666666
+arop_metric{name="kv_hit_rate"} 0.0
+arop_metric{name="kv_migration_count"} 0.0
+arop_metric{name="kv_miss_rate"} 0.0
+arop_metric{name="kv_ram_usage"} 155.0
+arop_metric{name="kv_reference_count"} 8.0
+arop_metric{name="kv_reuse_ratio"} 0.0
+arop_metric{name="kv_storage_usage"} 155.0
+arop_metric{name="maks_allocation_latency_ms"} 0.2109613175773621
+arop_metric{name="maks_cache_miss"} 16.0
+arop_metric{name="maks_cold_pages"} 0.0
+arop_metric{name="maks_compression_ratio"} 1.0
+arop_metric{name="maks_dedup_ratio"} 0.0
+arop_metric{name="maks_fragmentation"} 0.0
+arop_metric{name="maks_hot_pages"} 7.0
+arop_metric{name="maks_lookup_latency"} 0.3767023136489869
+arop_metric{name="maks_lookup_latency_ms"} 0.3767023136489869
+arop_metric{name="maks_memory_usage_bytes"} 10925.0
+arop_metric{name="maks_memory_used"} 10925.0
+arop_metric{name="maks_pressure"} 2.0349398255348206e-05
+arop_metric{name="maks_provider_usage"} 10925.0
+arop_metric{name="maks_provider_usage_bytes"} 10925.0
+arop_metric{name="maks_reference_count"} 7.0
+arop_metric{name="maks_reuse_ratio"} 0.0
+arop_metric{name="maks_shared_pages"} 0.0
+arop_metric{name="maks_tier_distribution"} 7000000.0
+arop_metric{name="maks_warm_pages"} 0.0
+arop_metric{name="neuroswarm_last_thinking_token_cap"} 1294.0
+arop_metric{name="nexus_ascr_acceptance_rate"} 1.0
+arop_metric{name="nexus_ascr_quality_cascade_total"} 7.0
+arop_metric{name="nexus_ascr_rounds_total"} 7.0
+arop_metric{name="nexus_ascr_speculation_gain"} 0.0
+arop_metric{name="nexus_awpp_budget_skips_total"} 2.0
+arop_metric{name="nexus_awpp_confidence"} 0.55
+arop_metric{name="nexus_awpp_cpu_time_ms"} 21.634166012518108
+arop_metric{name="nexus_awpp_prediction_accuracy"} 0.5714285714285714
+arop_metric{name="nexus_awpp_predictions_total"} 1.0
+arop_metric{name="nexus_awpp_warm_success_total"} 1.0
+arop_metric{name="nexus_dipa_cascade_hit_rate"} 0.125
+arop_metric{name="nexus_haoe_queue_depth"} 0.0
+arop_metric{name="nexus_haoe_worker_utilization"} 0.0
+arop_metric{name="nexus_hw_context_switches_total"} 664869.0
+arop_metric{name="nexus_hw_cpu_usage"} 0.434
+arop_metric{name="nexus_hw_memory_usage_bytes"} 285892608.0
+arop_metric{name="nexus_hw_thread_count"} 37.0
+arop_metric{name="nexus_kv_cache_bytes"} 10925.0
+arop_metric{name="nexus_memory_rss_bytes"} 285892608.0
+arop_metric{name="nexus_performix_available"} 1.0
+arop_metric{name="nexus_performix_backend_bound"} 0.0
+arop_metric{name="nexus_performix_branch_misses"} 0.0
+arop_metric{name="nexus_performix_cache_misses"} 0.0
+arop_metric{name="nexus_performix_cycles"} 0.0
+arop_metric{name="nexus_performix_frontend_bound"} 0.0
+arop_metric{name="nexus_performix_hotspot_count"} 0.0
+arop_metric{name="nexus_performix_hotspot_top_pct"} 0.0
+arop_metric{name="nexus_performix_instructions"} 0.0
+arop_metric{name="nexus_performix_ipc"} 0.0
+arop_metric{name="nexus_performix_pmu_available"} 0.0
+arop_metric{name="nexus_performix_snapshot_age_seconds"} 111.92665719985962
+arop_metric{name="nexus_request_active"} 0.0
+arop_metric{name="nexus_request_duration_seconds_count"} 8.0
+arop_metric{name="nexus_request_duration_seconds_sum"} 831.2070713671274
+arop_metric{name="nexus_request_latency_seconds_count"} 12898.0
+arop_metric{name="nexus_request_latency_seconds_last"} 20.70158229104709
+arop_metric{name="nexus_request_latency_seconds_sum"} 932.7361316815368
+arop_metric{name="nexus_requests_total"} 8.0
+arop_metric{name="nexus_rmf_build_info"} 1.0
+arop_metric{name="nexus_rmf_cardinality_rejects_total"} 0.0
+arop_metric{name="nexus_rmf_label_drops_total"} 2.0
+arop_metric{name="rof_events_emitted_total"} 25805.0
+arop_metric{name="rof_export_latency_seconds"} 2.755300374701619e-05
+arop_metric{name="rof_spans_exported_total"} 12965.0
+arop_metric{name="router_ann_latency_ms"} 0.08770602289587259
+arop_metric{name="router_avg_confidence"} 0.4103913515090942
+arop_metric{name="router_avg_prompt_reduction"} 0.5062222222222222
+arop_metric{name="router_avg_token_reduction"} 0.5062222222222222
+arop_metric{name="router_avg_tools_returned"} 3.0
+arop_metric{name="router_cache_hit_ratio"} 0.9285714285714286
+arop_metric{name="router_embedding_cache_size"} 9.0
+arop_metric{name="router_embedding_latency_ms"} 0.03675196785479784
+arop_metric{name="router_index_size"} 6.0
+arop_metric{name="router_requests_total"} 30.0
+arop_metric{name="router_rerank_latency_ms"} 0.057819008361548185
+arop_metric{name="router_routing_latency_ms"} 0.3929120139218867
+arop_metric{name="router_tools_registered"} 6.0
+arop_metric{name="router_topk_accuracy_rolling"} 0.0
+arop_metric{name="router_turbovec_search_ms"} 0.08770602289587259
+arop_metric{name="rtg_action_decrease_budget_total"} 7.0
+arop_metric{name="rtg_admits_total"} 8.0
+arop_metric{name="rtg_budget_remaining"} 256.0
+arop_metric{name="rtg_completions_total"} 7.0
+arop_metric{name="rtg_decisions_total"} 7.0
+arop_metric{name="rtg_last_confidence"} 0.259125
+arop_metric{name="rtg_last_initial_budget"} 1294.0
+arop_metric{name="rtg_last_session_tokens"} 19.0
+arop_metric{name="rtg_thinking_tokens"} 19.0
+arop_metric{name="runtime_backend_cost"} 0.004680081420096757
+arop_metric{name="runtime_cost_per_token"} 5.393807790258212e-05
+arop_metric{name="runtime_cost_total"} 0.012674646877093134
+arop_metric{name="runtime_cpu_seconds"} 0.0
+arop_metric{name="runtime_energy_estimate"} 0.0
+arop_metric{name="runtime_kv_reuse"} 0.0
+arop_metric{name="runtime_memory_bytes"} 286547968.0
+arop_metric{name="runtime_model_cost"} 0.012674646877093134
+arop_metric{name="runtime_planner_accuracy"} 0.0
+arop_metric{name="runtime_planner_prediction_error"} 36939694.08000001
+arop_metric{name="runtime_quant_cost"} 0.012674646877093134
+arop_metric{name="runtime_spec_acceptance"} 0.0
+arop_metric{name="runtime_tokens_per_dollar"} 12580.563767900674
+arop_metric{name="runtime_tokens_per_watt"} 1.2572373862696442
+arop_metric{name="uptime_s"} 55487.59125137329

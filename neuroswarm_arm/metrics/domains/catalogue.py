@@ -240,6 +240,11 @@ DOMAIN_METRICS: tuple[MetricDef, ...] = (
     _g("nexus_performix_backend_bound", "Top-down backend bound ratio 0..1", MetricDomain.PERFORMIX),
     _g("nexus_performix_pmu_available", "1 if real PMU path available else 0", MetricDomain.PERFORMIX),
     _g(
+        "nexus_performix_snapshot_age_seconds",
+        "Seconds since Performix snapshot.json mtime (top-down panels are last capture)",
+        MetricDomain.PERFORMIX,
+    ),
+    _g(
         "nexus_performix_hotspot_pct",
         "Per-function hotspot percent",
         MetricDomain.PERFORMIX,

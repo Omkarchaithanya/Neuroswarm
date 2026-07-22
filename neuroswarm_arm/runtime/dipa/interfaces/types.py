@@ -157,6 +157,7 @@ class InferenceRequest:
     tool_names: list[str] = field(default_factory=list)
     tool_schemas: list[dict[str, Any]] = field(default_factory=list)
     tool_confidence: float = 0.0
+    tool_high_confidence: bool = False
     tool_prompt_block: str = ""
     thinking_token_cap: int | None = None
     system_prompt: str | None = None

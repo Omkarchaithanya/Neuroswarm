@@ -345,13 +345,20 @@ class AgentGateway:
             tool_names = list(routed.tool_names)
             tool_schemas = list(routed.schemas)
             tool_confidence = float(routed.confidence_top1)
+            tool_high_confidence = bool(getattr(routed, "high_confidence", False))
             tool_prompt_block = self.semantic_router.prompt_block(routed)
+            high_conf_budget = int(
+                getattr(getattr(self.semantic_router, "config", None), "high_conf_thinking_budget", 256)
+                or 256
+            )
         else:
             selected_tools = self.semantic_router.route(query)
             tool_names = [t.name for t in selected_tools]
             tool_schemas = []
             tool_confidence = 0.0
+            tool_high_confidence = False
             tool_prompt_block = ""
+            high_conf_budget = 256
         session_id = req.session_id or f"chat-{uuid4().hex[:16]}"
         if self.kv_runtime is not None:
             self.kv_runtime.create_session(session_id, agent_id=req.agent_id)
@@ -371,13 +378,28 @@ class AgentGateway:
         engine = self.dipa or self.cascade
         if engine is None:
             raise RuntimeError("AgentGateway requires dipa or cascade")
-        response = engine.handle(
-            req.model_copy(update={"session_id": session_id}),
-            tool_names,
-            tool_schemas=tool_schemas or None,
-            tool_confidence=tool_confidence,
-            tool_prompt_block=tool_prompt_block or None,
-        )
+        handle_kwargs = {
+            "tool_schemas": tool_schemas or None,
+            "tool_confidence": tool_confidence,
+            "tool_prompt_block": tool_prompt_block or None,
+        }
+        if tool_high_confidence:
+            handle_kwargs["tool_high_confidence"] = True
+            handle_kwargs["high_conf_thinking_budget"] = high_conf_budget
+        try:
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
+        except TypeError:
+            handle_kwargs.pop("tool_high_confidence", None)
+            handle_kwargs.pop("high_conf_thinking_budget", None)
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
         if self.kv_runtime is not None:
 
             async def _ckpt() -> None:

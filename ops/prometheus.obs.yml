@@ -13,7 +13,8 @@ scrape_configs:
       - targets:
           - localhost:9090
 
-  # Compose nginx path on axion (:80 /metrics)
+  # Canonical Compose gateway via nginx on axion (:80 /metrics).
+  # Do NOT also scrape :8889 or k3s NodePort — that duplicates series ×2–3.
   - job_name: neuroswarm-gateway
     scrape_interval: 10s
     metrics_path: /metrics
@@ -24,26 +25,3 @@ scrape_configs:
           service: neuroswarm-gateway
           host: axion
           runtime: compose
-
-  # k3s Helm NodePort (sync-and-deploy -Mode k8s); one of compose/k8s will be UP
-  - job_name: neuroswarm-gateway-k8s
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - 10.128.0.2:30080
-        labels:
-          service: neuroswarm-gateway
-          host: axion
-          runtime: k8s
-
-  # OTEL collector prometheusexporter on axion
-  - job_name: axion-otel-exporter
-    scrape_interval: 15s
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - 10.128.0.2:8889
-        labels:
-          service: otel-collector
-          host: axion

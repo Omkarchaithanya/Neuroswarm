@@ -241,6 +241,8 @@ class DIPARuntime(IRuntime):
         tool_schemas: list[dict] | None = None,
         tool_confidence: float | None = None,
         tool_prompt_block: str | None = None,
+        tool_high_confidence: bool | None = None,
+        high_conf_thinking_budget: int | None = None,
     ) -> Any:
         """HAOE / CascadeRouter-compatible entry (returns ChatResponse-shaped)."""
         from neuroswarm_arm.schemas import (
@@ -257,6 +259,10 @@ class DIPARuntime(IRuntime):
             normalized.tool_schemas = list(tool_schemas)
         if tool_confidence is not None:
             normalized.tool_confidence = float(tool_confidence)
+        if tool_high_confidence is not None:
+            normalized.tool_high_confidence = bool(tool_high_confidence)
+        if high_conf_thinking_budget is not None:
+            normalized.baggage["high_conf_thinking_budget"] = int(high_conf_thinking_budget)
         if tool_prompt_block:
             normalized.tool_prompt_block = tool_prompt_block
         if hasattr(req, "agent_role"):

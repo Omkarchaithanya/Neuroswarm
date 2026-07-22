@@ -1,0 +1,17 @@
+{
+  "chats_ok": 3,
+  "chats_n": 3,
+  "accept_mode": "speculative_logits",
+  "chat_ascr_modes": [
+    "speculative",
+    "speculative",
+    "speculative"
+  ],
+  "chat_logits_available": true,
+  "ascr_speculation_gain": 0.3333333333333333,
+  "ascr_text_agreement": 0.0,
+  "ascr_quality_cascade_total": 7.0,
+  "ascr_acceptance_rate": 0.9577216676453317,
+  "logits_path": true,
+  "note": "Set NSA_LLAMA_N_PROBS=5 for logits accept; otherwise expect *_interim (honest)."
+}

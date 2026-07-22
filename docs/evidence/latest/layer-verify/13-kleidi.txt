@@ -1,0 +1,5 @@
+NAME                     IMAGE                             COMMAND                  SERVICE   CREATED        STATUS                  PORTS
+neuroswarm-arm-tier3-1   nexus-arm/llama-kleidiai:server   "llama-server -m /mo…"   tier3     15 hours ago   Up 15 hours (healthy)   8080/tcp
+neuroswarm-arm_tier1_1   nexus-arm/llama-kleidiai:server   "llama-server -m /mo…"   tier1     16 hours ago   Up 16 hours (healthy)   8080/tcp
+neuroswarm-arm_tier2_1   nexus-arm/llama-kleidiai:server   "llama-server -m /mo…"   tier2     16 hours ago   Up 16 hours (healthy)   8080/tcp
+Id=sha256:897dab50b513fd9c6b73ab6b3f08d8271b0735fec770b74d2f21e9d4b24ce3c7 Created=2026-07-20T18:52:46.360381676Z

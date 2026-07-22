@@ -1,0 +1,157 @@
+{
+  "01-up": {
+    "status": "success",
+    "data": {
+      "resultType": "vector",
+      "result": [
+        {
+          "metric": {
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.02,
+            "1"
+          ]
+        },
+        {
+          "metric": {
+            "instance": "localhost:9090",
+            "job": "prometheus"
+          },
+          "value": [
+            1784575536.02,
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "02-ipc": {
+    "status": "success",
+    "data": {
+      "resultType": "vector",
+      "result": [
+        {
+          "metric": {
+            "__name__": "nexus_performix_ipc",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.03,
+            "0"
+          ]
+        }
+      ]
+    }
+  },
+  "03-hotspots": {
+    "status": "success",
+    "data": {
+      "resultType": "vector",
+      "result": [
+        {
+          "metric": {
+            "__name__": "nexus_performix_hotspot_pct",
+            "function": "Unknown_symbol___0x00081dd0",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.039,
+            "100"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "nexus_performix_hotspot_pct",
+            "function": "clock_gettime",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.039,
+            "100"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "nexus_performix_hotspot_pct",
+            "function": "Unknown_symbol___0x00081a30",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.039,
+            "100"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "nexus_performix_hotspot_pct",
+            "function": "_Unknown_code_in_libggml-cpu.so.0.17.0_",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.039,
+            "79.047"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "nexus_performix_hotspot_pct",
+            "function": "_Unknown_code_in_libomp.so.5_",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.039,
+            "12.393"
+          ]
+        }
+      ]
+    }
+  },
+  "04-age": {
+    "status": "success",
+    "data": {
+      "resultType": "vector",
+      "result": [
+        {
+          "metric": {
+            "__name__": "nexus_performix_snapshot_age_seconds",
+            "host": "axion",
+            "instance": "10.128.0.2:80",
+            "job": "neuroswarm-gateway",
+            "runtime": "compose",
+            "service": "neuroswarm-gateway"
+          },
+          "value": [
+            1784575536.048,
+            "69.2529354095459"
+          ]
+        }
+      ]
+    }
+  }
+}

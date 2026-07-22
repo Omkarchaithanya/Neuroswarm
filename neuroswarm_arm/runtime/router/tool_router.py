@@ -170,8 +170,8 @@ class SemanticToolRouter:
 
             top_sem = semantic_hits[0][1] if semantic_hits else 0.0
             if below_threshold(top_sem, self.config.threshold):
-                # Expand with param-signature secondary ranking
-                expanded = []
+                # Expand with param-signature secondary ranking — always capped at candidate_k.
+                expanded: list[tuple[ToolRecord, float]] = []
                 for tool in tools:
                     param_score = keyword_overlap(
                         query, " ".join(tool.params.keys()) + " " + " ".join(tool.params.values())
@@ -201,12 +201,14 @@ class SemanticToolRouter:
             self.metrics.set("router_rerank_latency_ms", rerank_timer.ms())
 
             confidence = estimate_confidence(ranked)
+            high_confidence = bool(confidence > float(self.config.high_conf_gate))
             before, after = token_stats_for_registry(self.registry.as_list(), ranked)
             latency = timer.ms()
             result = RoutingResult(
                 tools=ranked,
                 top_k=k,
                 confidence_top1=confidence,
+                high_confidence=high_confidence,
                 prompt_tokens_before=before,
                 prompt_tokens_after=after,
                 latency_breakdown_ms={
@@ -217,6 +219,7 @@ class SemanticToolRouter:
                 },
                 features_debug={
                     "threshold": self.config.threshold,
+                    "high_conf_gate": self.config.high_conf_gate,
                     "candidate_k": candidate_k,
                     "ann_backend": getattr(self.index, "backend_name", "unknown"),
                 },
@@ -246,6 +249,16 @@ class SemanticToolRouter:
         top_k: int | None = None,
     ) -> list[RoutingResult]:
         return [self.route(q, context=context, top_k=top_k) for q in queries]
+
+    def route_result(
+        self,
+        query: str,
+        *,
+        context: RouteContext | None = None,
+        top_k: int | None = None,
+    ) -> RoutingResult:
+        """Alias used by gateway / HAOE chat adapters."""
+        return self.route(query, context=context, top_k=top_k)
 
     # Compat with HAOE SupportsRoute
     def route_tools(self, query: str) -> list[ToolRecord]:

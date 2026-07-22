@@ -124,12 +124,16 @@ class PerformixCollector:
             self.registry.set("nexus_performix_ipc", 0.0)
             self.registry.set("nexus_performix_cache_misses", 0.0)
             self.registry.set("nexus_performix_branch_misses", 0.0)
+            self.registry.set("nexus_performix_snapshot_age_seconds", 0.0)
             return
         try:
+            age = max(0.0, time.time() - self.path.stat().st_mtime)
+            self.registry.set("nexus_performix_snapshot_age_seconds", age)
             data = json.loads(self.path.read_text(encoding="utf-8"))
         except Exception as exc:
             logger.debug("performix snapshot read failed: %s", exc)
             self.registry.set("nexus_performix_available", 0.0)
+            self.registry.set("nexus_performix_snapshot_age_seconds", 0.0)
             return
         self.registry.set("nexus_performix_available", 1.0)
         cycles = float(data.get("cycles") or data.get("cpu_cycles") or 0.0)

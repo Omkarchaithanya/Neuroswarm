@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "preview": "Arm Neoverse is a family of high-performance, scalable, and power-efficient processor cores designed for cloud, edge, and enterprise applications.",
+  "meta": {
+    "tier_used": 3,
+    "model": "cascade",
+    "usage": {
+      "prompt_tokens": 9,
+      "completion_tokens": 19,
+      "total_tokens": 28
+    },
+    "id": "chatcmpl-efa1cef1612d4a13a225e8d5",
+    "object": "chat.completion"
+  },
+  "top_keys": [
+    "choices",
+    "content",
+    "created",
+    "id",
+    "metrics",
+    "model",
+    "object",
+    "runtime_cost_report",
+    "thinking_token_cap",
+    "tier_used",
+    "tool_schemas_used",
+    "usage"
+  ]
+}

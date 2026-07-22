@@ -13,16 +13,23 @@ API="${NSA_CHAT_URL:-http://127.0.0.1:8000/v1/chat/completions}"
 TIMEOUT="${PERFORMIX_TIMEOUT:-20}"
 
 fire_burst() {
-  echo "==> decode burst → $API"
-  curl -s -X POST "$API" \
-    -H "Content-Type: application/json" \
-    -d '{"model":"cascade","messages":[{"role":"user","content":"Write a 300 word explanation of NUMA on Arm servers."}],"stream":false,"max_tokens":400}' \
-    >/tmp/nsa-decode-burst.json &
+  echo "==> continuous decode load → $API"
+  # Keep llama busy for the full recipe window (not a single short burst).
+  (
+    while true; do
+      curl -s -X POST "$API" \
+        -H "Content-Type: application/json" \
+        -d '{"model":"cascade","messages":[{"role":"user","content":"Write a 300 word explanation of NUMA on Arm servers."}],"stream":false,"max_tokens":400}' \
+        >/tmp/nsa-decode-burst.json || true
+      sleep 0.5
+    done
+  ) &
   BURST_PID=$!
   sleep 2
 }
 
 wait_burst() {
+  kill "$BURST_PID" 2>/dev/null || true
   wait "$BURST_PID" 2>/dev/null || true
   head -c 200 /tmp/nsa-decode-burst.json 2>/dev/null || true
   echo
