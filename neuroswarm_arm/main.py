@@ -534,9 +534,12 @@ def export_metrics(request: Request) -> Response:
             arop_txt = prom.prometheus_text(dict(snap.aggregate))
     except Exception:
         arop_txt = ""
-    # Strip every OpenMetrics EOF marker before merge — RMF may already emit one.
-    core = "\n".join(ln for ln in body.splitlines() if ln.strip() != "# EOF").rstrip()
-    extras = f"{mem}{arop_txt}".strip()
+    # Strip every OpenMetrics EOF marker before merge — RMF/extras may already emit one.
+    def _strip_eof(text: str) -> str:
+        return "\n".join(ln for ln in text.splitlines() if ln.strip() != "# EOF").rstrip()
+
+    core = _strip_eof(body)
+    extras = _strip_eof(f"{mem}{arop_txt}")
     if extras:
         payload = f"{core}\n{extras}\n"
     else:
@@ -545,6 +548,7 @@ def export_metrics(request: Request) -> Response:
         payload = f"{payload.rstrip()}\n# EOF\n"
         ctype = "application/openmetrics-text; version=1.0.0; charset=utf-8"
     else:
+        # Classic Prometheus text: never emit # EOF (scrape Accept may still prefer OM).
         ctype = "text/plain; version=0.0.4; charset=utf-8"
     return Response(content=payload, media_type=ctype)
 
