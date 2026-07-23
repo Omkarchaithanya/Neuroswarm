@@ -175,6 +175,7 @@ class ExecutionPipeline:
         )
         ctx.kv_handle = kv_handle
         ctx.mark(ExecutionPhase.KV_ATTACHED)
+        _maybe_performix_sample(op="kv_load", session_id=req.session_id or "")
 
         # Prefill/decode soft path (ADR-0006); fall back to cascade/fused on failure.
         if plan.pd_enabled and self._pd_ready(rt):
@@ -248,9 +249,11 @@ class ExecutionPipeline:
                     "backend": result.backend or plan.backend or "",
                     "id_slot": result.metrics.get("id_slot"),
                     "cached_prompt_tokens": result.metrics.get("cached_prompt_tokens"),
+                    "okf_block_hashes": _okf_block_hashes(req),
                 },
             )
         )
+        _maybe_performix_sample(op="kv_save", session_id=req.session_id or "")
         ctx.mark(ExecutionPhase.METRICS)
         return result
 
@@ -436,6 +439,24 @@ class ExecutionPipeline:
         )
 
 
+def _maybe_performix_sample(*, op: str, session_id: str) -> None:
+    try:
+        from neuroswarm_arm.telemetry.performix_bridge import get_performix_bridge
+
+        get_performix_bridge().schedule_sample(op=op, session_id=session_id)
+    except Exception:
+        pass
+
+
+def _okf_block_hashes(req: InferenceRequest) -> list[str]:
+    from neuroswarm_arm.runtime.okf_slot_affinity import block_hashes_from_baggage
+
+    baggage = getattr(req, "baggage", None) or {}
+    if not isinstance(baggage, dict):
+        return []
+    return block_hashes_from_baggage(baggage)
+
+
 def _session_metadata_bytes(
     req: InferenceRequest,
     result: GenerateResult,
@@ -454,5 +475,6 @@ def _session_metadata_bytes(
         "id_slot": result.metrics.get("id_slot"),
         "cached_prompt_tokens": result.metrics.get("cached_prompt_tokens"),
         "completion_preview": (result.text or "")[:512],
+        "okf_block_hashes": _okf_block_hashes(req),
     }
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")

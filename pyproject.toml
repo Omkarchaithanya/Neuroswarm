@@ -121,7 +121,60 @@ dependencies = [
     "nexus-okf",
 ]
 
+[project.optional-dependencies]
+# Slim runtime for Dockerfile.arm64 / gateway container (no HF / LangGraph / ML stack).
+gateway = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "starlette>=0.47",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.10",
+    "anyio>=4.10",
+    "httpx>=0.28",
+    "aiofiles>=24.1",
+    "tenacity>=9.1",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.1",
+    "orjson>=3.11",
+    "numpy>=2.3",
+    "zstandard>=0.23",
+    "lz4>=4.3",
+    "psutil>=6.1",
+    "opentelemetry-api>=1.36",
+    "opentelemetry-sdk>=1.36",
+    "opentelemetry-exporter-otlp>=1.36",
+    "prometheus-client>=0.22",
+    "rich>=14",
+    "typer>=0.16",
+    "loguru>=0.7",
+]
+
 [dependency-groups]
+gateway = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "starlette>=0.47",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.10",
+    "anyio>=4.10",
+    "httpx>=0.28",
+    "aiofiles>=24.1",
+    "tenacity>=9.1",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.1",
+    "orjson>=3.11",
+    "numpy>=2.3",
+    "zstandard>=0.23",
+    "lz4>=4.3",
+    "psutil>=6.1",
+    "opentelemetry-api>=1.36",
+    "opentelemetry-sdk>=1.36",
+    "opentelemetry-exporter-otlp>=1.36",
+    "prometheus-client>=0.22",
+    "rich>=14",
+    "typer>=0.16",
+    "loguru>=0.7",
+]
 agent = [
     "langchain>=0.3",
     "langgraph>=0.5",

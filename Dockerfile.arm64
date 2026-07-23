@@ -12,16 +12,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install gateway runtime deps first (avoid pulling the full optional ML stack in-image).
-COPY pyproject.toml README.md LICENSE /app/
+COPY pyproject.toml README.md LICENSE requirements-gateway.txt /app/
 COPY neuroswarm_arm /app/neuroswarm_arm
 COPY templates /app/templates
 COPY okf /app/okf
+COPY packages/okf /app/packages/okf
 
-RUN pip install --no-cache-dir \
-      "fastapi>=0.115" \
-      "uvicorn[standard]>=0.34" \
-      "pydantic>=2.11" \
-      "pyyaml>=6.0" \
+RUN pip install --no-cache-dir -r /app/requirements-gateway.txt \
+    && pip install --no-cache-dir /app/packages/okf \
     && pip install --no-cache-dir --no-deps -e .
 
 EXPOSE 8000

@@ -1,0 +1,64 @@
+{"type": "factual", "prompt": "What is the capital of France?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "How many planets are in the solar system?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "Who wrote Romeo and Juliet?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What is the chemical symbol for gold?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "In what year did World War II end?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What is the speed of light in vacuum?", "agent_role": "classification", "max_tokens": 48}
+{"type": "factual", "prompt": "Which ocean is the largest on Earth?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What language is primarily spoken in Brazil?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "How many continents are there?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What is the tallest mountain in the world?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "Who painted the Mona Lisa?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What is the boiling point of water at sea level in Celsius?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "Which gas do plants absorb during photosynthesis?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What is the largest mammal?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "How many bytes are in a kilobyte (decimal)?", "agent_role": "classification", "max_tokens": 32}
+{"type": "factual", "prompt": "What currency is used in Japan?", "agent_role": "classification", "max_tokens": 32}
+{"type": "tool_call", "prompt": "Get current weather for San Francisco and respond with JSON keys city, temp_c, conditions.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Search GitHub issues labeled bug for repo neuroswarm-arm and summarize top 3.", "agent_role": "tool_call", "max_tokens": 96}
+{"type": "tool_call", "prompt": "List files in /var/log matching *.log and return count as JSON.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Query postgres table users where active=true limit 5; return JSON array.", "agent_role": "tool_call", "max_tokens": 96}
+{"type": "tool_call", "prompt": "Send slack message to #deployments: release v1.2.3 started.", "agent_role": "tool_call", "max_tokens": 48}
+{"type": "tool_call", "prompt": "Upload artifact build.tar.gz to s3 bucket releases/prod/.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Open browser to docs.python.org and extract page title.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Call calendar API to schedule meeting tomorrow 10:00 UTC for 30 minutes.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Translate text 'hello world' to Spanish using translation tool.", "agent_role": "tool_call", "max_tokens": 48}
+{"type": "tool_call", "prompt": "Fetch stock price for AAPL and return JSON with symbol and price.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Run unit tests for package runtime.dipa and report pass/fail counts.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Create Jira ticket: cascade acceptance benchmark regression.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Invoke email tool to send summary to team@example.com.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Use web-search to find latest llama.cpp release version.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Call metrics API for dipa_cascade_hit_rate last 5 minutes.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "tool_call", "prompt": "Delete stale redis keys matching session:* older than 24h.", "agent_role": "tool_call", "max_tokens": 64}
+{"type": "code", "prompt": "Write a Python function is_palindrome(s: str) -> bool.", "agent_role": "code", "max_tokens": 128}
+{"type": "code", "prompt": "Implement binary search on a sorted list of integers in Python.", "agent_role": "code", "max_tokens": 160}
+{"type": "code", "prompt": "Write a TypeScript function to debounce an async callback.", "agent_role": "code", "max_tokens": 160}
+{"type": "code", "prompt": "Create a Rust function that merges two sorted vectors.", "agent_role": "code", "max_tokens": 160}
+{"type": "code", "prompt": "Write SQL to find duplicate emails in table users.", "agent_role": "code", "max_tokens": 96}
+{"type": "code", "prompt": "Implement LRU cache with get/put in Python using OrderedDict.", "agent_role": "code", "max_tokens": 192}
+{"type": "code", "prompt": "Write a Go HTTP handler that returns JSON health status.", "agent_role": "code", "max_tokens": 128}
+{"type": "code", "prompt": "Refactor this loop to use list comprehension: squares of evens under 100.", "agent_role": "code", "max_tokens": 96}
+{"type": "code", "prompt": "Add type hints to a function that parses JSON from bytes safely.", "agent_role": "code", "max_tokens": 128}
+{"type": "code", "prompt": "Write pytest for a function that normalizes whitespace in strings.", "agent_role": "code", "max_tokens": 160}
+{"type": "code", "prompt": "Implement quicksort in JavaScript with in-place partition.", "agent_role": "code", "max_tokens": 192}
+{"type": "code", "prompt": "Write bash one-liner to count lines in all .py files recursively.", "agent_role": "code", "max_tokens": 64}
+{"type": "code", "prompt": "Create Pydantic model for InferenceRequest with validation.", "agent_role": "code", "max_tokens": 160}
+{"type": "code", "prompt": "Fix off-by-one bug in pagination offset calculation (page, page_size).", "agent_role": "code", "max_tokens": 128}
+{"type": "code", "prompt": "Write async Python context manager for temporary directory cleanup.", "agent_role": "code", "max_tokens": 128}
+{"type": "code", "prompt": "Implement token bucket rate limiter class in Python.", "agent_role": "code", "max_tokens": 192}
+{"type": "summarization", "prompt": "Summarize why KV cache reuse matters for multi-turn agents in 2 sentences.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Condense this topic: benefits of speculative decoding on ARM CPUs.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Give a one-paragraph summary of cascade tier escalation policies.", "agent_role": "classification", "max_tokens": 96}
+{"type": "summarization", "prompt": "Summarize key differences between prefill and decode phases.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Briefly explain what acceptance threshold controls in ASCR.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize tradeoffs of Q4 vs Q8 quantization for latency.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "In three bullets, summarize NUMA-aware thread pinning benefits.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize how circuit breakers protect cascade backends.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Provide short summary of tool-calling agent workflow.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize when quality_cascade_fallback activates.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Condense explanation of prefix caching for repeated system prompts.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize metrics to watch for cascade acceptance regressions.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Give two-sentence summary of draft-verify speculative loop.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize impact of batch size on verifier throughput.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Brief summary of escalation graph default_linear behavior.", "agent_role": "classification", "max_tokens": 64}
+{"type": "summarization", "prompt": "Summarize how agent_role influences routing decisions.", "agent_role": "classification", "max_tokens": 64}
