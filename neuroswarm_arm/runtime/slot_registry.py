@@ -89,6 +89,41 @@ class SlotRegistry:
             if slot_id is not None:
                 self._slots.pop(slot_id, None)
 
+    def acquire_at(
+        self, session_id: str, slot_id: int, prefix_hash: str = ""
+    ) -> tuple[int, bool] | None:
+        """Bind session to slot_id when free or already owned by session."""
+        if not session_id:
+            raise ValueError("session_id is required")
+        slot = int(slot_id)
+        if slot < 0 or slot >= self._total_slots:
+            return None
+
+        with self._lock:
+            existing = self._session_to_slot.get(session_id)
+            if existing is not None:
+                meta = self._slots[existing]
+                meta.last_used_timestamp = time.time()
+                if prefix_hash:
+                    meta.prefix_hash = prefix_hash
+                return existing, True
+
+            occupied = self._slots.get(slot)
+            if occupied is not None and occupied.session_id != session_id:
+                if not prefix_hash or occupied.prefix_hash != prefix_hash:
+                    return None
+                self._session_to_slot.pop(occupied.session_id, None)
+
+            now = time.time()
+            self._session_to_slot[session_id] = slot
+            self._slots[slot] = SlotMetadata(
+                session_id=session_id,
+                slot_id=slot,
+                last_used_timestamp=now,
+                prefix_hash=prefix_hash,
+            )
+            return slot, False
+
     def snapshot(self) -> list[SlotMetadata]:
         with self._lock:
             return list(self._slots.values())

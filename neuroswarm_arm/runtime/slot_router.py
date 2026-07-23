@@ -28,6 +28,8 @@ class SlotRouter:
         session_id: str,
         prompt: str,
         base_payload: dict[str, Any],
+        *,
+        affinity_hint: int | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Inject id_slot and cache_prompt into the outgoing llama-server payload."""
         payload = dict(base_payload)
@@ -41,6 +43,19 @@ class SlotRouter:
             return payload, telemetry
 
         prefix_hash = content_hash(prompt.encode("utf-8")) if prompt else ""
+        if affinity_hint is not None:
+            preferred = self._registry.acquire_at(
+                session_id, int(affinity_hint), prefix_hash=prefix_hash
+            )
+            if preferred is not None:
+                slot_id, slot_reused = preferred
+                payload["id_slot"] = int(slot_id)
+                telemetry["slot_id"] = int(slot_id)
+                telemetry["slot_reused"] = bool(slot_reused)
+                telemetry["prefix_hash"] = prefix_hash
+                telemetry["affinity_hint_honored"] = True
+                return payload, telemetry
+
         slot_id, slot_reused = self._registry.acquire(session_id, prefix_hash=prefix_hash)
         payload["id_slot"] = int(slot_id)
         telemetry["slot_id"] = int(slot_id)
