@@ -50,6 +50,35 @@ def test_dipa_connector_roundtrip(maks):
     asyncio.run(_run())
 
 
+def test_dipa_connector_q8_compression(monkeypatch: pytest.MonkeyPatch) -> None:
+    path = _fresh_dir()
+    monkeypatch.setenv("NSA_MAKS_COMPRESSION", "q8")
+    mgr = build_maks(load_maks_config(path), enable_scheduler=False)
+    try:
+
+        async def _run():
+            conn = MAKSConnector(sharing=mgr)
+            payload = b"session-metadata-" * 128
+            kid = await conn.save(
+                "sess-q8",
+                payload,
+                agent_id="agent-a",
+                metadata={"model_id": "m", "quant": "q8_0"},
+            )
+            assert kid
+            raw = await mgr.load_payload(kid)
+            assert raw == payload
+            rec = await mgr._find_by_session("sess-q8")
+            assert rec is not None
+            blob = await mgr._provider(rec.provider).load(rec.kv_id)
+            assert blob[:4] == b"NSQ8"
+
+        asyncio.run(_run())
+    finally:
+        mgr.stop()
+        shutil.rmtree(path, ignore_errors=True)
+
+
 def test_identity_mismatch_no_blind_share(maks):
     async def _run():
         a = KVIdentity(model_id="m", quantization="q4")

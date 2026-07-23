@@ -2,6 +2,11 @@
 # Collect perf counters for llama-server during a benchmark run.
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+python3 "${ROOT}/scripts/validate_kleidiai.py" \
+  --url "${NSA_TIER2_URL:-http://127.0.0.1:8080}" \
+  --require || exit 1
+
 PID="${1:-}"
 OUT="${2:-work/benchmarks/perf_stat.json}"
 BENCHMARK_RUN_ID="${3:-$(date +%s)}"

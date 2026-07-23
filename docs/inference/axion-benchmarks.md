@@ -9,7 +9,7 @@ llama.cpp unless the session-to-slot bridge is active.
 | Script | Purpose |
 |--------|---------|
 | `benchmarks/slot_reuse.py` | Multi-turn sessions; compares turn-1 vs turn-2+ latency |
-| `scripts/validate_kleidiai.py` | Confirms KleidiAI markers in llama-server `/props` |
+| `scripts/validate_kleidiai.py` | Benchmark-based KleidiAI gate (median tok/s vs `kleidiai_baselines.json`, 15% floor) |
 | `benchmarks/axion_demo_suite.py` | Aggregates baseline + KleidiAI into a markdown table |
 | `scripts/perf_collect.sh` | `perf stat` sidecar (no SPE on VM) |
 
@@ -42,5 +42,5 @@ NeuroSwarm `SlotRouter` sends `id_slot` + `cache_prompt: true`. MAKS stores
 ## Success criteria (demo)
 
 1. Turn-2+ TTFT reduction vs turn-1 on same session (target ≥ 40%).
-2. KleidiAI validation `ok: true` on tier image.
+2. KleidiAI validation `ok: true` (benchmark median ≥ 15% above `no_kleidiai` baseline).
 3. Cloud Trace shows `neuroswarm.kv.load` → `chat` with `slot.id`.

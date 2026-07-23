@@ -8,7 +8,7 @@ import os
 import time
 from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 from urllib import error, request
 
@@ -28,10 +28,17 @@ from neuroswarm_arm.runtime.dipa.interfaces.types import (
 
 from ...execution.execution_context import ExecutionContext
 from ...control.telemetry_exporter import TelemetryExporter
-from .kleidiai_verifier import KleidiaiVerifier
+from neuroswarm_arm.runtime.slot_registry import SlotRegistry
+from neuroswarm_arm.runtime.slot_router import SlotRouter
+from neuroswarm_arm.runtime.radix_slot_router import RadixSlotRouter
+from neuroswarm_arm.runtime.okf_slot_affinity import OkfSlotAffinity, block_hashes_from_baggage
+
+from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kleidiai_verifier import (
+    KleidiaiVerifier,
+    probe_cpu_features,
+)
 from .process_supervisor import ProcessSupervisor
 from .slot_client import SlotClient
-from .slot_router import SlotRouter
 
 
 @dataclass(slots=True)
@@ -185,7 +192,17 @@ class LlamaCppBackend(InferenceBackend):
         )
         self._client = LlamaHttpClient(base_url=base_url)
         self._slots = SlotClient(base_url)
-        self._slot_router = SlotRouter(client=self._slots, tier_url=base_url)
+        total_slots = int(os.getenv("NSA_LLAMA_SLOTS", "4"))
+        registry = SlotRegistry(total_slots)
+        if os.getenv("NSA_RADIX_ENABLED", "1").strip() not in {"0", "false", "False"}:
+            self._okf_affinity = OkfSlotAffinity()
+            self._slot_router: SlotRouter = RadixSlotRouter(
+                registry=registry,
+                okf_affinity=self._okf_affinity,
+            )
+        else:
+            self._okf_affinity = None
+            self._slot_router = SlotRouter(registry=registry)
         self._telemetry = telemetry
         self._supervisor = supervisor
         self._managed_command = managed_command
@@ -194,6 +211,29 @@ class LlamaCppBackend(InferenceBackend):
             require=os.getenv("NSA_REQUIRE_KLEIDIAI", "0").strip()
             in {"1", "true", "TRUE", "yes"}
         )
+        self._kleidiai_active: bool | None = None
+
+    def _probe_kleidiai_runtime(self) -> bool:
+        """Check llama-server for KleidiAI kernel evidence (not env assumption)."""
+        verifier = KleidiaiVerifier(require=False)
+        for path in ("/props", "/health"):
+            try:
+                data = self._client._get(path)
+                text = json.dumps(data) if isinstance(data, (dict, list)) else str(data)
+                verifier.feed_many(text)
+            except Exception:
+                continue
+        result = verifier.result()
+        active = bool(result.kernel_ok)
+        self._kleidiai_active = active
+        self.capabilities.kleidiai = active or self._kleidiai
+        return active
+
+    @property
+    def kleidiai_active(self) -> bool:
+        if self._kleidiai_active is None:
+            self._probe_kleidiai_runtime()
+        return bool(self._kleidiai_active)
 
     def start(self) -> None:
         if self._supervisor is not None and self._managed_command:
@@ -205,6 +245,7 @@ class LlamaCppBackend(InferenceBackend):
             )
             ok = self._supervisor.wait_kleidiai(self.name, timeout_s=180.0)
             self.capabilities.kleidiai = bool(ok or self._kleidiai)
+        self._probe_kleidiai_runtime()
 
     def stop(self) -> None:
         if self._supervisor is not None:
@@ -233,6 +274,9 @@ class LlamaCppBackend(InferenceBackend):
         if self._supervisor is not None:
             details["supervisor"] = self._supervisor.snapshot().get(self.name, {})
         if ready:
+            self._probe_kleidiai_runtime()
+            details["kleidiai_active"] = self.kleidiai_active
+            details["cpu_features"] = asdict(probe_cpu_features())
             try:
                 details["slot_busy_ratio"] = await asyncio.to_thread(
                     self._slots.busy_ratio
@@ -269,10 +313,12 @@ class LlamaCppBackend(InferenceBackend):
         self, req: DecodeRequest, ctx: ExecutionContext
     ) -> AsyncIterator[TokenChunk]:
         index = 0
-        extra = _llama_chat_extra(
+        extra, _slot_meta = _llama_chat_extra(
             session_id=req.session_id,
+            messages=req.messages,
             slot_router=self._slot_router,
-            tier_url=self.base_url,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=_okf_hashes_from_request(req),
         )
 
         def _iter() -> Iterator[TokenChunk]:
@@ -302,20 +348,24 @@ class LlamaCppBackend(InferenceBackend):
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
-        extra = _llama_chat_extra(
+        extra, slot_meta = _llama_chat_extra(
             session_id=req.session_id,
+            messages=req.messages,
             slot_router=self._slot_router,
-            tier_url=self.base_url,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=_okf_hashes_from_request(req),
         )
-        slot_action = str(extra.pop("_slot_action", "bind"))
+        slot_id = slot_meta.get("slot_id")
+        slot_reused = bool(slot_meta.get("slot_reused"))
         span_attrs = {
             "session_id": req.session_id,
             "backend": self.name,
             "tier": self.tier,
-            "slot.action": slot_action,
+            "slot.reused": slot_reused,
+            "gen_ai.arm.kleidiai_active": self.kleidiai_active,
         }
-        if "id_slot" in extra:
-            span_attrs["slot.id"] = extra["id_slot"]
+        if isinstance(slot_id, int):
+            span_attrs["slot.id"] = slot_id
         tel = self._telemetry
         with tel.span("chat", **span_attrs) if tel else _null_span():
             raw = await asyncio.to_thread(
@@ -326,25 +376,42 @@ class LlamaCppBackend(InferenceBackend):
                 stream=False,
                 extra=extra,
             )
-        self._slot_router.after_response(req.session_id, self.base_url, raw)
         latency_ms = (time.perf_counter() - t0) * 1000.0
+        ttft_seconds = latency_ms / 1000.0
         text = _extract_chat_content(raw)
         prompt_tokens = _usage_or_approx(raw, "prompt_tokens", req.messages)
         completion_tokens = _usage_or_approx_text(raw, "completion_tokens", text)
         cached_tokens = _cached_prompt_tokens(raw)
-        id_slot = raw.get("id_slot") if isinstance(raw, dict) else None
+        response_slot = raw.get("id_slot") if isinstance(raw, dict) else None
+        if isinstance(response_slot, int):
+            slot_id = response_slot
         metrics = {
             "cached_prompt_tokens": float(cached_tokens),
+            "slot_reused": 1.0 if slot_reused else 0.0,
+            "ttft_seconds": ttft_seconds,
         }
-        if isinstance(id_slot, int):
-            metrics["id_slot"] = float(id_slot)
+        if isinstance(slot_id, int):
+            metrics["slot_id"] = float(slot_id)
+            metrics["id_slot"] = float(slot_id)
+        if isinstance(self._slot_router, RadixSlotRouter):
+            prompt_text = " ".join(str(m.get("content", "")) for m in req.messages)
+            token_ids = await asyncio.to_thread(self.tokenize, prompt_text)
+            self._slot_router.record_after_inference(
+                token_ids,
+                slot_id,
+                okf_block_hashes=_okf_hashes_from_request(req),
+            )
+            snap = self._slot_router.metrics.snapshot()
+            metrics["radix_prefix_hit_total"] = float(snap["radix_prefix_hit_total"])
+            if slot_meta.get("radix_match_len"):
+                metrics["radix_match_len"] = float(slot_meta["radix_match_len"])
         if tel:
             tel.event(
                 "neuroswarm.slot.bind",
                 session_id=req.session_id,
-                slot_id=id_slot,
+                slot_id=slot_id,
                 tier=self.tier,
-                slot_action=slot_action,
+                slot_reused=slot_reused,
             )
             if cached_tokens:
                 tel.event(
@@ -371,16 +438,38 @@ class LlamaCppBackend(InferenceBackend):
         return None
 
 
+def _okf_hashes_from_request(req: GenerateRequest | DecodeRequest) -> list[str] | None:
+    baggage = getattr(req, "baggage", None) or {}
+    if not isinstance(baggage, dict):
+        return None
+    hashes = block_hashes_from_baggage(baggage)
+    return hashes or None
+
+
 def _llama_chat_extra(
     *,
     session_id: str = "",
+    messages: list[dict[str, str]] | None = None,
     slot_router: SlotRouter | None = None,
-    tier_url: str = "",
-) -> dict[str, Any]:
+    tokenize_fn: Any | None = None,
+    okf_block_hashes: list[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Build llama-server slot reuse payload (id_slot + cache_prompt)."""
-    if slot_router is not None and session_id:
-        return slot_router.acquire(session_id, tier_url)
-    return {"cache_prompt": True}
+    prompt = " ".join(str(m.get("content", "")) for m in (messages or []))
+    token_ids: list[int] | None = None
+    if tokenize_fn is not None and prompt:
+        token_ids = tokenize_fn(prompt)
+    if slot_router is not None:
+        if isinstance(slot_router, RadixSlotRouter):
+            return slot_router.prepare_payload(
+                session_id,
+                prompt,
+                {},
+                token_ids=token_ids,
+                okf_block_hashes=okf_block_hashes,
+            )
+        return slot_router.prepare_payload(session_id, prompt, {})
+    return {"cache_prompt": True}, {"slot_reused": False, "slot_id": None}
 
 
 def _cached_prompt_tokens(payload: dict[str, Any]) -> int:
