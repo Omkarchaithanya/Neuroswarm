@@ -7,7 +7,7 @@ import signal
 import subprocess
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -182,7 +182,7 @@ class ProcessSupervisor:
                     "running": proc is not None and proc.poll() is None,
                     "last_error": meta.last_error,
                     "verify": (
-                        self._verifiers[name].result().__dict__
+                        asdict(self._verifiers[name].result())
                         if name in self._verifiers
                         else {}
                     ),

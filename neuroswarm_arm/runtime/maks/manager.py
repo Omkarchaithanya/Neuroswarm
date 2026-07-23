@@ -213,8 +213,13 @@ class KVManager:
         prov, location = await self.allocator.allocate(
             kv_id, len(payload), hint=loc_hint
         )
-        # Backends that need compression (e.g. NVMe) apply it themselves.
-        await prov.store(kv_id, payload)
+        stored = payload
+        if self.compression.name not in {"", "none"}:
+            try:
+                stored = self.compression.compress(payload)
+            except NotImplementedError:
+                stored = payload
+        await prov.store(kv_id, stored)
 
         dedup_key = ""
         if can_dedup:
@@ -642,9 +647,15 @@ class KVManager:
     # DIPA SupportsKVSharing surface
     async def store(self, key: str, data: bytes) -> None:
         existing = await self._find_by_session(key)
+        stored = data
+        if self.compression.name not in {"", "none"}:
+            try:
+                stored = self.compression.compress(data)
+            except NotImplementedError:
+                stored = data
         if existing is not None:
             prov = self._provider(existing.provider)
-            await prov.store(existing.kv_id, data)
+            await prov.store(existing.kv_id, stored)
             existing.metadata.kv_size = len(data)
             existing.last_access = now_ts()
             await self.registry.upsert(existing)

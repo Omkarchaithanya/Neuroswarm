@@ -7,7 +7,8 @@ import json
 import os
 import time
 from collections.abc import AsyncIterator, Iterator
-from dataclasses import dataclass
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from typing import Any
 from urllib import error, request
 
@@ -26,7 +27,16 @@ from neuroswarm_arm.runtime.dipa.interfaces.types import (
 )
 
 from ...execution.execution_context import ExecutionContext
-from .kleidiai_verifier import KleidiaiVerifier
+from ...control.telemetry_exporter import TelemetryExporter
+from neuroswarm_arm.runtime.slot_registry import SlotRegistry
+from neuroswarm_arm.runtime.slot_router import SlotRouter
+from neuroswarm_arm.runtime.radix_slot_router import RadixSlotRouter
+from neuroswarm_arm.runtime.okf_slot_affinity import OkfSlotAffinity, block_hashes_from_baggage
+
+from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kleidiai_verifier import (
+    KleidiaiVerifier,
+    probe_cpu_features,
+)
 from .process_supervisor import ProcessSupervisor
 from .slot_client import SlotClient
 
@@ -161,6 +171,7 @@ class LlamaCppBackend(InferenceBackend):
         supervisor: ProcessSupervisor | None = None,
         managed_command: list[str] | None = None,
         numa_bind: list[str] | None = None,
+        telemetry: TelemetryExporter | None = None,
     ) -> None:
         self.name = name
         self.base_url = base_url
@@ -181,6 +192,18 @@ class LlamaCppBackend(InferenceBackend):
         )
         self._client = LlamaHttpClient(base_url=base_url)
         self._slots = SlotClient(base_url)
+        total_slots = int(os.getenv("NSA_LLAMA_SLOTS", "4"))
+        registry = SlotRegistry(total_slots)
+        if os.getenv("NSA_RADIX_ENABLED", "1").strip() not in {"0", "false", "False"}:
+            self._okf_affinity = OkfSlotAffinity()
+            self._slot_router: SlotRouter = RadixSlotRouter(
+                registry=registry,
+                okf_affinity=self._okf_affinity,
+            )
+        else:
+            self._okf_affinity = None
+            self._slot_router = SlotRouter(registry=registry)
+        self._telemetry = telemetry
         self._supervisor = supervisor
         self._managed_command = managed_command
         self._numa_bind = numa_bind
@@ -188,6 +211,29 @@ class LlamaCppBackend(InferenceBackend):
             require=os.getenv("NSA_REQUIRE_KLEIDIAI", "0").strip()
             in {"1", "true", "TRUE", "yes"}
         )
+        self._kleidiai_active: bool | None = None
+
+    def _probe_kleidiai_runtime(self) -> bool:
+        """Check llama-server for KleidiAI kernel evidence (not env assumption)."""
+        verifier = KleidiaiVerifier(require=False)
+        for path in ("/props", "/health"):
+            try:
+                data = self._client._get(path)
+                text = json.dumps(data) if isinstance(data, (dict, list)) else str(data)
+                verifier.feed_many(text)
+            except Exception:
+                continue
+        result = verifier.result()
+        active = bool(result.kernel_ok)
+        self._kleidiai_active = active
+        self.capabilities.kleidiai = active or self._kleidiai
+        return active
+
+    @property
+    def kleidiai_active(self) -> bool:
+        if self._kleidiai_active is None:
+            self._probe_kleidiai_runtime()
+        return bool(self._kleidiai_active)
 
     def start(self) -> None:
         if self._supervisor is not None and self._managed_command:
@@ -199,6 +245,7 @@ class LlamaCppBackend(InferenceBackend):
             )
             ok = self._supervisor.wait_kleidiai(self.name, timeout_s=180.0)
             self.capabilities.kleidiai = bool(ok or self._kleidiai)
+        self._probe_kleidiai_runtime()
 
     def stop(self) -> None:
         if self._supervisor is not None:
@@ -227,6 +274,9 @@ class LlamaCppBackend(InferenceBackend):
         if self._supervisor is not None:
             details["supervisor"] = self._supervisor.snapshot().get(self.name, {})
         if ready:
+            self._probe_kleidiai_runtime()
+            details["kleidiai_active"] = self.kleidiai_active
+            details["cpu_features"] = asdict(probe_cpu_features())
             try:
                 details["slot_busy_ratio"] = await asyncio.to_thread(
                     self._slots.busy_ratio
@@ -263,6 +313,13 @@ class LlamaCppBackend(InferenceBackend):
         self, req: DecodeRequest, ctx: ExecutionContext
     ) -> AsyncIterator[TokenChunk]:
         index = 0
+        extra, _slot_meta = _llama_chat_extra(
+            session_id=req.session_id,
+            messages=req.messages,
+            slot_router=self._slot_router,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=_okf_hashes_from_request(req),
+        )
 
         def _iter() -> Iterator[TokenChunk]:
             nonlocal index
@@ -271,6 +328,7 @@ class LlamaCppBackend(InferenceBackend):
                 req.messages,
                 max_tokens=req.max_tokens,
                 temperature=req.temperature,
+                extra=extra,
             ):
                 for piece in _parse_sse_line(line):
                     if piece is None:
@@ -290,70 +348,78 @@ class LlamaCppBackend(InferenceBackend):
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
-        extra: dict[str, Any] = {}
-        try:
-            n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
-        except ValueError:
-            n_probs = 0
-        if n_probs > 0:
-            # OpenAI-compatible chat logprobs (preferred on modern llama-server).
-            extra["logprobs"] = True
-            extra["top_logprobs"] = n_probs
-        raw: dict[str, Any] = {}
-        try:
+        extra, slot_meta = _llama_chat_extra(
+            session_id=req.session_id,
+            messages=req.messages,
+            slot_router=self._slot_router,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=_okf_hashes_from_request(req),
+        )
+        slot_id = slot_meta.get("slot_id")
+        slot_reused = bool(slot_meta.get("slot_reused"))
+        span_attrs = {
+            "session_id": req.session_id,
+            "backend": self.name,
+            "tier": self.tier,
+            "slot.reused": slot_reused,
+            "gen_ai.arm.kleidiai_active": self.kleidiai_active,
+        }
+        if isinstance(slot_id, int):
+            span_attrs["slot.id"] = slot_id
+        tel = self._telemetry
+        with tel.span("chat", **span_attrs) if tel else _null_span():
             raw = await asyncio.to_thread(
                 self._client.chat,
                 req.messages,
                 max_tokens=req.max_tokens,
                 temperature=req.temperature,
                 stream=False,
-                extra=extra or None,
+                extra=extra,
             )
-        except Exception:
-            # Retry: older servers want n_probs; some 500 on top_logprobs.
-            if n_probs > 0:
-                try:
-                    raw = await asyncio.to_thread(
-                        self._client.chat,
-                        req.messages,
-                        max_tokens=req.max_tokens,
-                        temperature=req.temperature,
-                        stream=False,
-                        extra={"n_probs": n_probs},
-                    )
-                except Exception:
-                    raw = await asyncio.to_thread(
-                        self._client.chat,
-                        req.messages,
-                        max_tokens=req.max_tokens,
-                        temperature=req.temperature,
-                        stream=False,
-                        extra=None,
-                    )
-            else:
-                raise
         latency_ms = (time.perf_counter() - t0) * 1000.0
+        ttft_seconds = latency_ms / 1000.0
         text = _extract_chat_content(raw)
         prompt_tokens = _usage_or_approx(raw, "prompt_tokens", req.messages)
         completion_tokens = _usage_or_approx_text(raw, "completion_tokens", text)
-        logits_meta = _extract_logits_meta(raw if isinstance(raw, dict) else {})
-        # Also accept completion_probabilities from n_probs path
-        if not logits_meta.get("logits_available") and isinstance(raw, dict):
-            choices = raw.get("choices") or []
-            if choices and isinstance(choices[0], dict):
-                if choices[0].get("completion_probabilities"):
-                    logits_meta = {
-                        "logits_available": True,
-                        "logits": choices[0]["completion_probabilities"],
-                        "entropy": 1.0,
-                    }
-        metrics: dict[str, float] = {}
-        raw_out: dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
-        if logits_meta.get("logits_available"):
-            metrics["logits_available"] = 1.0
-            raw_out["logits"] = logits_meta.get("logits") or True
-            if "entropy" in logits_meta:
-                metrics["entropy"] = float(logits_meta["entropy"])
+        cached_tokens = _cached_prompt_tokens(raw)
+        response_slot = raw.get("id_slot") if isinstance(raw, dict) else None
+        if isinstance(response_slot, int):
+            slot_id = response_slot
+        metrics = {
+            "cached_prompt_tokens": float(cached_tokens),
+            "slot_reused": 1.0 if slot_reused else 0.0,
+            "ttft_seconds": ttft_seconds,
+        }
+        if isinstance(slot_id, int):
+            metrics["slot_id"] = float(slot_id)
+            metrics["id_slot"] = float(slot_id)
+        if isinstance(self._slot_router, RadixSlotRouter):
+            prompt_text = " ".join(str(m.get("content", "")) for m in req.messages)
+            token_ids = await asyncio.to_thread(self.tokenize, prompt_text)
+            self._slot_router.record_after_inference(
+                token_ids,
+                slot_id,
+                okf_block_hashes=_okf_hashes_from_request(req),
+            )
+            snap = self._slot_router.metrics.snapshot()
+            metrics["radix_prefix_hit_total"] = float(snap["radix_prefix_hit_total"])
+            if slot_meta.get("radix_match_len"):
+                metrics["radix_match_len"] = float(slot_meta["radix_match_len"])
+        if tel:
+            tel.event(
+                "neuroswarm.slot.bind",
+                session_id=req.session_id,
+                slot_id=slot_id,
+                tier=self.tier,
+                slot_reused=slot_reused,
+            )
+            if cached_tokens:
+                tel.event(
+                    "gen_ai.cache_read",
+                    session_id=req.session_id,
+                    cached_tokens=cached_tokens,
+                    gen_ai_usage_cache_read_input_tokens=cached_tokens,
+                )
         return GenerateResult(
             text=text,
             prompt_tokens=prompt_tokens,
@@ -363,13 +429,64 @@ class LlamaCppBackend(InferenceBackend):
             backend=self.name,
             quant=req.quant,
             tier_used=self.tier,
-            raw=raw_out,
+            raw=raw if isinstance(raw, dict) else {},
             metrics=metrics,
         )
 
     async def cancel(self, session_id: str) -> None:
         # llama-server cancel is slot-specific; best-effort no-op when unmanaged.
         return None
+
+
+def _okf_hashes_from_request(req: GenerateRequest | DecodeRequest) -> list[str] | None:
+    baggage = getattr(req, "baggage", None) or {}
+    if not isinstance(baggage, dict):
+        return None
+    hashes = block_hashes_from_baggage(baggage)
+    return hashes or None
+
+
+def _llama_chat_extra(
+    *,
+    session_id: str = "",
+    messages: list[dict[str, str]] | None = None,
+    slot_router: SlotRouter | None = None,
+    tokenize_fn: Any | None = None,
+    okf_block_hashes: list[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build llama-server slot reuse payload (id_slot + cache_prompt)."""
+    prompt = " ".join(str(m.get("content", "")) for m in (messages or []))
+    token_ids: list[int] | None = None
+    if tokenize_fn is not None and prompt:
+        token_ids = tokenize_fn(prompt)
+    if slot_router is not None:
+        if isinstance(slot_router, RadixSlotRouter):
+            return slot_router.prepare_payload(
+                session_id,
+                prompt,
+                {},
+                token_ids=token_ids,
+                okf_block_hashes=okf_block_hashes,
+            )
+        return slot_router.prepare_payload(session_id, prompt, {})
+    return {"cache_prompt": True}, {"slot_reused": False, "slot_id": None}
+
+
+def _cached_prompt_tokens(payload: dict[str, Any]) -> int:
+    usage = payload.get("usage") or {}
+    if not isinstance(usage, dict):
+        return 0
+    details = usage.get("prompt_tokens_details") or {}
+    if isinstance(details, dict):
+        cached = details.get("cached_tokens")
+        if isinstance(cached, int):
+            return cached
+    return 0
+
+
+@contextmanager
+def _null_span() -> Iterator[None]:
+    yield None
 
 
 def _parse_sse_line(line: str) -> list[str | None]:
@@ -430,45 +547,3 @@ def _usage_or_approx_text(payload: dict[str, Any], key: str, text: str) -> int:
     if isinstance(value, int):
         return value
     return _approx_word_tokens(text)
-
-
-def _extract_logits_meta(payload: dict[str, Any]) -> dict[str, Any]:
-    """Detect llama.cpp / OpenAI logprobs or n_probs payloads."""
-    choices = payload.get("choices") or []
-    if not choices:
-        return {"logits_available": False}
-    choice = choices[0] if isinstance(choices[0], dict) else {}
-    logprobs = choice.get("logprobs")
-    # llama.cpp may also put probs under completion_probabilities / probs
-    alt = choice.get("completion_probabilities") or choice.get("probs") or payload.get("probs")
-    if not logprobs and not alt:
-        return {"logits_available": False}
-    logits: Any = logprobs if logprobs is not None else alt
-    entropy = 1.0
-    try:
-        # OpenAI-style: logprobs.content[].top_logprobs
-        content = []
-        if isinstance(logprobs, dict):
-            content = list(logprobs.get("content") or [])
-        elif isinstance(logprobs, list):
-            content = logprobs
-        if content and isinstance(content[0], dict):
-            tops = content[0].get("top_logprobs") or content[0].get("top_probs") or []
-            if tops:
-                import math
-
-                probs: list[float] = []
-                for t in tops[:8]:
-                    if not isinstance(t, dict):
-                        continue
-                    if "logprob" in t:
-                        probs.append(math.exp(float(t["logprob"])))
-                    elif "prob" in t:
-                        probs.append(float(t["prob"]))
-                if probs:
-                    s = sum(probs) or 1.0
-                    probs = [p / s for p in probs]
-                    entropy = -sum(p * math.log(max(p, 1e-12)) for p in probs)
-    except Exception:
-        entropy = 1.0
-    return {"logits_available": True, "logits": logits, "entropy": float(entropy)}

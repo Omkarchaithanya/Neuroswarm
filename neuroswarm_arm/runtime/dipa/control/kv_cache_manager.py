@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Any, Mapping
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, Mapping
 
 from neuroswarm_arm.runtime.dipa.interfaces.kv_cache import IKVCacheConnector
 
+if TYPE_CHECKING:
+    from neuroswarm_arm.runtime.dipa.control.telemetry_exporter import TelemetryExporter
+
 
 class KVCacheManager:
-    def __init__(self, connector: IKVCacheConnector | None = None) -> None:
+    def __init__(
+        self,
+        connector: IKVCacheConnector | None = None,
+        *,
+        telemetry: TelemetryExporter | None = None,
+    ) -> None:
         self.connector = connector
+        self._telemetry = telemetry
         self._lock = threading.RLock()
         self._sessions: dict[str, dict[str, Any]] = {}
         self._allocs = 0
@@ -19,7 +29,63 @@ class KVCacheManager:
         self._misses = 0
 
     def attach(self, connector: IKVCacheConnector) -> None:
-        self.connector = connector
+        with self._lock:
+            self.connector = connector
+
+    @property
+    def is_wired(self) -> bool:
+        with self._lock:
+            return self.connector is not None
+
+    def _connector_ref(self) -> IKVCacheConnector | None:
+        with self._lock:
+            return self.connector
+
+    async def load(self, session_id: str, agent_id: str = "") -> str | None:
+        connector = self._connector_ref()
+        if connector is None:
+            return None
+        tel = self._telemetry
+        with tel.span(
+            "neuroswarm.kv.load",
+            session_id=session_id,
+            agent_id=agent_id,
+        ) if tel else _null_span():
+            handle = await connector.load(session_id, agent_id)
+        if tel:
+            tel.record_kv_alloc(hit=handle is not None)
+            tel.event(
+                "neuroswarm.kv.load",
+                session_id=session_id,
+                kv_id=handle or "",
+                cache_hit=bool(handle),
+            )
+        return handle
+
+    async def save(
+        self,
+        session_id: str,
+        payload: bytes,
+        *,
+        agent_id: str = "",
+        metadata: Mapping[str, Any] | None = None,
+    ) -> str:
+        connector = self._connector_ref()
+        if connector is None:
+            return session_id or agent_id or "anon"
+        tel = self._telemetry
+        with tel.span(
+            "neuroswarm.kv.save",
+            session_id=session_id,
+            agent_id=agent_id,
+            payload_bytes=len(payload),
+        ) if tel else _null_span():
+            key = await connector.save(
+                session_id, payload, agent_id=agent_id, metadata=metadata
+            )
+        if tel:
+            tel.event("neuroswarm.kv.save", session_id=session_id, kv_id=key)
+        return key
 
     def allocate(
         self,
@@ -73,3 +139,8 @@ class KVCacheManager:
                 "misses": self._misses,
                 "connector": self.connector is not None,
             }
+
+
+@contextmanager
+def _null_span():
+    yield None

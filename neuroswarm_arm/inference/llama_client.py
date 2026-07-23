@@ -58,4 +58,3 @@ class LlamaClient:
             raise RuntimeError(f"llama server HTTP {exc.code}") from exc
         except error.URLError as exc:
             raise RuntimeError(f"llama server unavailable: {exc.reason}") from exc
-

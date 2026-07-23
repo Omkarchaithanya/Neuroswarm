@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -164,9 +165,17 @@ class ExecutionPipeline:
         ctx.warm = warm
         ctx.mark(ExecutionPhase.WARM_CHECKED)
 
-        kv_handle = rt.kv_loader.load_sync(req.session_id, req.agent_id)
+        if not rt.kv_cache_manager.is_wired:
+            raise RuntimeError(
+                "KVCacheManager requires a wired IKVCacheConnector"
+            )
+
+        kv_handle = rt._run_async(
+            rt.kv_cache_manager.load(req.session_id, req.agent_id)
+        )
         ctx.kv_handle = kv_handle
         ctx.mark(ExecutionPhase.KV_ATTACHED)
+        _maybe_performix_sample(op="kv_load", session_id=req.session_id or "")
 
         # Prefill/decode soft path (ADR-0006); fall back to cascade/fused on failure.
         if plan.pd_enabled and self._pd_ready(rt):
@@ -223,19 +232,28 @@ class ExecutionPipeline:
         if plan.stream and result.text:
             rt.stream_manager.publish_complete(req.session_id, result.text)
 
-        rt.kv_writer.save_sync(
-            req.session_id,
-            result.text.encode("utf-8")[:4096],
-            agent_id=req.agent_id,
-            metadata={
-                "model_id": result.model or plan.model or req.model,
-                "model": result.model or plan.model or req.model,
-                "quantization": plan.quant,
-                "quant": plan.quant,
-                "prompt_hash": "",
-                "priority": 0,
-            },
+        rt._run_async(
+            rt.kv_cache_manager.save(
+                req.session_id,
+                _session_metadata_bytes(req, result, plan, ctx),
+                agent_id=req.agent_id,
+                metadata={
+                    "model_id": result.model or plan.model or req.model,
+                    "model": result.model or plan.model or req.model,
+                    "quantization": plan.quant,
+                    "quant": plan.quant,
+                    "prompt_hash": "",
+                    "priority": 0,
+                    "record_type": "session_metadata",
+                    "tier": str(result.tier_used or plan.backend or ""),
+                    "backend": result.backend or plan.backend or "",
+                    "id_slot": result.metrics.get("id_slot"),
+                    "cached_prompt_tokens": result.metrics.get("cached_prompt_tokens"),
+                    "okf_block_hashes": _okf_block_hashes(req),
+                },
+            )
         )
+        _maybe_performix_sample(op="kv_save", session_id=req.session_id or "")
         ctx.mark(ExecutionPhase.METRICS)
         return result
 
@@ -419,3 +437,44 @@ class ExecutionPipeline:
             metrics=metrics,
             degraded=False,
         )
+
+
+def _maybe_performix_sample(*, op: str, session_id: str) -> None:
+    try:
+        from neuroswarm_arm.telemetry.performix_bridge import get_performix_bridge
+
+        get_performix_bridge().schedule_sample(op=op, session_id=session_id)
+    except Exception:
+        pass
+
+
+def _okf_block_hashes(req: InferenceRequest) -> list[str]:
+    from neuroswarm_arm.runtime.okf_slot_affinity import block_hashes_from_baggage
+
+    baggage = getattr(req, "baggage", None) or {}
+    if not isinstance(baggage, dict):
+        return []
+    return block_hashes_from_baggage(baggage)
+
+
+def _session_metadata_bytes(
+    req: InferenceRequest,
+    result: GenerateResult,
+    plan: ExecutionPlan,
+    ctx: ExecutionContext,
+) -> bytes:
+    """Persist honest session metadata (not GGML KV tensors)."""
+    payload = {
+        "session_id": req.session_id,
+        "agent_id": req.agent_id,
+        "tier": result.tier_used or plan.backend,
+        "backend": result.backend or plan.backend,
+        "model": result.model or plan.model or req.model,
+        "quant": plan.quant,
+        "kv_handle": ctx.kv_handle,
+        "id_slot": result.metrics.get("id_slot"),
+        "cached_prompt_tokens": result.metrics.get("cached_prompt_tokens"),
+        "completion_preview": (result.text or "")[:512],
+        "okf_block_hashes": _okf_block_hashes(req),
+    }
+    return json.dumps(payload, separators=(",", ":")).encode("utf-8")

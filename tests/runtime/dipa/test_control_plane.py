@@ -73,6 +73,18 @@ def test_kleidiai_verifier_matches_upstream_log() -> None:
         v2.assert_ready()
 
 
+def test_kleidiai_verifier_kai_matmul_kernel() -> None:
+    v = KleidiaiVerifier(require=True)
+    assert v.feed("kai_matmul: running") is True
+    assert v.result().kernel_ok is True
+
+
+def test_kleidiai_verifier_ggml_cpu_aarch64() -> None:
+    v = KleidiaiVerifier(require=True)
+    assert v.feed("backend ggml-cpu-aarch64 selected") is True
+    assert v.result().kernel_ok is True
+
+
 def test_request_queue_priority_and_reject() -> None:
     q = RequestQueue(maxsize=2)
     a = q.enqueue("a", priority=0)

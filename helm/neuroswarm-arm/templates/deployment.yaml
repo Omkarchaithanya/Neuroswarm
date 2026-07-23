@@ -1,10 +1,9 @@
 ﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "neuroswarm-arm.fullname" . }}-gateway
+  name: neuroswarm-arm
   labels:
-    {{- include "neuroswarm-arm.labels" . | nindent 4 }}
-    app.kubernetes.io/component: gateway
+    app: neuroswarm-arm
 spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
@@ -14,13 +13,11 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      {{- include "neuroswarm-arm.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: gateway
+      app: neuroswarm-arm
   template:
     metadata:
       labels:
-        {{- include "neuroswarm-arm.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: gateway
+        app: neuroswarm-arm
     spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       containers:
@@ -31,14 +28,6 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
           env:
-            - name: NSA_TIER1_URL
-              value: "{{ .Values.env.NSA_TIER1_URL }}"
-            - name: NSA_TIER2_URL
-              value: "{{ .Values.env.NSA_TIER2_URL }}"
-            - name: NSA_TIER3_URL
-              value: "{{ .Values.env.NSA_TIER3_URL }}"
-            - name: NSA_TOOL_METADATA_ROOT
-              value: "{{ .Values.env.NSA_TOOL_METADATA_ROOT }}"
             - name: NSA_REQUIRE_KLEIDIAI
               value: "{{ .Values.env.NSA_REQUIRE_KLEIDIAI }}"
             - name: NSA_DIPA_KLEIDIAI
@@ -55,33 +44,6 @@ spec:
               value: "{{ .Values.env.NSA_DIPA_SGLANG_URL }}"
             - name: NSA_DIPA_CHUNK_SIZE
               value: "{{ .Values.env.NSA_DIPA_CHUNK_SIZE }}"
-            - name: NSA_RMF_EXPORTERS
-              value: "{{ .Values.env.NSA_RMF_EXPORTERS }}"
-            - name: NSA_RMF_PERFORMIX
-              value: "{{ .Values.env.NSA_RMF_PERFORMIX }}"
-            - name: NSA_RMF_PERFORMIX_PATH
-              value: "{{ .Values.env.NSA_RMF_PERFORMIX_PATH }}"
-            - name: NSA_AROP_PERFORMIX
-              value: "{{ .Values.env.NSA_AROP_PERFORMIX }}"
-            - name: NSA_AROP_REFLECTION
-              value: "{{ .Values.env.NSA_AROP_REFLECTION }}"
-            - name: NSA_MEM_PROVIDER
-              value: "{{ .Values.env.NSA_MEM_PROVIDER }}"
-            - name: NSA_MEM_STORE
-              value: "{{ .Values.env.NSA_MEM_STORE }}"
-            - name: NSA_MEM_QDRANT_PATH
-              value: "{{ .Values.env.NSA_MEM_QDRANT_PATH }}"
-            - name: NSA_MEM_QDRANT_URL
-              value: "{{ .Values.env.NSA_MEM_QDRANT_URL | default "http://qdrant:6333" }}"
-            - name: NSA_MEM_LLM
-              value: "{{ .Values.env.NSA_MEM_LLM }}"
-            - name: NSA_ASCR_TEXT_AGREE
-              value: "{{ .Values.env.NSA_ASCR_TEXT_AGREE }}"
-            - name: NSA_ROF_EXPORTERS
-              value: "{{ .Values.env.NSA_ROF_EXPORTERS }}"
-          volumeMounts:
-            {{- include "neuroswarm-arm.modelsVolumeMount" . | nindent 12 }}
-            {{- include "neuroswarm-arm.extraVolumeMounts" . | nindent 12 }}
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.liveness.path }}
@@ -106,6 +68,3 @@ spec:
             preStop:
               exec:
                 command: ["/bin/sh", "-c", "sleep 5"]
-      volumes:
-        {{- include "neuroswarm-arm.modelsVolume" . | nindent 8 }}
-        {{- include "neuroswarm-arm.extraVolumes" . | nindent 8 }}

@@ -10,7 +10,7 @@ Phase 0 (now)     Memory OS on GCP Axion
 
 Phase 1           Hardened multi-node Redis registry
                   Prefix + segment matching
-                  Live engine page-table bridges (llama.cpp slots)
+                  Live engine page-table bridges (llama.cpp slots) — session-to-slot bridge in DIPA
 
 Phase 2           ARM MTE provider on hardware that exposes user-space MTE
                   Zero-copy cross-agent reads

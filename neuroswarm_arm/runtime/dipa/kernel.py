@@ -140,6 +140,11 @@ class DIPARuntime(IRuntime):
         )
         self.streaming_engine = streaming_engine or StreamingEngine()
         self.kv_cache_manager = kv_cache_manager or KVCacheManager()
+        if not self.kv_cache_manager.is_wired:
+            loader_conn = getattr(kv_loader, "connector", None)
+            maks_conn = getattr(loader_conn, "connector", None)
+            if maks_conn is not None:
+                self.kv_cache_manager.attach(maks_conn)
         self.metrics_collector = metrics_collector or MetricsCollector()
         self.configuration_manager = configuration_manager or ConfigurationManager(
             config

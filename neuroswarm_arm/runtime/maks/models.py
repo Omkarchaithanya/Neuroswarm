@@ -48,6 +48,7 @@ class EvictionPolicyName(str, Enum):
     ARC = "arc"
     TEMPERATURE = "temperature"
     COST_AWARE = "cost_aware"
+    S3FIFO = "s3fifo"
 
 
 class KVIdentity(BaseModel):
