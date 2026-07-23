@@ -41,6 +41,10 @@ section "Project"
 check "repo exists at $PROJECT_ROOT" test -d "$PROJECT_ROOT"
 check ".env.example exists" test -f "$PROJECT_ROOT/.env.example"
 check "docker-compose.yaml exists" test -f "$PROJECT_ROOT/docker-compose.yaml"
+check "validate_kleidiai benchmark gate (median_tok_s)" \
+  grep -q 'median_tok_s' "$PROJECT_ROOT/scripts/validate_kleidiai.py"
+check "kleidiai baselines catalog" \
+  test -f "$PROJECT_ROOT/benchmarks/kleidiai_baselines.json"
 
 section "Runtime"
 check "curl installed" command -v curl
