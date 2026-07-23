@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Mapping
 
+from neuroswarm_arm.runtime.dipa.cache.okf_slot_affinity import BlockHashSlotAffinity
 from neuroswarm_arm.runtime.dipa.cache.semantic_cache import SemanticCache
 from neuroswarm_arm.runtime.dipa.interfaces.pd import IPrefixCache
 
@@ -17,11 +18,14 @@ class PrefixCacheManager(IPrefixCache):
         maks: Any | None = None,
         metrics: Any | None = None,
         semantic: SemanticCache | None = None,
+        slot_affinity: BlockHashSlotAffinity | None = None,
+        num_slots: int = 8,
     ) -> None:
         self.sglang_backend = sglang_backend
         self.maks = maks
         self.metrics = metrics
         self.semantic = semantic or SemanticCache()
+        self.slot_affinity = slot_affinity or BlockHashSlotAffinity(num_slots=num_slots)
         self._hits = 0
         self._misses = 0
         self._hit_tokens = 0
@@ -35,13 +39,24 @@ class PrefixCacheManager(IPrefixCache):
         semantic_kv = self.semantic.lookup(prefix_key)
         if semantic_kv:
             self._semantic_hits += 1
+        self.slot_affinity.evict_expired()
+        block_hash = self.slot_affinity.hash_block(prefix_key)
+        affinity_slot: int | None = None
+        if warmed:
+            affinity_slot = self.slot_affinity.get_slot(block_hash)
         return {
             "key": key,
+            "block_hash": block_hash,
             "warmed": warmed,
+            "affinity_slot": affinity_slot,
             "hit_ratio": self.hit_ratio,
             "semantic_kv_id": semantic_kv,
             "semantic_hit_ratio": self.semantic.hit_ratio,
         }
+
+    def record_slot_assignment(self, prefix_key: str, slot_id: int) -> None:
+        block_hash = self.slot_affinity.hash_block(prefix_key)
+        self.slot_affinity.assign_slot(block_hash, slot_id)
 
     def lookup_semantic(self, prompt: str) -> str | None:
         return self.semantic.lookup(prompt)
@@ -123,6 +138,7 @@ class PrefixCacheManager(IPrefixCache):
             "warmed": float(len(self._warmed)),
             "semantic_hits": float(self._semantic_hits),
             "semantic_hit_ratio": float(self.semantic.hit_ratio),
+            "slot_affinity": dict(self.slot_affinity.stats()),
         }
 
 

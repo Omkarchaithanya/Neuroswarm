@@ -174,6 +174,7 @@ class RadixSlotRouter(SlotRouter):
         *,
         token_ids: list[int] | None = None,
         okf_block_hashes: list[str] | None = None,
+        affinity_hint: int | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         ids = token_ids or []
 
@@ -203,7 +204,9 @@ class RadixSlotRouter(SlotRouter):
                     "radix_match_len": matched_len,
                 }
 
-        payload, telemetry = super().prepare_payload(session_id, prompt, base_payload)
+        payload, telemetry = super().prepare_payload(
+            session_id, prompt, base_payload, affinity_hint=affinity_hint
+        )
         slot_id = telemetry.get("slot_id")
         if isinstance(slot_id, int) and ids:
             self.insert(ids, slot_id)
