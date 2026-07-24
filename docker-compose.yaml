@@ -54,6 +54,8 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    ports:
+      - "8081:8080"
     environment:
       # Unset = auto SME detect; set 0 to disable on Axion without SME
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
@@ -98,6 +100,8 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    ports:
+      - "8082:8080"
     environment:
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
     command:
@@ -141,6 +145,8 @@ services:
     image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
     platform: linux/arm64
     restart: unless-stopped
+    ports:
+      - "8083:8080"
     environment:
       GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
     command:
