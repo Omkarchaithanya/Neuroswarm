@@ -72,6 +72,8 @@ class RouterConfig:
     top_k: int = 3
     candidate_multiplier: int = 5
     threshold: float = 0.42
+    high_conf_gate: float = 0.85
+    high_conf_thinking_budget: int = 256
     encoder_name: str = "BAAI/bge-small-en-v1.5"
     fallback_dims: int = 64
     ann_backend: str = "turbovec"
@@ -87,6 +89,8 @@ class RouterConfig:
     use_onnx: bool = False
     use_int8: bool = False
     onnx_path: str | None = None
+    tokenizer_path: str | None = None
+    allow_hash: bool = False
     embed_batch_size: int = 32
     embed_workers: int = 2
     cache_ttl_s: float = 3600.0
@@ -116,10 +120,16 @@ class RouterConfig:
         )
         cores_raw = os.getenv("NSA_ROUTER_AFFINITY_CORES", "")
         cores = [int(x) for x in cores_raw.split(",") if x.strip().isdigit()]
+        # Dual naming: THRESHOLD and RERANK_TRIGGER both control expand gate.
+        threshold = _f("NSA_ROUTER_THRESHOLD", 0.42)
+        if os.getenv("NSA_ROUTER_RERANK_TRIGGER") is not None:
+            threshold = _f("NSA_ROUTER_RERANK_TRIGGER", threshold)
         return cls(
             top_k=_i("NSA_ROUTER_TOP_K", 3),
             candidate_multiplier=_i("NSA_ROUTER_CANDIDATE_MULT", 5),
-            threshold=_f("NSA_ROUTER_THRESHOLD", 0.42),
+            threshold=threshold,
+            high_conf_gate=_f("NSA_ROUTER_HIGH_CONF_GATE", 0.85),
+            high_conf_thinking_budget=_i("NSA_ROUTER_HIGH_CONF_THINKING_BUDGET", 256),
             encoder_name=os.getenv("NSA_ROUTER_ENCODER", "BAAI/bge-small-en-v1.5"),
             fallback_dims=_i("NSA_ROUTER_FALLBACK_DIMS", 64),
             ann_backend=os.getenv("NSA_ROUTER_ANN_BACKEND", "turbovec").lower(),
@@ -137,6 +147,8 @@ class RouterConfig:
             use_onnx=_b("NSA_ROUTER_ONNX", False),
             use_int8=_b("NSA_ROUTER_INT8", False),
             onnx_path=os.getenv("NSA_ROUTER_ONNX_PATH"),
+            tokenizer_path=os.getenv("NSA_ROUTER_TOKENIZER_PATH"),
+            allow_hash=_b("NSA_ROUTER_ALLOW_HASH", False),
             embed_batch_size=_i("NSA_ROUTER_EMBED_BATCH", 32),
             embed_workers=_i("NSA_ROUTER_EMBED_WORKERS", 2),
             cache_ttl_s=_f("NSA_ROUTER_CACHE_TTL", 3600.0),

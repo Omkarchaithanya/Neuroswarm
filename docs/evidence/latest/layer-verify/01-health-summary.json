@@ -1,0 +1,84 @@
+{
+  "status": "ok",
+  "memory": {
+    "healthy": true,
+    "provider": "mem0",
+    "details": {
+      "primary": {
+        "provider": "mem0",
+        "available": true,
+        "error": null,
+        "qdrant_path": "/app/work/memory/qdrant",
+        "healthy": true
+      },
+      "secondary": {
+        "provider": "json_emergency",
+        "records": 331,
+        "owners": 5,
+        "root": "/app/work/memory/json",
+        "healthy": true
+      }
+    }
+  },
+  "numa": {
+    "numa_nodes": 1,
+    "cpulists": {
+      "0": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "multi_node": false,
+    "memory_bind_active": false,
+    "cross_numa_penalty_applicable": false,
+    "policy": "single_uma",
+    "machine_type": "c4a-standard-8",
+    "numa_policy_env": "auto",
+    "bind_planned": {
+      "tier1": null,
+      "tier2": null,
+      "tier3": null
+    },
+    "llama_numa": null,
+    "reason": "Single-UMA / Axion path: cache-aware CPU affinity (draft=0-1, verifier tier2=2-4, tier3=5-7). Cross-NUMA split is not applicable.",
+    "locality_mode": "cache_aware",
+    "core_partitions": {
+      "tier1": [
+        0,
+        1
+      ],
+      "tier2": [
+        2,
+        3,
+        4
+      ],
+      "tier3": [
+        5,
+        6,
+        7
+      ]
+    },
+    "cpuset_strings": {
+      "tier1": "0-1",
+      "tier2": "2-4",
+      "tier3": "5-7"
+    },
+    "omp": {
+      "OMP_PROC_BIND": "close",
+      "OMP_PLACES": "cores"
+    }
+  },
+  "haoe": null,
+  "keys": [
+    "awpp",
+    "memory",
+    "numa",
+    "status"
+  ]
+}

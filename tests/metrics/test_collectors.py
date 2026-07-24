@@ -55,3 +55,5 @@ def test_performix_snapshot() -> None:
     assert by_name["nexus_performix_available"] == 1.0
     assert by_name["nexus_performix_cycles"] == 1000.0
     assert by_name["nexus_performix_ipc"] == 2.0
+    assert by_name["nexus_performix_snapshot_age_seconds"] >= 0.0
+    assert by_name["nexus_performix_snapshot_age_seconds"] < 60.0

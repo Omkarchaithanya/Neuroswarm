@@ -32,7 +32,8 @@ def _scratch() -> Path:
 
 
 @pytest.fixture
-def router():
+def router(monkeypatch):
+    monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
     scratch = _scratch()
     cfg = load_router_config(REPO)
     cfg.tool_metadata_root = TOOLS
@@ -44,6 +45,7 @@ def router():
     cfg.mem_store = scratch / "mem"
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
+    cfg.allow_hash = True
     cfg.ensure_dirs()
     offline_mem = build_memory_runtime(
         config=MemoryRuntimeConfig(
@@ -182,12 +184,14 @@ def test_benchmark_runner(router):
     assert "latency_ms" in report
 
 
-def test_fault_exact_backend():
+def test_fault_exact_backend(monkeypatch):
+    monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
     scratch = _scratch()
     cfg = load_router_config(REPO)
     cfg.tool_metadata_root = TOOLS
     cfg.ann_backend = "exact"
     cfg.enable_hot_reload = False
+    cfg.allow_hash = True
     cfg.snapshot_dir = scratch / "snap"
     cfg.index_path = scratch / "idx"
     cfg.cache_dir = scratch / "cache"

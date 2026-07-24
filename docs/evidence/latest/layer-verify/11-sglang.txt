@@ -1,0 +1,48 @@
+Inspecting lmsysorg/sglang:latest
+docker: unknown command: docker buildx
+
+Run 'docker --help' for more information
+{
+   "schemaVersion": 2,
+   "mediaType": "application/vnd.oci.image.index.v1+json",
+   "manifests": [
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 12346,
+         "digest": "sha256:289cf51da1e5fd6f8eb3231f0202d46800c2e241ecf28f68a5a51507ed928e31",
+         "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+         }
+      },
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 564,
+         "digest": "sha256:ba4cae1c9b1e22f11e393235927520903e874719aaceee269317966f2ad2da42",
+         "platform": {
+            "architecture": "unknown",
+            "os": "unknown"
+         }
+      },
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 12345,
+         "digest": "sha256:00264faaade6f6fefb1d8f191147680ea49d9b03fd3871e5963bb9765412bb82",
+         "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+         }
+      },
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 564,
+         "digest": "sha256:58b5201ffbd67027c17b2444bef4d510873f2149ab2ee34cdddcb6725c4ca051",
+         "platform": {
+            "architecture": "unknown",
+            "os": "unknown"
+         }
+      }
+   ]
+}
+PASS: arm64 present in manifest for lmsysorg/sglang:latest
+Cite: Arm May 2026 Neoverse SGLang blog + SGLANG_USE_CPU_ENGINE=1

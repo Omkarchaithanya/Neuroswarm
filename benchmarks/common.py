@@ -55,6 +55,9 @@ def build_router(tool_root: Path = DEFAULT_TOOL_ROOT, top_k: int = 3) -> Semanti
     cfg.top_k = top_k
     cfg.enable_hot_reload = False
     cfg.ann_backend = os.getenv("NSA_ROUTER_ANN_BACKEND", "exact")
+    # Benchmarks are CI-friendly: allow hash when ST/ONNX are unavailable.
+    cfg.allow_hash = True
+    os.environ.setdefault("NSA_ROUTER_ALLOW_HASH", "1")
     mem_root = REPO_ROOT / "work" / "benchmarks" / ".mem"
     offline_mem = build_memory_runtime(
         config=MemoryRuntimeConfig(

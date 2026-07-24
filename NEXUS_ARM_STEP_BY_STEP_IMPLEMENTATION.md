@@ -176,20 +176,23 @@ Acceptance criteria:
 
 ## 6. Implement CPU-CPU Cascade
 
-Start separate servers:
+**Topology note:** GCP Axion C4A reports **1 NUMA node** (single UMA). Do not use `numactl --cpunodebind=0/1` on Axion — there is no NUMA1. Use cache-aware CPU affinity instead (Compose `cpuset` or `taskset`):
 
 ```bash
-numactl --cpunodebind=0 --membind=0 \
-  llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf \
-  --port 8081 -ngl 0 -t 16 -c 4096
+# Preferred: docker compose (cpuset 0-1 / 2-4 / 5-7 + OMP_PROC_BIND=close)
+docker compose up -d tier1 tier2 tier3 gateway
 
-numactl --cpunodebind=1 --membind=1 \
-  llama-server -m /models/llama-3.2-3b-q5_k_m.gguf \
-  --port 8082 -ngl 0 -t 16 -c 8192
+# Manual Axion-equivalent (single-UMA locality):
+taskset -c 0,1 llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf \
+  --port 8081 -ngl 0 -t 2 -c 4096
+taskset -c 2-4 llama-server -m /models/llama-3.2-3b-q5_k_m.gguf \
+  --port 8082 -ngl 0 -t 3 -c 8192
+taskset -c 5-7 llama-server -m /models/llama-3.1-8b-q5_k_m.gguf \
+  --port 8083 -ngl 0 -t 3 -c 8192
 
-numactl --interleave=all \
-  llama-server -m /models/llama-3.1-8b-q5_k_m.gguf \
-  --port 8083 -ngl 0 -t 32 -c 16384
+# Only on multi-NUMA hosts (future), topology-gated numactl is valid:
+# numactl --cpunodebind=0 --membind=0 llama-server ...  # draft
+# numactl --cpunodebind=1 --membind=1 llama-server ...  # verifier
 ```
 
 Implement `app/inference/llama_client.py`:

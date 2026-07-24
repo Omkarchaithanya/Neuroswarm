@@ -1,0 +1,6 @@
+total 20
+drwxrwxr-x 2 tejaswini2482_gmail_com tejaswini2482_gmail_com 4096 Jul 18 03:57 .
+drwxrwxr-x 5 tejaswini2482_gmail_com tejaswini2482_gmail_com 4096 Jul 18 03:57 ..
+-rw-r--r-- 1 root                    root                      66 Jul 18 03:57 governor_policy.md
+-rw-rw-r-- 1 tejaswini2482_gmail_com tejaswini2482_gmail_com   63 Jul 18 03:57 system_prompt.md
+-rw-r--r-- 1 root                    root                      23 Jul 18 03:57 teacher.json

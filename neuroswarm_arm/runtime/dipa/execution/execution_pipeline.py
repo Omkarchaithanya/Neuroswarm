@@ -30,6 +30,29 @@ class ExecutionPipeline:
     def __init__(self, runtime: DIPARuntime) -> None:
         self.runtime = runtime
 
+    @staticmethod
+    def apply_high_confidence_thinking_cap(req: InferenceRequest) -> None:
+        """When semantic routing is high-confidence, hard-cap thinking tokens."""
+        high_conf = bool(
+            getattr(req, "tool_high_confidence", False)
+            or req.baggage.get("tool_high_confidence")
+        )
+        if not high_conf:
+            return
+        import os
+
+        budget = int(
+            req.baggage.get("high_conf_thinking_budget")
+            or os.getenv("NSA_ROUTER_HIGH_CONF_THINKING_BUDGET", "256")
+            or 256
+        )
+        current = req.thinking_token_cap
+        if current is None or int(current) > budget:
+            req.thinking_token_cap = budget
+        req.max_tokens = min(int(req.max_tokens), budget)
+        req.baggage["tool_high_confidence"] = True
+        req.baggage["high_conf_thinking_budget"] = budget
+
     def run(self, req: InferenceRequest) -> InferenceResponse:
         ctx = ExecutionContext(request=req, ids=req.ids)
         session = ExecutionSession(ctx=ctx, session_id=req.session_id or "")
@@ -135,6 +158,9 @@ class ExecutionPipeline:
             if force_msg:
                 req.baggage["rtg_force_close_message"] = force_msg
 
+        # Pillar 2 high-confidence: hard-cap thinking budget when router is sure.
+        self.apply_high_confidence_thinking_cap(req)
+
         # classify / intent already embedded in plan
         ctx.mark(ExecutionPhase.CLASSIFIED)
         ctx.mark(ExecutionPhase.INTENT_DETECTED)
@@ -164,6 +190,26 @@ class ExecutionPipeline:
         warm = rt.warm_manager.ensure(req, plan)
         ctx.warm = warm
         ctx.mark(ExecutionPhase.WARM_CHECKED)
+        # Surface AQR warm features on plan/baggage for WarmBonusExtractor
+        connector = getattr(rt, "awpp", None) or getattr(rt.warm_manager, "connector", None)
+        if connector is not None and hasattr(connector, "populate_aqr_context"):
+            try:
+                from neuroswarm_arm.runtime.aqr.models import RequestContext
+
+                aqr_ctx = RequestContext(
+                    agent_id=req.agent_id,
+                    session_id=req.session_id,
+                    agent_role=req.agent_role,
+                    awpp_prediction=getattr(connector, "last_prediction", None),
+                    model_warm_state=dict(getattr(connector, "model_warm_state", {}) or {}),
+                )
+                connector.populate_aqr_context(aqr_ctx)
+                plan.metadata["awpp_prediction"] = aqr_ctx.awpp_prediction
+                plan.metadata["model_warm_state"] = dict(aqr_ctx.model_warm_state)
+                req.baggage["awpp_prediction"] = aqr_ctx.awpp_prediction
+                req.baggage["model_warm_state"] = dict(aqr_ctx.model_warm_state)
+            except Exception:
+                pass
 
         if not rt.kv_cache_manager.is_wired:
             raise RuntimeError(
@@ -255,6 +301,20 @@ class ExecutionPipeline:
         )
         _maybe_performix_sample(op="kv_save", session_id=req.session_id or "")
         ctx.mark(ExecutionPhase.METRICS)
+        # AWPP observation feedback → policy update + replay JSONL
+        connector = getattr(rt, "awpp", None) or getattr(rt.warm_manager, "connector", None)
+        if connector is not None and hasattr(connector, "record_observation"):
+            try:
+                connector.record_observation(
+                    req,
+                    plan,
+                    latency_ms=float(result.latency_ms or 0.0),
+                    tools_used=list(req.tool_names or []),
+                    model=result.model or plan.model or req.model,
+                    cold_start=not bool(ctx.warm),
+                )
+            except Exception:
+                pass
         return result
 
     def _pd_ready(self, rt: Any) -> bool:

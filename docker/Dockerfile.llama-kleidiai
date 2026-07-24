@@ -15,11 +15,14 @@ ARG LLAMA_CPP_REF=master
 RUN git clone --depth 1 --branch "${LLAMA_CPP_REF}" https://github.com/ggml-org/llama.cpp.git
 
 WORKDIR /src/llama.cpp
+# RelWithDebInfo + frame pointers so Performix hotspots resolve to kai_*/ggml_* symbols.
 # KleidiAI + native ARM ISA. Avoid GGML_CPU_ALL_VARIANTS (needs GGML_BACKEND_DL).
 RUN cmake -B build \
-        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_C_COMPILER=clang \
         -DCMAKE_CXX_COMPILER=clang++ \
+        -DCMAKE_C_FLAGS="-fno-omit-frame-pointer -g" \
+        -DCMAKE_CXX_FLAGS="-fno-omit-frame-pointer -g" \
         -DGGML_CPU_KLEIDIAI=ON \
         -DGGML_NATIVE=ON \
         -DGGML_OPENMP=ON \
@@ -27,11 +30,12 @@ RUN cmake -B build \
         -DGGML_BLAS=OFF \
         -DGGML_CUDA=OFF \
         -DGGML_METAL=OFF \
-    && cmake --build build --config Release -j"$(nproc)" \
+    && cmake --build build --config RelWithDebInfo -j"$(nproc)" \
     && install -d /opt/llama/bin /opt/llama/lib \
     && cp -a build/bin/. /opt/llama/bin/ \
     && find build -name '*.so*' -exec cp -a {} /opt/llama/lib/ \; \
     && (test -x /opt/llama/bin/llama-server || install -m 0755 build/bin/llama-server /opt/llama/bin/llama-server)
+# Do not strip — keep DWARF for apx/neoprof symbolization.
 
 FROM ubuntu:24.04 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive

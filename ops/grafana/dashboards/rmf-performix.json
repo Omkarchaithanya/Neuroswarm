@@ -27,7 +27,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "nexus_performix_available",
+          "expr": "nexus_performix_available{job=\"neuroswarm-gateway\"}",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -53,7 +53,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "nexus_performix_ipc",
+          "expr": "nexus_performix_ipc{job=\"neuroswarm-gateway\"}",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -79,7 +79,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "nexus_performix_cache_misses",
+          "expr": "nexus_performix_cache_misses{job=\"neuroswarm-gateway\"}",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -105,7 +105,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "nexus_performix_branch_misses",
+          "expr": "nexus_performix_branch_misses{job=\"neuroswarm-gateway\"}",
           "legendFormat": "{{instance}}"
         }
       ],

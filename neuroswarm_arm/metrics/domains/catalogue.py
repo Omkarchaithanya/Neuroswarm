@@ -148,6 +148,55 @@ DOMAIN_METRICS: tuple[MetricDef, ...] = (
     _c("nexus_kv_cache_evictions_total", "KV cache evictions", MetricDomain.MEMORY, ("tier",)),
     _c("nexus_mem0_hits_total", "Mem0 hits", MetricDomain.MEMORY),
     _c("nexus_okf_loads_total", "OKF document loads", MetricDomain.MEMORY),
+    # AWPP Layer 4 — aliases map subsystem awpp_* gauges into RMF
+    _c(
+        "nexus_awpp_predictions_total",
+        "AWPP predictions",
+        MetricDomain.MEMORY,
+        aliases=("awpp_predictions_total",),
+    ),
+    _c(
+        "nexus_awpp_prediction_skips_total",
+        "AWPP low-confidence skips",
+        MetricDomain.MEMORY,
+        aliases=("awpp_prediction_skips_total",),
+    ),
+    _c(
+        "nexus_awpp_warm_success_total",
+        "AWPP successful warms",
+        MetricDomain.MEMORY,
+        aliases=("awpp_warm_success_total",),
+    ),
+    _c(
+        "nexus_awpp_warm_failures_total",
+        "AWPP failed warms",
+        MetricDomain.MEMORY,
+        aliases=("awpp_warm_failures_total",),
+    ),
+    _c(
+        "nexus_awpp_budget_skips_total",
+        "AWPP warms skipped under CPU/rate budget",
+        MetricDomain.MEMORY,
+        aliases=("awpp_budget_skips_total",),
+    ),
+    _g(
+        "nexus_awpp_cpu_time_ms",
+        "AWPP warm CPU time in rolling window (ms)",
+        MetricDomain.MEMORY,
+        aliases=("awpp_cpu_time_ms",),
+    ),
+    _g(
+        "nexus_awpp_confidence",
+        "Last AWPP prediction confidence",
+        MetricDomain.MEMORY,
+        aliases=("awpp_confidence",),
+    ),
+    _g(
+        "nexus_awpp_prediction_accuracy",
+        "Rolling AWPP prediction accuracy",
+        MetricDomain.MEMORY,
+        aliases=("awpp_prediction_accuracy",),
+    ),
     # 10 Hardware
     _g("nexus_hw_cpu_usage", "CPU usage ratio 0..1", MetricDomain.HARDWARE, ("numa_node",)),
     _g("nexus_hw_cpu_frequency_hz", "CPU frequency Hz", MetricDomain.HARDWARE, ("numa_node",)),
@@ -157,6 +206,26 @@ DOMAIN_METRICS: tuple[MetricDef, ...] = (
     _c("nexus_hw_context_switches_total", "Context switches", MetricDomain.HARDWARE),
     _g("nexus_hw_numa_node_usage", "NUMA node memory usage bytes", MetricDomain.HARDWARE, ("numa_node",)),
     _g("nexus_hw_sve2_utilization", "SVE2 utilization estimate 0..1", MetricDomain.HARDWARE),
+    _g(
+        "nexus_hw_numa_nodes",
+        "Guest NUMA node count (1 = single UMA / Axion C4A)",
+        MetricDomain.HARDWARE,
+        ("topology",),
+        ("neuroswarm_numa_nodes",),
+    ),
+    _g(
+        "nexus_hw_cross_numa_applicable",
+        "1 if cross-NUMA penalties can apply (nodes>1), else 0",
+        MetricDomain.HARDWARE,
+        ("topology",),
+        ("neuroswarm_cross_numa_applicable",),
+    ),
+    _g(
+        "neuroswarm_numa_bind_planned",
+        "1 if numactl bind argv is planned for managed llama tiers",
+        MetricDomain.HARDWARE,
+        ("topology",),
+    ),
     # 11 Performix
     _g("nexus_performix_available", "1 if Performix available else 0", MetricDomain.PERFORMIX),
     _g("nexus_performix_cycles", "CPU cycles", MetricDomain.PERFORMIX),
@@ -170,6 +239,11 @@ DOMAIN_METRICS: tuple[MetricDef, ...] = (
     _g("nexus_performix_frontend_bound", "Top-down frontend bound ratio 0..1", MetricDomain.PERFORMIX),
     _g("nexus_performix_backend_bound", "Top-down backend bound ratio 0..1", MetricDomain.PERFORMIX),
     _g("nexus_performix_pmu_available", "1 if real PMU path available else 0", MetricDomain.PERFORMIX),
+    _g(
+        "nexus_performix_snapshot_age_seconds",
+        "Seconds since Performix snapshot.json mtime (top-down panels are last capture)",
+        MetricDomain.PERFORMIX,
+    ),
     _g(
         "nexus_performix_hotspot_pct",
         "Per-function hotspot percent",
