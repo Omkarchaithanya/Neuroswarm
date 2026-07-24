@@ -507,19 +507,38 @@ def _parse_sse_line(line: str) -> list[str | None]:
     if not choices:
         return []
     delta = choices[0].get("delta") or {}
+    # Reasoning models (R1 / Qwen3-thinking) may stream only reasoning_content
+    # until the final answer lands in content.
     content = delta.get("content")
+    if content is None or content == "":
+        content = delta.get("reasoning_content")
+        if content is None:
+            content = delta.get("reasoning")
     if content is None:
         return []
     return [str(content)]
 
 
 def _extract_chat_content(payload: dict[str, Any]) -> str:
+    """Prefer assistant content; fall back to reasoning_content when empty.
+
+    Some llama-server builds / reasoning GGUFs put all tokens in
+    ``message.reasoning_content`` and leave ``message.content`` empty
+    (especially when max_tokens is consumed by the think phase).
+    """
     choices = payload.get("choices") or []
     if not choices:
         return ""
     message = choices[0].get("message") or {}
-    content = message.get("content", "")
-    return str(content) if content is not None else ""
+    content = message.get("content")
+    text = str(content) if content is not None else ""
+    if text.strip():
+        return text
+    for key in ("reasoning_content", "reasoning"):
+        alt = message.get(key)
+        if alt is not None and str(alt).strip():
+            return str(alt)
+    return text
 
 
 def _approx_word_tokens(text: str) -> int:

@@ -22,10 +22,11 @@ orjson>=3.11
 # Router + runtime numerics (neuroswarm_arm/runtime/router/*)
 numpy>=2.3
 
-# KV / MAKS default compression (zstd)
+# KV / MAKS default compression (zstd) + OKF slot affinity hashing
 zstandard>=0.23
 lz4>=4.3
 psutil>=6.1
+blake3>=1.0
 
 # Observability (NSA_DIPA_OTEL defaults on)
 opentelemetry-api>=1.36

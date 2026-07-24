@@ -53,7 +53,7 @@ PY
 echo "==> 2 chat cascade"
 curl -fsS --max-time 180 -X POST "$BASE/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -d '{"model":"cascade","messages":[{"role":"user","content":"Reply in one short sentence: what is Arm Neoverse?"}],"max_tokens":64,"stream":false}' \
+  -d '{"model":"cascade","messages":[{"role":"user","content":"Reply in one short sentence: what is Arm Neoverse?"}],"max_tokens":128,"stream":false}' \
   -o "$OUT/02-chat.json" || echo '{"error":"chat_fail"}' > "$OUT/02-chat.json"
 python3 - <<PY
 import json
