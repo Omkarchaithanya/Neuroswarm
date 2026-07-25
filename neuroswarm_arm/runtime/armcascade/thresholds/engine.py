@@ -35,13 +35,14 @@ class AdaptiveThresholdEngine(ThresholdEngine):
             reasoning_confidence=inputs.governor_cap,
         )
         action = self.agent.act(obs)
+        max_rounds = max(1, int(getattr(inputs, "base_max_rounds", 4) or 4))
         return ThresholdSet(
             draft_len=max(1, int(action.draft_len)),
             accept_threshold=float(action.accept_threshold),
             verify_batch_size=max(1, int(action.verify_batch_size)),
             escalate_threshold=float(action.escalate_threshold),
             speculation_depth=max(1, int(action.speculation_depth)),
-            max_rounds=4,
+            max_rounds=max_rounds,
             quality_accept_threshold=min(
                 0.95, max(0.35, float(action.accept_threshold) - 0.15)
             ),

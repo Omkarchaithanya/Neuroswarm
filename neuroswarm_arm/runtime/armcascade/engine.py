@@ -139,6 +139,7 @@ class ASCREngine(ICascadeEngine):
             base_escalate_threshold=policy.thresholds.escalate_threshold,
             base_verify_batch=policy.thresholds.verify_batch_size,
             base_depth=policy.thresholds.speculation_depth,
+            base_max_rounds=int(policy.thresholds.max_rounds or 4),
         )
         thresholds = self.thresholds.compute(thr_in)
         policy.thresholds = thresholds
@@ -177,8 +178,10 @@ class ASCREngine(ICascadeEngine):
             state.rounds += 1
             elapsed_ms = (time.monotonic() - t0) * 1000.0
             thr_in.latency_used_ms = elapsed_ms
-            thresholds = self.thresholds.compute(thr_in)
-            policy.thresholds = thresholds
+            # Round 1: pre-loop compute already ran with latency_used=0; skip recompute.
+            if state.rounds > 1:
+                thresholds = self.thresholds.compute(thr_in)
+                policy.thresholds = thresholds
 
             node = graph.nodes.get(esc_state.current)
             if node is None:

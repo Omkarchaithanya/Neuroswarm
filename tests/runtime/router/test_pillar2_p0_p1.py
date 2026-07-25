@@ -104,10 +104,10 @@ def test_catalog_has_at_least_40_tools():
 
 def test_mcp_execute_disabled_by_default(monkeypatch):
     monkeypatch.delenv("NSA_MCP_EXECUTE", raising=False)
-    from neuroswarm_arm.runtime.router.mcp_executor import call_tool, mcp_execute_enabled
+    from neuroswarm_arm.runtime.router.mcp_executor import call_tool_sync, mcp_execute_enabled
 
     assert mcp_execute_enabled() is False
-    out = call_tool("github.list_issues", {"repo": "a/b"})
+    out = call_tool_sync("github.list_issues", {"repo": "a/b"})
     assert out["ok"] is False
     assert "NSA_MCP_EXECUTE" in out["error"]
 

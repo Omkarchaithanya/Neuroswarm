@@ -97,6 +97,10 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
             "yes",
             "on",
         }
+    if v := os.environ.get("NSA_ASCR_MAX_ROUNDS"):
+        out.setdefault("defaults", {})
+        out["defaults"] = dict(out.get("defaults") or {})
+        out["defaults"]["max_rounds"] = int(v)
     return out
 
 

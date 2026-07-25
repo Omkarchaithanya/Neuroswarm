@@ -12,6 +12,9 @@ params:
 example_prompts:
 - search the web
 - google-like search
+- search the web for Arm Neoverse V2
+- look up a related web source before answering
+- search public docs online
 capabilities:
 - web-search
 - mcp

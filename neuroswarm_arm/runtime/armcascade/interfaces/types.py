@@ -209,6 +209,7 @@ class ThresholdInputs:
     base_escalate_threshold: float = 0.4
     base_verify_batch: int = 1
     base_depth: int = 1
+    base_max_rounds: int = 4
 
 
 @dataclass(slots=True)

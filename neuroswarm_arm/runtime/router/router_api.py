@@ -131,7 +131,7 @@ def create_tool_router(runtime: SemanticToolRouter) -> APIRouter:
         return payload
 
     @tools_router.post("/tools/call")
-    def call_tool(body: CallToolBody) -> dict[str, Any]:
+    async def call_tool(body: CallToolBody) -> dict[str, Any]:
         """Optional demo execute path (NSA_MCP_EXECUTE=1). Not used by default chat."""
         from .mcp_executor import call_tool as mcp_call, mcp_execute_enabled
 
@@ -140,7 +140,7 @@ def create_tool_router(runtime: SemanticToolRouter) -> APIRouter:
                 status_code=503,
                 detail="MCP execute disabled. Set NSA_MCP_EXECUTE=1 and provide API keys.",
             )
-        out = mcp_call(body.tool_id, body.arguments, timeout_s=body.timeout_s)
+        out = await mcp_call(body.tool_id, body.arguments, timeout_s=body.timeout_s)
         if not out.get("ok"):
             raise HTTPException(status_code=400, detail=out)
         return out
