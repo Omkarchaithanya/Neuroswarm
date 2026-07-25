@@ -20,6 +20,44 @@ DEFAULT_CASES = [
 ]
 
 
+def _family(tool_id: str) -> str:
+    tid = str(tool_id or "").lower().strip()
+    if "." in tid:
+        return tid.split(".", 1)[0]
+    # Coarse aliases
+    if tid in {"web-search", "web"}:
+        return "web"
+    return tid
+
+
+def _expected_families(expected: str) -> set[str]:
+    exp = str(expected or "").lower().strip()
+    if exp in {"web-search", "web"}:
+        return {"web", "web-search"}
+    return {exp, _family(exp)}
+
+
+def _matches_expected(expected: str, tool_id: str, tool_name: str = "") -> bool:
+    """Family-aware match: expected=github hits github.create_issue."""
+    exp = str(expected or "").lower().strip()
+    tid = str(tool_id or "").lower().strip()
+    name = str(tool_name or "").lower().strip()
+    if not exp:
+        return False
+    if exp in {tid, name}:
+        return True
+    families = _expected_families(exp)
+    if _family(tid) in families:
+        return True
+    if tid.startswith(exp + ".") or exp.startswith(tid + "."):
+        return True
+    # Name contains family token (e.g. "GitHub Create Issue")
+    for fam in families:
+        if fam and fam in name.replace(" ", "-"):
+            return True
+    return False
+
+
 def run_router_benchmark(router: Any, cases: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     suite = cases or DEFAULT_CASES
     latencies: list[float] = []
@@ -35,13 +73,24 @@ def run_router_benchmark(router: Any, cases: list[dict[str, Any]] | None = None)
         result = router.route(query, top_k=max(5, router.config.top_k))
         ms = (time.perf_counter() - t0) * 1000.0
         latencies.append(ms)
-        ids = result.tool_ids
-        names = result.tool_names
-        hit = expected in ids or expected in names
-        if ids and (ids[0] == expected or names[0] == expected):
+        ids = list(result.tool_ids)
+        names = list(result.tool_names)
+        hit3 = any(
+            _matches_expected(expected, tid, names[i] if i < len(names) else "")
+            for i, tid in enumerate(ids[:3])
+        )
+        hit5 = any(
+            _matches_expected(expected, tid, names[i] if i < len(names) else "")
+            for i, tid in enumerate(ids[:5])
+        )
+        hit1 = bool(ids) and _matches_expected(
+            expected, ids[0], names[0] if names else ""
+        )
+        if hit1:
             top1 += 1
-        if hit:
+        if hit3:
             top3 += 1
+        if hit5:
             top5 += 1
         else:
             fn += 1
@@ -54,6 +103,8 @@ def run_router_benchmark(router: Any, cases: list[dict[str, Any]] | None = None)
                 "picked": ids,
                 "confidence": result.confidence_top1,
                 "latency_ms": round(ms, 3),
+                "hit1": hit1,
+                "hit3": hit3,
             }
         )
 

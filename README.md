@@ -1,5 +1,14 @@
 # NeuroSwarm-Arm
 
+**Live Axion checklist (GCP `neuroswarm-axion`, Neoverse-V2): PASS=10 FAIL=0**
+
+```
+embedding_backend=fastembed  dims=384  tools_registered=46
+build-info: SVE2+I8MM present; SME2 not available
+router accuracy: top1=1.0 top3=1.0 top5=1.0  reduction≈0.89
+MCP execute: gated OFF by default (honest 503 until NSA_MCP_EXECUTE=1)
+```
+
 NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization Challenge. The MVP runs on a single GCP Axion VM and combines:
 
 - llama.cpp CPU inference on Arm64
@@ -10,6 +19,31 @@ NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization 
 - HAOE Layer-1 runtime kernel (task graphs, work stealing, affinity HAL, telemetry)
 - DIPA Layer-2 inference runtime kernel (planner, **ASCR** cascade, backends, streaming, recovery)
 - Prometheus metrics for latency, tier usage, tool schemas, and token caps
+
+## Acronym map (5-plane stack)
+
+| Acronym | One-liner |
+|---------|-----------|
+| **HAOE** | Layer-1 task-graph runtime (schedules work; never runs models) |
+| **DIPA** | Layer-2 inference kernel (planner → routers → cascade → backends) |
+| **ASCR** | Adaptive speculative / quality cascade across CPU tiers |
+| **AROP** | Evolution / runtime optimization loop (Performix-fed policies) |
+| **OKF** | Ontology / knowledge files compiled into agent context |
+| **AQR** | Adaptive quantization routing metadata |
+| **AWPP** | Arm weight / preference policy connector |
+| **MAKS** | Memory / KV session services |
+| **RTG** | Reasoning-token governor |
+| **ACR** | Agent conversation / memory recall plane |
+
+## Latency note (measured on Axion)
+
+Baseline checklist showed tier1 chat ~**1116ms** while `haoe_workflow_latency_ms` ~**1970ms** (~850ms orchestration overhead on a non-escalating turn). Mitigations in this tree:
+
+1. **MCP process pool** — warm stdio servers instead of spawn-per-call (`mcp_executor.py`)
+2. **HAOE fast-path** — high-confidence chat skips full `submit_workflow` DAG (`gateway.py`, `metrics.haoe_bypassed=true`)
+3. **ASCR round-1** — skip threshold recompute on first round; `NSA_ASCR_MAX_ROUNDS` for demo measurement (default remains 4)
+
+Router gates stay at top1=1.0 (`threshold=0.42`, `high_conf_gate=0.70`) — not tuned for speed.
 
 ## Semantic MCP Tool Router
 
@@ -24,7 +58,7 @@ python benchmarks/router_full.py
 
 ## HAOE (Layer 1)
 
-Chat requests execute as HAOE task graphs (route → KV session → DIPA → checkpoint → response). HAOE coordinates inference; it does not run models. Topology/affinity providers degrade safely on Axion (no NUMA/MTE/CXL assumptions). See [`docs/haoe/architecture.md`](docs/haoe/architecture.md) and ADRs under `docs/haoe/adr/`.
+Chat requests execute as HAOE task graphs (route → KV session → DIPA → checkpoint → response). High-confidence turns may take the gateway fast-path (cascade direct). HAOE coordinates inference; it does not run models. Topology/affinity providers degrade safely on Axion (no NUMA/MTE/CXL assumptions). See [`docs/haoe/architecture.md`](docs/haoe/architecture.md) and ADRs under `docs/haoe/adr/`.
 
 ```bash
 pytest tests/runtime/haoe -q

@@ -82,3 +82,24 @@ def test_quality_thresholds_loaded_from_yaml() -> None:
     d = cfg.get("defaults") or {}
     assert float(d.get("quality_accept_threshold", 0)) == 0.55
     assert float(d.get("quality_early_accept_floor", 0)) == 0.52
+
+
+def test_max_rounds_env_override(monkeypatch) -> None:
+    monkeypatch.setenv("NSA_ASCR_MAX_ROUNDS", "2")
+    from neuroswarm_arm.runtime.armcascade.config.loader import (
+        apply_env_overrides,
+        default_thresholds,
+    )
+
+    cfg = apply_env_overrides({"defaults": {"max_rounds": 4}})
+    thr = default_thresholds(cfg)
+    assert thr.max_rounds == 2
+
+
+def test_adaptive_preserves_base_max_rounds() -> None:
+    from neuroswarm_arm.runtime.armcascade.interfaces.types import ThresholdInputs
+    from neuroswarm_arm.runtime.armcascade.thresholds.engine import AdaptiveThresholdEngine
+
+    eng = AdaptiveThresholdEngine()
+    out = eng.compute(ThresholdInputs(base_max_rounds=2))
+    assert out.max_rounds == 2
