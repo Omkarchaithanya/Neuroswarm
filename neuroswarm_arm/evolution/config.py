@@ -11,6 +11,20 @@ def _bool(name: str, default: str = "1") -> bool:
     return os.getenv(name, default) not in {"0", "false", "False", "no", "NO"}
 
 
+def _canary_percent(raw: str | None, default: float = 5.0) -> float:
+    """Normalize canary traffic share to percentage points (0–100).
+
+    Accepts ``5``, ``5.0``, or fraction ``0.05`` (→ 5.0). Registry compares
+    ``hash(agent) % 100 < canary_percent``.
+    """
+    if raw is None or str(raw).strip() == "":
+        return default
+    v = float(raw)
+    if 0.0 < v <= 1.0:
+        return v * 100.0
+    return max(0.0, min(100.0, v))
+
+
 @dataclass(slots=True)
 class AROPConfig:
     enabled: bool = True
@@ -21,7 +35,7 @@ class AROPConfig:
     performix_recipe: str = "code-hotspots"
     haoe_snapshot: Path = field(default_factory=lambda: Path("work/haoe/performix_snapshot.json"))
     interval_seconds: int = 3600
-    canary_percent: float = 10.0
+    canary_percent: float = 5.0
     reflection_strategy: str = "hybrid"  # rule|gepa|hybrid|offline_llm
     primary_metric: str = "reward_scalar"
     min_improvement: float = 0.01
@@ -52,7 +66,8 @@ def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = No
         performix_recipe=os.getenv("NSA_AROP_PERFORMIX_RECIPE", "code-hotspots"),
         haoe_snapshot=Path(os.getenv("NSA_AROP_HAOE_SNAPSHOT", "work/haoe/performix_snapshot.json")),
         interval_seconds=int(os.getenv("NSA_AROP_INTERVAL", "3600")),
-        canary_percent=float(os.getenv("NSA_AROP_CANARY_PCT", "10")),
+        # Plan: 5% canary (accepts NSA_AROP_CANARY_PCT=5 or 0.05).
+        canary_percent=_canary_percent(os.getenv("NSA_AROP_CANARY_PCT", "5")),
         reflection_strategy=os.getenv("NSA_AROP_REFLECTION", "hybrid"),
         primary_metric=os.getenv("NSA_AROP_PRIMARY_METRIC", "reward_scalar"),
         min_improvement=float(os.getenv("NSA_AROP_MIN_IMPROVEMENT", "0.01")),

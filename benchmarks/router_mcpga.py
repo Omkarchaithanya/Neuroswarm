@@ -1,7 +1,9 @@
-"""Lean ~40-tool MCPGA-style router harness (6 real templates + distractors).
+"""Lean ~40-tool MCPGA-style router harness.
 
-Writes work/benchmarks/router_mcpga.json with top-3 accuracy and token_reduction_ratio.
-Uses NSA_ROUTER_ALLOW_HASH=1 so CI does not require HF downloads.
+Uses the live ≥40-tool catalog under templates/mcp-servers when present.
+Pads with synthetic distractors only if the catalog is still under 40.
+Hash embeddings are used when NSA_ROUTER_MCPGA_HASH=1 or FastEmbed is unavailable
+(CI-friendly). Prefer real FastEmbed for local/Axion measurement runs.
 """
 
 from __future__ import annotations
@@ -15,7 +17,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-os.environ.setdefault("NSA_ROUTER_ALLOW_HASH", "1")
+# CI default: hash. Set NSA_ROUTER_MCPGA_HASH=0 to force real backend attempt.
+if os.getenv("NSA_ROUTER_MCPGA_HASH", "1") not in {"0", "false", "False"}:
+    os.environ.setdefault("NSA_ROUTER_ALLOW_HASH", "1")
+    os.environ.setdefault("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
+else:
+    os.environ.setdefault("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed")
+    os.environ.pop("NSA_ROUTER_ALLOW_HASH", None)
 
 from neuroswarm_arm.runtime.memory import build_memory_runtime
 from neuroswarm_arm.runtime.memory.config import MemoryRuntimeConfig
@@ -27,7 +35,7 @@ from neuroswarm_arm.runtime.router.tool_serializer import serialize_tools_for_pr
 RESULTS = REPO_ROOT / "work" / "benchmarks" / "router_mcpga.json"
 TOOLS = REPO_ROOT / "templates" / "mcp-servers"
 
-# Queries keyed to the six live MCP templates.
+# Queries keyed to live per-tool catalog namespaces.
 SUITE = [
     {"query": "Search the web and summarize GitHub issues for the project", "expected": "github"},
     {"query": "Find a page in the browser and capture the visible text", "expected": "browser"},
@@ -38,7 +46,7 @@ SUITE = [
 ]
 
 
-def _distractors(n: int = 34) -> list[ToolRecord]:
+def _distractors(n: int) -> list[ToolRecord]:
     cats = [
         ("calendar", "Schedule meetings and calendar events"),
         ("email", "Send and read email messages"),
@@ -76,7 +84,7 @@ def _distractors(n: int = 34) -> list[ToolRecord]:
         ("vpn", "Manage VPN endpoints"),
     ]
     out: list[ToolRecord] = []
-    for i in range(n):
+    for i in range(max(0, n)):
         name, desc = cats[i % len(cats)]
         tid = f"distract-{name}-{i}"
         out.append(
@@ -112,14 +120,20 @@ def run_mcpga(*, top_k: int = 3) -> dict:
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
     cfg.top_k = top_k
-    cfg.allow_hash = True
+    if os.getenv("NSA_ROUTER_MCPGA_HASH", "1") not in {"0", "false", "False"}:
+        cfg.allow_hash = True
+        cfg.embedding_backend = "hash"
+    else:
+        cfg.allow_hash = False
+        cfg.embedding_backend = "fastembed"
     cfg.ensure_dirs()
 
     mem = build_memory_runtime(
         config=MemoryRuntimeConfig(store_root=scratch / "mem", provider="json", llm_mode="none")
     )
     router = build_router(cfg, start_sync=False, memory=mem)
-    for tool in _distractors(34):
+    need = max(0, 40 - router.registry.size())
+    for tool in _distractors(need):
         router.register_tool(tool)
 
     tool_count = router.registry.size()
@@ -133,49 +147,41 @@ def run_mcpga(*, top_k: int = 3) -> dict:
         result = router.route(str(case["query"]), top_k=top_k)
         ok = _hit(str(case["expected"]), result.tool_ids)
         hits += int(ok)
-        top_tokens = sum(
-            estimate_schema_tokens(t.schema or build_tool_schema(t.tool)) for t in result.tools
-        )
-        ratio = 0.0 if naive_tokens <= 0 else max(0.0, 1.0 - (top_tokens / naive_tokens))
-        reductions.append(ratio)
-        # Ensure serializer budget path is exercised.
-        _ = serialize_tools_for_prompt(result.tools, max_tokens=max(64, top_tokens))
+        selected = [t for t in all_tools if t.id in set(result.tool_ids)]
+        sel_tokens = sum(estimate_schema_tokens(build_tool_schema(t)) for t in selected)
+        reduction = 1.0 - (sel_tokens / max(1, naive_tokens))
+        reductions.append(reduction)
         rows.append(
             {
                 "query": case["query"],
                 "expected": case["expected"],
                 "tool_ids": result.tool_ids,
                 "hit": ok,
-                "confidence_top1": result.confidence_top1,
+                "confidence": result.confidence_top1,
                 "high_confidence": result.high_confidence,
-                "token_reduction_ratio": ratio,
-                "candidate_count": result.candidate_count,
+                "token_reduction": reduction,
+                "prompt_chars": len(serialize_tools_for_prompt(result.tools)),
             }
         )
 
-    emb_backend = router.embedder.backend_name
-    router.shutdown()
-    report = {
-        "status": "ok",
+    payload = {
         "tool_count": tool_count,
+        "embedding_backend": router.embedder.backend_name,
         "top_k": top_k,
-        "cases": len(SUITE),
-        "top3_accuracy": hits / max(1, len(SUITE)),
+        "top3_hit_rate": hits / max(1, len(SUITE)),
         "avg_token_reduction_ratio": sum(reductions) / max(1, len(reductions)),
-        "naive_all_schema_tokens": naive_tokens,
-        "embedding_backend": emb_backend,
-        "rows": rows,
+        "note": (
+            "Internal harness (not a public MCPGA paper). "
+            "Use NSA_ROUTER_MCPGA_HASH=0 for FastEmbed measurement."
+        ),
+        "cases": rows,
     }
     RESULTS.parent.mkdir(parents=True, exist_ok=True)
-    RESULTS.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    return report
-
-
-def main() -> None:
-    report = run_mcpga()
-    print(json.dumps({k: v for k, v in report.items() if k != "rows"}, indent=2))
-    print(f"wrote {RESULTS}")
+    RESULTS.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    router.shutdown()
+    print(json.dumps({k: payload[k] for k in payload if k != "cases"}, indent=2))
+    return payload
 
 
 if __name__ == "__main__":
-    main()
+    run_mcpga()

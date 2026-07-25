@@ -1,0 +1,28 @@
+id: postgres.insert_row
+name: Postgres Insert Row
+description: Insert a row into a table from a JSON object.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  table: table
+  row: json object
+example_prompts:
+- insert into postgres
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/insert_row
+input_schema:
+  type: object
+  properties:
+    table:
+      type: string
+      description: table
+    row:
+      type: string
+      description: json object
+output_schema:
+  type: object

@@ -487,8 +487,52 @@ def _cpu_features() -> list[str]:
     if not cpuinfo.exists():
         return []
     text = cpuinfo.read_text(encoding="utf-8", errors="ignore")
-    wanted = ("asimd", "sve", "sve2", "i8mm", "dotprod", "bf16")
+    wanted = ("asimd", "sve", "sve2", "i8mm", "dotprod", "bf16", "sme", "sme2")
     return sorted({flag for flag in wanted if re.search(rf"\b{re.escape(flag)}\b", text)})
+
+
+@app.get("/build-info")
+def build_info() -> dict[str, object]:
+    """KleidiAI / GGML / Axion feature honesty for operators and demos."""
+    features = _cpu_features()
+    has_sve2 = "sve2" in features
+    has_i8mm = "i8mm" in features
+    has_sme = "sme" in features or "sme2" in features
+    kleidi_env = {
+        "GGML_KLEIDIAI_SME": os.getenv("GGML_KLEIDIAI_SME"),
+        "NSA_REQUIRE_KLEIDIAI": os.getenv("NSA_REQUIRE_KLEIDIAI"),
+        "NSA_ROUTER_EMBEDDING_BACKEND": os.getenv("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed"),
+        "NSA_AROP_CANARY_PCT": os.getenv("NSA_AROP_CANARY_PCT", "5"),
+        "NSA_RTG_PPO": os.getenv("NSA_RTG_PPO", "0"),
+    }
+    return {
+        "arch": platform.machine(),
+        "cpu_features": features,
+        "axion_profile": {
+            "expected": "Neoverse-V2",
+            "acceleration": "SVE2+I8MM",
+            "sme2": False,
+            "note": "GCP Axion C4A is Neoverse V2: SVE2+I8MM present; SME2 not available.",
+        },
+        "detected": {
+            "sve2": has_sve2,
+            "i8mm": has_i8mm,
+            "sme2": has_sme,
+            "dotprod": "dotprod" in features,
+            "bf16": "bf16" in features,
+        },
+        "kleidiai": {
+            "sme_auto": kleidi_env["GGML_KLEIDIAI_SME"] in (None, "", "auto"),
+            "sme_forced_off": kleidi_env["GGML_KLEIDIAI_SME"] in {"0", "false", "off"},
+            "require": kleidi_env["NSA_REQUIRE_KLEIDIAI"] in {"1", "true", "yes"},
+        },
+        "rtg": {
+            "default_policy": "bandit",
+            "ppo_enabled": kleidi_env["NSA_RTG_PPO"] in {"1", "true", "yes"},
+            "note": "PPO is optional offline scaffold; bandit/heuristics are the default live path.",
+        },
+        "env": kleidi_env,
+    }
 
 
 @app.get("/v1/models")

@@ -1,0 +1,33 @@
+id: github.list_commits
+name: GitHub List Commits
+description: List recent commits on a branch.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  repo: owner/name
+  sha: branch
+  limit: max commits
+example_prompts:
+- list commits
+- git history
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/list_commits
+input_schema:
+  type: object
+  properties:
+    repo:
+      type: string
+      description: owner/name
+    sha:
+      type: string
+      description: branch
+    limit:
+      type: string
+      description: max commits
+output_schema:
+  type: object

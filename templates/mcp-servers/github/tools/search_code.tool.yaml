@@ -1,0 +1,33 @@
+id: github.search_code
+name: GitHub Search Code
+description: Search code across GitHub or scoped to one repository.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  query: search terms
+  repo: optional owner/name
+  limit: max results
+example_prompts:
+- search github code
+- find code on github
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/search_code
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: search terms
+    repo:
+      type: string
+      description: optional owner/name
+    limit:
+      type: string
+      description: max results
+output_schema:
+  type: object

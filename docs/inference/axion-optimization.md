@@ -50,7 +50,7 @@ Env: `NSA_LOCALITY_MODE`, `NSA_TIER1_CPUSET`, `NSA_TIER2_CPUSET`, `NSA_TIER3_CPU
 
 ## SME
 
-Unset `GGML_KLEIDIAI_SME` for auto. Axion without SME → kernels fall back to DotProd/I8MM/SVE2.
+Unset `GGML_KLEIDIAI_SME` for auto. **Axion C4A has no SME2** — kernels use DotProd/I8MM/SVE2. Do not document SME2 as available on Axion.
 
 ## SGLang prefill (soft PD)
 

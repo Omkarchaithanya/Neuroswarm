@@ -1,0 +1,33 @@
+id: s3.put_object
+name: S3 Put Object
+description: Upload an object to an S3 bucket key.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  key: object key
+  path: local file
+example_prompts:
+- upload to s3
+- put object storage
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/put_object
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    key:
+      type: string
+      description: object key
+    path:
+      type: string
+      description: local file
+output_schema:
+  type: object

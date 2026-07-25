@@ -1,0 +1,28 @@
+id: s3.delete_object
+name: S3 Delete Object
+description: Delete an object from a bucket.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  key: object key
+example_prompts:
+- delete s3 object
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/delete_object
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    key:
+      type: string
+      description: object key
+output_schema:
+  type: object

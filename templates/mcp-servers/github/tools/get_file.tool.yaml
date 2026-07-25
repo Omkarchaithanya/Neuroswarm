@@ -1,0 +1,33 @@
+id: github.get_file
+name: GitHub Get File Contents
+description: Read file contents from a repository path at a ref.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  repo: owner/name
+  path: file path
+  ref: branch or sha
+example_prompts:
+- read github file
+- get repo file contents
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/get_file
+input_schema:
+  type: object
+  properties:
+    repo:
+      type: string
+      description: owner/name
+    path:
+      type: string
+      description: file path
+    ref:
+      type: string
+      description: branch or sha
+output_schema:
+  type: object

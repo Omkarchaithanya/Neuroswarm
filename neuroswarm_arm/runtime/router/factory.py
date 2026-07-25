@@ -51,10 +51,12 @@ def build_router(
             model_name=config.encoder_name,
             dims=384,
             normalize=True,
+            backend=config.embedding_backend,
             use_onnx=config.use_onnx,
             use_int8=config.use_int8,
             onnx_path=config.onnx_path,
             tokenizer_path=config.tokenizer_path,
+            fastembed_cache_dir=config.fastembed_cache_dir,
         ),
         cache=cache,
         metrics=metrics,
@@ -69,6 +71,7 @@ def build_router(
         metric=metric,
         bit_width=config.turbovec_bit_width,
         events=events,
+        turbovec_min_tools=config.turbovec_min_tools,
     )
     if int(embedder.dims) != int(getattr(index, "dims", embedder.dims)):
         raise ValueError(

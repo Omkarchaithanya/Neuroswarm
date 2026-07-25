@@ -1,4 +1,4 @@
-"""Embedding service: BGE-small, MiniLM, ONNX INT8, hash fallback (opt-in)."""
+"""Embedding service: FastEmbed BGE-small, Sentence-Transformers, ONNX, hash (opt-in)."""
 
 from __future__ import annotations
 
@@ -27,9 +27,9 @@ KNOWN_MODELS = {
 }
 
 _HASH_REMEDIATION = (
-    "No real embedding backend available (Sentence-Transformers / ONNX). "
-    "Install sentence-transformers and download the encoder, or set "
-    "NSA_ROUTER_ONNX=1 with NSA_ROUTER_ONNX_PATH + tokenizer. "
+    "No real embedding backend available (FastEmbed / Sentence-Transformers / ONNX). "
+    "Install fastembed (preferred on ARM gateway) or sentence-transformers, "
+    "or set NSA_ROUTER_ONNX=1 with NSA_ROUTER_ONNX_PATH + tokenizer. "
     "For local tests only, set NSA_ROUTER_ALLOW_HASH=1."
 )
 
@@ -46,6 +46,39 @@ def _hash_embed(text: str, dims: int) -> np.ndarray:
 def _allow_hash() -> bool:
     raw = os.getenv("NSA_ROUTER_ALLOW_HASH", "")
     return raw in {"1", "true", "True", "yes", "YES"}
+
+
+def _env_backend() -> str:
+    return (os.getenv("NSA_ROUTER_EMBEDDING_BACKEND") or "").strip().lower()
+
+
+class _FastEmbedAdapter:
+    """Adapt fastembed.TextEmbedding to a SentenceTransformer-like encode API."""
+
+    def __init__(self, model: Any, dims: int = 384) -> None:
+        self._model = model
+        self._dims = int(dims)
+
+    def encode(self, text_or_list: Any, normalize_embeddings: bool = False) -> np.ndarray:
+        if isinstance(text_or_list, str):
+            vecs = list(self._model.embed([text_or_list]))
+            arr = np.asarray(vecs[0], dtype=np.float32).reshape(-1)
+        else:
+            texts = [str(t) for t in text_or_list]
+            vecs = list(self._model.embed(texts))
+            arr = np.asarray(vecs, dtype=np.float32)
+        if normalize_embeddings:
+            if arr.ndim == 1:
+                n = float(np.linalg.norm(arr)) or 1.0
+                arr = arr / n
+            else:
+                norms = np.linalg.norm(arr, axis=1, keepdims=True)
+                norms = np.where(norms == 0, 1.0, norms)
+                arr = arr / norms
+        return arr
+
+    def get_sentence_embedding_dimension(self) -> int:
+        return self._dims
 
 
 class EmbeddingService:
@@ -80,23 +113,84 @@ class EmbeddingService:
     def backend_name(self) -> str:
         return self._backend
 
-    def _ensure_backend(self) -> None:
+    def _requested_backend(self) -> str:
+        env = _env_backend()
+        if env:
+            return env
         if self.spec.use_onnx:
+            return "onnx"
+        return (self.spec.backend or "fastembed").strip().lower() or "fastembed"
+
+    def _ensure_backend(self) -> None:
+        requested = self._requested_backend()
+
+        if requested == "hash":
+            self._backend = "hash"
+            self._dims = self._dims or self.fallback_dims
+            if not self._allow_hash:
+                raise EmbeddingError(_HASH_REMEDIATION)
+            return
+
+        if requested in {"onnx", "onnx-int8"} or self.spec.use_onnx:
             if self._try_onnx():
                 return
-            # use_onnx requested but session/tokenizer failed inside _try_onnx (raises)
-            # or onnx_path missing — do not silently label hash as ONNX.
             raise EmbeddingError(
-                "NSA_ROUTER_ONNX=1 but ONNX session could not be loaded. "
+                "ONNX embedding backend requested but session could not be loaded. "
                 "Set NSA_ROUTER_ONNX_PATH to a valid model and provide a tokenizer "
                 f"(NSA_ROUTER_TOKENIZER_PATH or encoder '{self.spec.model_name}')."
             )
-        if self._try_sentence_transformers():
-            return
+
+        if requested in {"fastembed", "auto", "default", ""}:
+            if self._try_fastembed():
+                return
+            if requested == "fastembed":
+                # Fall through to ST then fail/hash — still prefer fail-loud for prod.
+                pass
+
+        if requested in {"sentence-transformers", "st", "auto", "default", "fastembed", ""}:
+            if self._try_sentence_transformers():
+                return
+
+        if requested in {"sentence-transformers", "st"} and not self._allow_hash:
+            raise EmbeddingError(
+                "NSA_ROUTER_EMBEDDING_BACKEND=sentence-transformers but "
+                "sentence-transformers failed to load. " + _HASH_REMEDIATION
+            )
+
+        if requested == "fastembed" and not self._allow_hash:
+            raise EmbeddingError(
+                "NSA_ROUTER_EMBEDDING_BACKEND=fastembed but fastembed failed to load. "
+                "Install fastembed+onnxruntime into the gateway image. " + _HASH_REMEDIATION
+            )
+
         self._backend = "hash"
         self._dims = self._dims or self.fallback_dims
         if not self._allow_hash:
             raise EmbeddingError(_HASH_REMEDIATION)
+
+    def _try_fastembed(self) -> bool:
+        try:
+            from fastembed import TextEmbedding  # type: ignore
+        except Exception:
+            return False
+        try:
+            cache_dir = (
+                self.spec.fastembed_cache_dir
+                or os.getenv("NSA_ROUTER_FASTEMBED_CACHE")
+                or os.getenv("FASTEMBED_CACHE_PATH")
+            )
+            kwargs: dict[str, Any] = {"model_name": self.spec.model_name}
+            if cache_dir:
+                kwargs["cache_dir"] = cache_dir
+            raw = TextEmbedding(**kwargs)
+            dims = int(KNOWN_MODELS.get(self.spec.model_name, self.spec.dims or 384))
+            self._model = _FastEmbedAdapter(raw, dims=dims)
+            self._dims = dims
+            self._backend = "fastembed"
+            return True
+        except Exception:
+            self._model = None
+            return False
 
     def _try_sentence_transformers(self) -> bool:
         try:

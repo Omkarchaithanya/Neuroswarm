@@ -1,0 +1,24 @@
+id: postgres.list_tables
+name: Postgres List Tables
+description: List tables in a schema.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  schema: schema name
+example_prompts:
+- list postgres tables
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/list_tables
+input_schema:
+  type: object
+  properties:
+    schema:
+      type: string
+      description: schema name
+output_schema:
+  type: object

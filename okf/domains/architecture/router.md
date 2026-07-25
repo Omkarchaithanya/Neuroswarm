@@ -33,11 +33,11 @@ In-process registry that replaces naïve injection of all MCP tool schemas with 
 
 | Claim | Value |
 |-------|-------|
-| Encoder | BGE-small-en-v1.5 — **384-dim**, ~33.4M params |
-| TurboVec | **2/4-bit** (default 4-bit) |
+| Encoder | BGE-small-en-v1.5 — **384-dim**, ~33.4M params via **FastEmbed** default |
+| TurboVec | **4-bit** when tools ≥ `NSA_ROUTER_TURBOVEC_MIN_TOOLS` (100); else exact |
 | Expand / re-rank trigger | `NSA_ROUTER_THRESHOLD` / `NSA_ROUTER_RERANK_TRIGGER` = **0.42** |
-| High-confidence gate | `NSA_ROUTER_HIGH_CONF_GATE` = **0.85** → caps thinking budget |
-| Live evidence | 6 MCP templates; see `docs/evidence/latest/LAYER_SCORECARD.md` |
+| High-confidence gate | `NSA_ROUTER_HIGH_CONF_GATE` = **0.70** → caps thinking budget (FastEmbed-calibrated) |
+| Live catalog | **≥40** per-tool schemas under `templates/mcp-servers/*/tools/` |
 
 ## Package
 

@@ -1,0 +1,32 @@
+id: postgres.create_index
+name: Postgres Create Index
+description: Create an index on table columns.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  table: table
+  columns: comma-separated
+  unique: bool
+example_prompts:
+- create postgres index
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/create_index
+input_schema:
+  type: object
+  properties:
+    table:
+      type: string
+      description: table
+    columns:
+      type: string
+      description: comma-separated
+    unique:
+      type: string
+      description: bool
+output_schema:
+  type: object

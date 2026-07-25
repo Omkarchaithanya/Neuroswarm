@@ -67,6 +67,12 @@ class BenchmarkBody(BaseModel):
     cases: list[dict[str, Any]] | None = None
 
 
+class CallToolBody(BaseModel):
+    tool_id: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    timeout_s: float = 30.0
+
+
 def _context_from_body(body: RouteBody) -> RouteContext:
     return RouteContext(
         agent_id=body.agent_id,
@@ -123,6 +129,21 @@ def create_tool_router(runtime: SemanticToolRouter) -> APIRouter:
         payload = result.to_dict()
         payload["prompt_block"] = runtime.prompt_block(result)
         return payload
+
+    @tools_router.post("/tools/call")
+    def call_tool(body: CallToolBody) -> dict[str, Any]:
+        """Optional demo execute path (NSA_MCP_EXECUTE=1). Not used by default chat."""
+        from .mcp_executor import call_tool as mcp_call, mcp_execute_enabled
+
+        if not mcp_execute_enabled():
+            raise HTTPException(
+                status_code=503,
+                detail="MCP execute disabled. Set NSA_MCP_EXECUTE=1 and provide API keys.",
+            )
+        out = mcp_call(body.tool_id, body.arguments, timeout_s=body.timeout_s)
+        if not out.get("ok"):
+            raise HTTPException(status_code=400, detail=out)
+        return out
 
     @tools_router.post("/tools/reload")
     def reload_tools() -> dict[str, Any]:

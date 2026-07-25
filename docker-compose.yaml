@@ -11,6 +11,13 @@ services:
       NSA_TIER2_URL: http://tier2:8080
       NSA_TIER3_URL: http://tier3:8080
       NSA_TOOL_METADATA_ROOT: /app/templates/mcp-servers
+      NSA_ROUTER_EMBEDDING_BACKEND: ${NSA_ROUTER_EMBEDDING_BACKEND:-fastembed}
+      NSA_ROUTER_ENCODER: ${NSA_ROUTER_ENCODER:-BAAI/bge-small-en-v1.5}
+      NSA_ROUTER_FASTEMBED_CACHE: ${NSA_ROUTER_FASTEMBED_CACHE:-/app/work/fastembed}
+      NSA_ROUTER_TURBOVEC_MIN_TOOLS: ${NSA_ROUTER_TURBOVEC_MIN_TOOLS:-100}
+      NSA_ROUTER_HIGH_CONF_GATE: ${NSA_ROUTER_HIGH_CONF_GATE:-0.70}
+      NSA_AROP_CANARY_PCT: ${NSA_AROP_CANARY_PCT:-5}
+      NSA_MCP_EXECUTE: ${NSA_MCP_EXECUTE:-0}
       NSA_REQUIRE_KLEIDIAI: ${NSA_REQUIRE_KLEIDIAI:-0}
       NSA_DIPA_KLEIDIAI: ${NSA_DIPA_KLEIDIAI:-1}
       NSA_DIPA_PD_MODE: ${NSA_DIPA_PD_MODE:-off}
@@ -52,6 +59,7 @@ services:
       - ./work:/app/work
       - ./neuroswarm_arm:/app/neuroswarm_arm:ro
       - ./okf:/app/okf:ro
+      - ./templates:/app/templates:ro
       - ${MODEL_DIR:-/models}:/models:ro
     depends_on:
       tier1:
