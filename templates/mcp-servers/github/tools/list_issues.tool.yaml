@@ -1,0 +1,33 @@
+id: github.list_issues
+name: GitHub List Issues
+description: List issues for a GitHub repository by owner/name, state, and limit.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  repo: owner/name
+  state: open|closed|all
+  limit: max issues
+example_prompts:
+- list github issues
+- open issues in repo
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/list_issues
+input_schema:
+  type: object
+  properties:
+    repo:
+      type: string
+      description: owner/name
+    state:
+      type: string
+      description: open|closed|all
+    limit:
+      type: string
+      description: max issues
+output_schema:
+  type: object

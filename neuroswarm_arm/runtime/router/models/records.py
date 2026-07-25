@@ -18,10 +18,13 @@ class EmbeddingSpec:
     model_name: str = "BAAI/bge-small-en-v1.5"
     dims: int = 384
     normalize: bool = True
+    # fastembed | sentence-transformers | onnx | hash | auto
+    backend: str = "fastembed"
     use_onnx: bool = False
     use_int8: bool = False
     onnx_path: str | None = None
     tokenizer_path: str | None = None
+    fastembed_cache_dir: str | None = None
 
 
 @dataclass(slots=True)

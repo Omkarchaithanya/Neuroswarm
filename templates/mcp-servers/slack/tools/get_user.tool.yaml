@@ -1,0 +1,24 @@
+id: slack.get_user
+name: Slack Get User
+description: Look up a Slack user by id or email.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  user: user id or email
+example_prompts:
+- find slack user
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/get_user
+input_schema:
+  type: object
+  properties:
+    user:
+      type: string
+      description: user id or email
+output_schema:
+  type: object

@@ -34,10 +34,13 @@ def _scratch() -> Path:
 @pytest.fixture
 def router(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
+    monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
     scratch = _scratch()
     cfg = load_router_config(REPO)
     cfg.tool_metadata_root = TOOLS
     cfg.okf_root = scratch / "okf"
+    cfg.embedding_backend = "hash"
+    cfg.allow_hash = True
     cfg.okf_root.mkdir()
     cfg.index_path = scratch / "index"
     cfg.snapshot_dir = scratch / "snapshots"
@@ -61,7 +64,7 @@ def router(monkeypatch):
 
 
 def test_registry_load_and_route(router):
-    assert router.registry.size() >= 6
+    assert router.registry.size() >= 40
     result = router.route("Upload an artifact to object storage")
     assert result.tools
     assert result.confidence_top1 >= 0.0
@@ -101,8 +104,8 @@ def test_snapshot_restore(router):
     router.index.clear()
     assert router.registry.size() == 0
     restored = router.restore(path)
-    assert restored["tools"] >= 6
-    assert router.index.size() >= 6
+    assert restored["tools"] >= 40
+    assert router.index.size() >= 40
 
 
 def test_hot_reload_scan(router):

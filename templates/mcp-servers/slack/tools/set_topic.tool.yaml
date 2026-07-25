@@ -1,0 +1,28 @@
+id: slack.set_topic
+name: Slack Set Channel Topic
+description: Update the topic string for a Slack channel.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  channel: channel
+  topic: new topic
+example_prompts:
+- set slack topic
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/set_topic
+input_schema:
+  type: object
+  properties:
+    channel:
+      type: string
+      description: channel
+    topic:
+      type: string
+      description: new topic
+output_schema:
+  type: object

@@ -1,0 +1,29 @@
+id: web.search
+name: Web Search
+description: Search the public web and return ranked results.
+namespace: web-search
+category: web-search
+tags:
+- web-search
+- mcp
+params:
+  query: search query
+  limit: max results
+example_prompts:
+- search the web
+- google-like search
+capabilities:
+- web-search
+- mcp
+endpoint: mcp://web-search/search
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: search query
+    limit:
+      type: string
+      description: max results
+output_schema:
+  type: object

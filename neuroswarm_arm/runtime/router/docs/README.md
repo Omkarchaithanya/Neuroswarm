@@ -12,7 +12,7 @@ Default path (honest):
 
 `BGE-small-en-v1.5 (33.4M, 384-dim) → TurboVec (default 4-bit; NEON when turbovec installed) → Hybrid → Rerank → Top-K schemas → DIPA`
 
-This is an **in-process registry**, not an MCP proxy. Dual gates: expand at **0.42**, high-confidence at **0.85**.
+This is an **in-process registry**, not an MCP proxy. Dual gates: expand at **0.42**, high-confidence at **0.70** (FastEmbed-calibrated).
 
 FAISS / HNSWlib / USearch / ScaNN remain pluggable via `NSA_ROUTER_ANN_BACKEND`.
 

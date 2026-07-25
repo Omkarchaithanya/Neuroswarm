@@ -72,11 +72,15 @@ class RouterConfig:
     top_k: int = 3
     candidate_multiplier: int = 5
     threshold: float = 0.42
-    high_conf_gate: float = 0.85
+    high_conf_gate: float = 0.70
     high_conf_thinking_budget: int = 256
     encoder_name: str = "BAAI/bge-small-en-v1.5"
+    embedding_backend: str = "fastembed"
+    fastembed_cache_dir: str | None = None
     fallback_dims: int = 64
     ann_backend: str = "turbovec"
+    # Use TurboVec IdMapIndex only at/above this tool count; below → exact float32.
+    turbovec_min_tools: int = 100
     metric: str = "cosine"
     cache_backend: str = "memory"
     redis_url: str = "redis://localhost:6379/1"
@@ -128,11 +132,15 @@ class RouterConfig:
             top_k=_i("NSA_ROUTER_TOP_K", 3),
             candidate_multiplier=_i("NSA_ROUTER_CANDIDATE_MULT", 5),
             threshold=threshold,
-            high_conf_gate=_f("NSA_ROUTER_HIGH_CONF_GATE", 0.85),
+            high_conf_gate=_f("NSA_ROUTER_HIGH_CONF_GATE", 0.70),
             high_conf_thinking_budget=_i("NSA_ROUTER_HIGH_CONF_THINKING_BUDGET", 256),
             encoder_name=os.getenv("NSA_ROUTER_ENCODER", "BAAI/bge-small-en-v1.5"),
+            embedding_backend=os.getenv("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed").lower(),
+            fastembed_cache_dir=os.getenv("NSA_ROUTER_FASTEMBED_CACHE")
+            or os.getenv("FASTEMBED_CACHE_PATH"),
             fallback_dims=_i("NSA_ROUTER_FALLBACK_DIMS", 64),
             ann_backend=os.getenv("NSA_ROUTER_ANN_BACKEND", "turbovec").lower(),
+            turbovec_min_tools=_i("NSA_ROUTER_TURBOVEC_MIN_TOOLS", 100),
             metric=os.getenv("NSA_ROUTER_METRIC", "cosine").lower(),
             cache_backend=os.getenv("NSA_ROUTER_CACHE", "memory").lower(),
             redis_url=os.getenv("NSA_ROUTER_REDIS_URL", "redis://localhost:6379/1"),

@@ -42,4 +42,10 @@ class AdaptiveThresholdEngine(ThresholdEngine):
             escalate_threshold=float(action.escalate_threshold),
             speculation_depth=max(1, int(action.speculation_depth)),
             max_rounds=4,
+            quality_accept_threshold=min(
+                0.95, max(0.35, float(action.accept_threshold) - 0.15)
+            ),
+            quality_early_accept_floor=min(
+                0.9, max(0.3, float(action.accept_threshold) - 0.18)
+            ),
         )

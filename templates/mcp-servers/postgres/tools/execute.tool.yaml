@@ -1,0 +1,25 @@
+id: postgres.execute
+name: Postgres Execute
+description: Execute a mutating SQL statement (INSERT/UPDATE/DELETE).
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  sql: SQL statement
+example_prompts:
+- execute sql
+- update postgres
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/execute
+input_schema:
+  type: object
+  properties:
+    sql:
+      type: string
+      description: SQL statement
+output_schema:
+  type: object

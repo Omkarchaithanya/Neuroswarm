@@ -1,0 +1,32 @@
+id: s3.presign_url
+name: S3 Presign URL
+description: Create a time-limited presigned URL for an object.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  key: key
+  expires_s: seconds
+example_prompts:
+- presigned s3 url
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/presign_url
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    key:
+      type: string
+      description: key
+    expires_s:
+      type: string
+      description: seconds
+output_schema:
+  type: object

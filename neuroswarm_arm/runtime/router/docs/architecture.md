@@ -38,18 +38,23 @@ classDiagram
 | Piece | Reality |
 |-------|---------|
 | Default encoder | `BAAI/bge-small-en-v1.5` — **~33.4M params, 384-dim** |
-| TurboVec | **2/4-bit** product quantization; default **4-bit** (~1.92 MB for 10k×384×4-bit) |
-| Fallback | Exact numpy ANN when `turbovec` is missing (health `degraded` unless `NSA_ROUTER_ANN_BACKEND=exact`) |
+| Default embed backend | **FastEmbed** (`NSA_ROUTER_EMBEDDING_BACKEND=fastembed`) via ONNX Runtime — preferred on ARM gateway |
+| Sentence-Transformers | Optional fallback when FastEmbed unavailable |
+| TurboVec | **4-bit** product quantization when `tools >= NSA_ROUTER_TURBOVEC_MIN_TOOLS` (default **100**); below that → exact float32 |
+| Fallback | Exact numpy ANN when turbovec missing or N small (health `ok` when intentional; `degraded` only if turbovec import failed) |
 | Hash embedder | Dev/CI only when `NSA_ROUTER_ALLOW_HASH=1`; otherwise fail-loud |
+| SVE2 codebook kernels | **Not** claimed for Pillar 2 (`sve_kernels_active=false`); ARM win is FastEmbed/ONNX + TurboVec NEON |
+
+Measured evidence for 40→3 token reduction requires FastEmbed + the ≥40-tool catalog. Do not cite a public “MCPGA paper” uplift — use `benchmarks/router_mcpga.py` as an internal harness.
 
 ## Thresholds (dual gates)
 
 | Gate | Env | Default | Role |
 |------|-----|---------|------|
 | Re-rank / expand trigger | `NSA_ROUTER_THRESHOLD` or `NSA_ROUTER_RERANK_TRIGGER` | **0.42** | Low top-1 semantic score → expand candidates |
-| High-confidence | `NSA_ROUTER_HIGH_CONF_GATE` | **0.85** | Sets `RoutingResult.high_confidence`; caps DIPA/RTG `thinking_token_cap` |
+| High-confidence | `NSA_ROUTER_HIGH_CONF_GATE` | **0.70** | Sets `RoutingResult.high_confidence`; caps DIPA/RTG `thinking_token_cap` (FastEmbed-calibrated) |
 
-Measured evidence (6 live MCP templates, ~16% schema-token cut) lives in `docs/evidence/latest/LAYER_SCORECARD.md` / `MEASURED.md`. Do not claim 40→3 / 92% without the mcpga bench artifact.
+Measured evidence for **≥40 live tool schemas** + FastEmbed lives in `docs/evidence/latest/` and `benchmarks/router_mcpga.py` (internal harness — not a public paper). Do not claim 40→3 / 92% without a FastEmbed measurement artifact.
 
 ## Design rules
 

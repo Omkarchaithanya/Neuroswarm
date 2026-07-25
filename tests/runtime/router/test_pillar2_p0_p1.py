@@ -35,18 +35,81 @@ def _scratch() -> Path:
 @pytest.fixture(autouse=True)
 def _allow_hash_env(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
+    monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
 
 
 def test_missing_embedder_raises_loud(monkeypatch):
     monkeypatch.delenv("NSA_ROUTER_ALLOW_HASH", raising=False)
     monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "0")
+    monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed")
+
+    def _no_fe(self):
+        return False
 
     def _no_st(self):
         return False
 
+    monkeypatch.setattr(EmbeddingService, "_try_fastembed", _no_fe)
     monkeypatch.setattr(EmbeddingService, "_try_sentence_transformers", _no_st)
-    with pytest.raises(EmbeddingError, match="NSA_ROUTER_ALLOW_HASH"):
-        EmbeddingService(EmbeddingSpec(model_name="BAAI/bge-small-en-v1.5"), allow_hash=False)
+    with pytest.raises(EmbeddingError, match="NSA_ROUTER_ALLOW_HASH|fastembed"):
+        EmbeddingService(EmbeddingSpec(model_name="BAAI/bge-small-en-v1.5", backend="fastembed"), allow_hash=False)
+
+
+def test_fastembed_backend_name(monkeypatch):
+    class _FakeFE:
+        def embed(self, texts):
+            import numpy as np
+
+            for _ in texts:
+                yield np.ones(384, dtype=np.float32)
+
+    def _ok(self):
+        from neuroswarm_arm.runtime.router.embedding_service import _FastEmbedAdapter
+
+        self._model = _FastEmbedAdapter(_FakeFE(), dims=384)
+        self._dims = 384
+        self._backend = "fastembed"
+        return True
+
+    monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed")
+    monkeypatch.setattr(EmbeddingService, "_try_fastembed", _ok)
+    svc = EmbeddingService(EmbeddingSpec(backend="fastembed"), allow_hash=False)
+    assert svc.backend_name == "fastembed"
+    assert svc.dims == 384
+    vec = svc.encode("hello world")
+    assert vec.shape == (384,)
+
+
+def test_turbovec_min_tools_uses_exact_below_threshold():
+    tv = TurboVecIndex(8, metric=MetricKind.COSINE, min_tools_for_turbovec=100)
+    import numpy as np
+
+    for i in range(5):
+        tv.insert(f"k{i}", np.ones(8, dtype=np.float32))
+    assert tv.size() == 5
+    assert tv.kernel_path == "numpy"
+    assert tv._using_turbovec is False
+
+
+def test_catalog_has_at_least_40_tools():
+    from neuroswarm_arm.runtime.router.registry_loader import RegistryLoader
+
+    tools = RegistryLoader().load_path(TOOLS)
+    assert len(tools) >= 40
+    ids = {t.id for t in tools}
+    assert "github.list_issues" in ids
+    assert "s3.put_object" in ids
+    assert "web.search" in ids
+
+
+def test_mcp_execute_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("NSA_MCP_EXECUTE", raising=False)
+    from neuroswarm_arm.runtime.router.mcp_executor import call_tool, mcp_execute_enabled
+
+    assert mcp_execute_enabled() is False
+    out = call_tool("github.list_issues", {"repo": "a/b"})
+    assert out["ok"] is False
+    assert "NSA_MCP_EXECUTE" in out["error"]
 
 
 def test_onnx_without_tokenizer_raises(monkeypatch, tmp_path):
@@ -85,6 +148,7 @@ def test_factory_dims_consistency():
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
     cfg.allow_hash = True
+    cfg.embedding_backend = "hash"
     cfg.ensure_dirs()
     mem = build_memory_runtime(
         config=MemoryRuntimeConfig(store_root=scratch / "mem", provider="json", llm_mode="none")
@@ -111,12 +175,29 @@ def test_turbovec_health_reports_real_backend():
     assert report_exact["status"] == "ok"
     assert report_exact["kernel_path"] == "numpy"
 
-    # turbovec requested but numpy fallback → degraded
-    tv = TurboVecIndex(8, metric=MetricKind.COSINE)
-    _Rt.config = type("C", (), {"ann_backend": "turbovec", "encoder_name": "x", "top_k": 3, "threshold": 0.42, "enable_hot_reload": False, "snapshot_dir": ".", "high_conf_gate": 0.85})()
+    # turbovec requested: numpy is OK when below min_tools with import success,
+    # degraded only when turbovec import failed.
+    tv = TurboVecIndex(8, metric=MetricKind.COSINE, min_tools_for_turbovec=100)
+    _Rt.config = type(
+        "C",
+        (),
+        {
+            "ann_backend": "turbovec",
+            "encoder_name": "x",
+            "top_k": 3,
+            "threshold": 0.42,
+            "enable_hot_reload": False,
+            "snapshot_dir": ".",
+            "high_conf_gate": 0.85,
+            "turbovec_min_tools": 100,
+            "embedding_backend": "hash",
+        },
+    )()
     _Rt.index = tv
     report_tv = build_health_report(_Rt())
-    if tv.kernel_path == "numpy":
+    if getattr(tv, "_turbovec_import_ok", False) and tv.kernel_path == "numpy":
+        assert report_tv["status"] == "ok"
+    elif tv.kernel_path == "numpy":
         assert report_tv["status"] == "degraded"
     else:
         assert report_tv["status"] == "ok"
@@ -136,6 +217,7 @@ def test_high_confidence_flag():
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
     cfg.allow_hash = True
+    cfg.embedding_backend = "hash"
     cfg.high_conf_gate = 0.01  # force true on any positive confidence
     cfg.ensure_dirs()
     mem = build_memory_runtime(
@@ -187,6 +269,7 @@ def test_threshold_rerank_expansion_cap():
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
     cfg.allow_hash = True
+    cfg.embedding_backend = "hash"
     cfg.threshold = 0.99  # force expand path
     cfg.top_k = 3
     cfg.candidate_multiplier = 2  # candidate_k = 6
@@ -230,9 +313,10 @@ def test_serialize_max_tokens_drops_output_schema():
 
 def test_mcpga_40_tool_smoke(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
+    monkeypatch.setenv("NSA_ROUTER_MCPGA_HASH", "1")
     from benchmarks.router_mcpga import run_mcpga
 
     report = run_mcpga(top_k=3)
     assert report["tool_count"] >= 40
-    assert report["top3_accuracy"] >= 0.5  # hash embedder is weak; floor for CI
-    assert report["avg_token_reduction_ratio"] >= 0.70
+    assert report["top3_hit_rate"] >= 0.5  # hash embedder is weak; floor for CI
+    assert report["avg_token_reduction_ratio"] >= 0.85

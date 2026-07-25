@@ -216,8 +216,15 @@ class ASCREngine(ICascadeEngine):
             backend_name = self._backend_for_tier(tier_id, policy)
 
             if use_quality or state.mode == "quality_cascade":
+                q_thresh = float(
+                    getattr(
+                        thresholds,
+                        "quality_accept_threshold",
+                        thresholds.accept_threshold,
+                    )
+                )
                 result = await self._quality_cascade_tier(
-                    req, ctx, backend_name, tier_id, thresholds.accept_threshold
+                    req, ctx, backend_name, tier_id, q_thresh
                 )
                 committed = result.text
                 last_verify_text = result.text
@@ -226,8 +233,19 @@ class ASCREngine(ICascadeEngine):
                 conf = float(result.raw.get("confidence", 0.5))
                 esc_state.confidence = conf
                 state.last_confidence = conf
-                if conf >= thresholds.accept_threshold or tier_id >= 3:
+                from neuroswarm_arm.runtime.armcascade.confidence.engine import (
+                    should_early_accept_quality,
+                )
+
+                accept_now = should_early_accept_quality(
+                    conf,
+                    tier_id=tier_id,
+                    threshold=q_thresh,
+                    cfg=self.config,
+                )
+                if accept_now or tier_id >= 3:
                     state.accepted_tokens += approx_tokens(committed)
+                    state.mode = "quality_cascade"
                     break
                 # Escalate
                 esc_state.confidence = conf
@@ -451,8 +469,14 @@ class ASCREngine(ICascadeEngine):
                 "ascr_draft_tokens": float(state.draft_tokens),
                 "ascr_accepted_tokens": float(state.accepted_tokens),
                 "ascr_rejected_tokens": float(state.rejected_tokens),
-                "ascr_speculation_gain": float(
-                    self.metrics.snapshot().get("ascr_speculation_gain", 0.0)
+                # Honesty: gain is 0 outside true speculative mode (quality accepts
+                # must not be reported as speculation_gain).
+                "ascr_speculation_gain": (
+                    0.0
+                    if state.mode in {"quality_cascade", "text_agree"}
+                    else float(
+                        self.metrics.snapshot().get("ascr_speculation_gain", 0.0)
+                    )
                 ),
                 "logits_available": 1.0 if saw_logits else 0.0,
                 "ascr_mode": state.mode,
