@@ -5,15 +5,16 @@
 ```
 embedding_backend=fastembed  dims=384  tools_registered=46
 build-info: SVE2+I8MM present; SME2 not available
-router accuracy: top1=1.0 top3=1.0 top5=1.0  reduction≈0.89
+router accuracy: top1=1.0 top3=1.0 top5=1.0  reduction≈0.89 (schema-token ratio, not 40→3/92%)
 MCP execute: gated OFF by default (honest 503 until NSA_MCP_EXECUTE=1)
+MCP manager: protocol 2025-11-25; executable only after tools/list reconcile
 ```
 
 NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization Challenge. The MVP runs on a single GCP Axion VM and combines:
 
 - llama.cpp CPU inference on Arm64
 - three-tier CPU cascade routing
-- semantic MCP tool selection (TurboVec ANN + hybrid rerank; see [`neuroswarm_arm/runtime/router/docs/`](neuroswarm_arm/runtime/router/docs/))
+- semantic MCP tool selection (TurboVec ANN when the wheel is active + hybrid rerank; exact NumPy fallback — see [`neuroswarm_arm/runtime/router/docs/`](neuroswarm_arm/runtime/router/docs/))
 - reasoning-token governance
 - adaptive quantization policy metadata
 - HAOE Layer-1 runtime kernel (task graphs, work stealing, affinity HAL, telemetry)
@@ -49,7 +50,9 @@ Router gates stay at top1=1.0 (`threshold=0.42`, `high_conf_gate=0.70`) — not 
 
 Replaces naïve injection of all MCP tool schemas with Top-K semantic routing:
 
-`BGE-small → TurboVec → hybrid retrieval → rerank → Top-K schemas → DIPA`
+`BGE-small → TurboVec (2/4-bit TurboQuant when active; else exact NumPy) → hybrid retrieval → rerank → Top-K schemas → DIPA`
+
+Default `NSA_ROUTER_TURBOVEC_MIN_TOOLS=0` so TurboVec runs whenever the ARM64 wheel imports. `/ready` reports honest `configured_backend` / `active_backend` / `fallback_reason`. Advertised tool YAML IDs match FastMCP execute names (`scripts/verify-mcp-execute-contract.py`).
 
 ```bash
 pytest tests/runtime/router -q

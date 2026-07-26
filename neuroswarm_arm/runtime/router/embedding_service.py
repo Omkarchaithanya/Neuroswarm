@@ -26,6 +26,9 @@ KNOWN_MODELS = {
     "e5-small-v2": 384,
 }
 
+# BGE retrieval query instruction (FlagEmbedding / BAAI card). Documents stay unprefixed.
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
 _HASH_REMEDIATION = (
     "No real embedding backend available (FastEmbed / Sentence-Transformers / ONNX). "
     "Install fastembed (preferred on ARM gateway) or sentence-transformers, "
@@ -50,6 +53,24 @@ def _allow_hash() -> bool:
 
 def _env_backend() -> str:
     return (os.getenv("NSA_ROUTER_EMBEDDING_BACKEND") or "").strip().lower()
+
+
+def bge_query_prefix_enabled() -> bool:
+    """Kill-switch: NSA_ROUTER_BGE_QUERY_PREFIX=0 disables instruction prefix."""
+    raw = os.getenv("NSA_ROUTER_BGE_QUERY_PREFIX", "1")
+    return raw not in {"0", "false", "False", "no", "NO"}
+
+
+def apply_bge_query_prefix(text: str, *, model_name: str) -> str:
+    """Prefix query text for BGE-small retrieval; no-op for other models / when disabled."""
+    if not text or not bge_query_prefix_enabled():
+        return text
+    name = (model_name or "").lower()
+    if "bge-small" not in name and not name.endswith("bge-small-en-v1.5"):
+        return text
+    if text.startswith(BGE_QUERY_PREFIX):
+        return text
+    return BGE_QUERY_PREFIX + text
 
 
 class _FastEmbedAdapter:
@@ -275,6 +296,17 @@ class EmbeddingService:
         if self.metrics and timer:
             self.metrics.set("router_embedding_latency_ms", timer.ms())
         return vec
+
+    def encode_query(self, text: str, *, normalize: bool | None = None) -> np.ndarray:
+        """Encode a retrieval query (BGE instruction prefix when applicable).
+
+        Tool/document embeddings must keep using ``encode`` (unprefixed).
+        Hash backend skips the prefix so deterministic toy embeddings stay aligned.
+        """
+        if self._backend == "hash":
+            return self.encode(text, normalize=normalize)
+        prefixed = apply_bge_query_prefix(text, model_name=self.spec.model_name)
+        return self.encode(prefixed, normalize=normalize)
 
     def _encode_uncached(self, text: str) -> np.ndarray:
         if self._onnx is not None:

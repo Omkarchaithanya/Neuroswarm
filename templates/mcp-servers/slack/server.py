@@ -1,11 +1,7 @@
-"""Slack MCP server — REAL implementation (FastMCP + slack_sdk AsyncWebClient).
+"""Slack MCP server — FastMCP + slack_sdk AsyncWebClient.
 
-Replaces the fake stub that only echoed its own tool description back.
-Auth: export SLACK_BOT_TOKEN=xoxb-... (bot token with chat:write and
-channels:history / groups:history as needed for the channels you use).
-
-Run: python server.py          (stdio, for local MCP clients)
-Test: npx @modelcontextprotocol/inspector python server.py
+Auth: export SLACK_BOT_TOKEN=xoxb-...
+Tool names match templates/mcp-servers/slack/tools/*.tool.yaml IDs.
 """
 from __future__ import annotations
 
@@ -71,13 +67,8 @@ def _map_slack_error(exc: SlackApiError) -> ValueError:
         "openWorldHint": True,
     },
 )
-async def send_message(channel: str, text: str) -> dict[str, Any]:
-    """Post a message to a Slack channel (chat.postMessage).
-
-    Args:
-        channel: channel ID (C…) or name
-        text: message body
-    """
+async def post_message(channel: str, text: str) -> dict[str, Any]:
+    """Post a message to a Slack channel (chat.postMessage)."""
     if not channel or not text:
         raise ValueError("channel and text are required")
     try:
@@ -93,6 +84,40 @@ async def send_message(channel: str, text: str) -> dict[str, Any]:
     }
 
 
+# Legacy FastMCP name (executor aliases send_message → post_message).
+@mcp.tool(
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    },
+)
+async def send_message(channel: str, text: str) -> dict[str, Any]:
+    """Legacy alias for post_message."""
+    return await post_message(channel=channel, text=text)
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    },
+)
+async def add_reaction(channel: str, timestamp: str, name: str) -> dict[str, Any]:
+    """Add an emoji reaction to a message."""
+    if not channel or not timestamp or not name:
+        raise ValueError("channel, timestamp, and name are required")
+    try:
+        resp = await _client().reactions_add(channel=channel, timestamp=timestamp, name=name)
+    except SlackApiError as exc:
+        raise _map_slack_error(exc) from None
+    data = resp.data if hasattr(resp, "data") else dict(resp)
+    return {"ok": bool(data.get("ok")), "channel": channel, "timestamp": timestamp, "name": name}
+
+
 @mcp.tool(
     annotations={
         "readOnlyHint": True,
@@ -101,31 +126,122 @@ async def send_message(channel: str, text: str) -> dict[str, Any]:
         "openWorldHint": True,
     },
 )
-async def get_history(channel: str, limit: int = 20) -> list[dict[str, Any]]:
-    """Fetch recent messages from a channel (conversations.history).
-
-    Args:
-        channel: channel ID (C…)
-        limit: max messages (1-100)
-    """
-    if not channel:
-        raise ValueError("channel is required")
-    limit = max(1, min(int(limit), 100))
+async def get_user(user: str) -> dict[str, Any]:
+    """Fetch a Slack user profile by user ID."""
+    if not user:
+        raise ValueError("user is required")
     try:
-        resp = await _client().conversations_history(channel=channel, limit=limit)
+        resp = await _client().users_info(user=user)
     except SlackApiError as exc:
         raise _map_slack_error(exc) from None
     data = resp.data if hasattr(resp, "data") else dict(resp)
-    messages = data.get("messages") or []
+    u = data.get("user") or {}
+    return {
+        "id": u.get("id"),
+        "name": u.get("name"),
+        "real_name": u.get("real_name"),
+        "is_bot": u.get("is_bot"),
+    }
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def list_channels(limit: int = 100) -> list[dict[str, Any]]:
+    """List conversations the bot can see."""
+    limit = max(1, min(int(limit), 200))
+    try:
+        resp = await _client().conversations_list(limit=limit, types="public_channel,private_channel")
+    except SlackApiError as exc:
+        raise _map_slack_error(exc) from None
+    data = resp.data if hasattr(resp, "data") else dict(resp)
     return [
-        {
-            "ts": m.get("ts"),
-            "user": m.get("user"),
-            "text": m.get("text"),
-            "type": m.get("type"),
-        }
-        for m in messages
+        {"id": c.get("id"), "name": c.get("name"), "is_private": c.get("is_private")}
+        for c in (data.get("channels") or [])
     ]
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def search_messages(query: str, count: int = 20) -> dict[str, Any]:
+    """Search messages (requires search:read scope on a user token for full results)."""
+    if not query or not query.strip():
+        raise ValueError("query is required")
+    count = max(1, min(int(count), 100))
+    try:
+        resp = await _client().search_messages(query=query.strip(), count=count)
+    except SlackApiError as exc:
+        raise _map_slack_error(exc) from None
+    data = resp.data if hasattr(resp, "data") else dict(resp)
+    matches = ((data.get("messages") or {}).get("matches")) or []
+    return {
+        "query": query,
+        "matches": [
+            {"text": m.get("text"), "channel": (m.get("channel") or {}).get("name"), "ts": m.get("ts")}
+            for m in matches
+        ],
+    }
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def set_topic(channel: str, topic: str) -> dict[str, Any]:
+    """Set a channel topic."""
+    if not channel:
+        raise ValueError("channel is required")
+    try:
+        resp = await _client().conversations_setTopic(channel=channel, topic=topic or "")
+    except SlackApiError as exc:
+        raise _map_slack_error(exc) from None
+    data = resp.data if hasattr(resp, "data") else dict(resp)
+    return {"ok": bool(data.get("ok")), "channel": channel, "topic": topic}
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    },
+)
+async def upload_file(
+    channels: str,
+    content: str,
+    filename: str = "upload.txt",
+    title: str | None = None,
+) -> dict[str, Any]:
+    """Upload a text file to one or more channels (comma-separated IDs)."""
+    if not channels or content is None:
+        raise ValueError("channels and content are required")
+    try:
+        resp = await _client().files_upload_v2(
+            channel=channels.split(",")[0].strip(),
+            content=content,
+            filename=filename,
+            title=title or filename,
+        )
+    except SlackApiError as exc:
+        raise _map_slack_error(exc) from None
+    data = resp.data if hasattr(resp, "data") else dict(resp)
+    return {"ok": bool(data.get("ok")), "file": data.get("file") or data.get("files")}
 
 
 if __name__ == "__main__":

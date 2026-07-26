@@ -323,6 +323,24 @@ app.include_router(create_workflow_router(workflow_service))
 app.include_router(create_experience_router(workflow_service))
 
 
+@app.on_event("startup")
+async def _startup_mcp_reconcile() -> None:
+    """When NSA_MCP_EXECUTE=1, discover tools/list and mark reconciled tools executable."""
+    try:
+        from neuroswarm_arm.runtime.router.mcp_executor import mcp_execute_enabled
+
+        if not mcp_execute_enabled():
+            return
+        result = await tool_router.reconcile_mcp_execute()
+        import logging
+
+        logging.getLogger(__name__).info("mcp_reconcile_startup %s", result)
+    except Exception as exc:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).warning("mcp_reconcile_startup failed: %s", exc)
+
+
 @app.on_event("shutdown")
 def _shutdown_runtime() -> None:
     try:
@@ -414,6 +432,20 @@ def ready() -> dict[str, object]:
                 reasons.append(f"{tier} llama server unavailable")
         if tools_indexed == 0:
             reasons.append(f"no tools indexed from {cfg.tool_metadata_root}")
+        try:
+            from neuroswarm_arm.runtime.router.mcp_executor import (
+                get_mcp_manager,
+                mcp_execute_enabled,
+            )
+
+            if mcp_execute_enabled():
+                mgr = get_mcp_manager()
+                if int(getattr(mgr, "executable_count", None) or len(mgr.executable_tools)) == 0:
+                    reasons.append(
+                        "MCP execute on but tools/list reconcile incomplete (executable_count=0)"
+                    )
+        except Exception as exc:  # noqa: BLE001
+            reasons.append(f"mcp_manager: {exc}")
 
         def _safe(label: str, fn):
             try:
@@ -427,9 +459,19 @@ def ready() -> dict[str, object]:
             neuro = getattr(memory, "neuro", memory)
             if hasattr(neuro, "health"):
                 hs = neuro.health()
-                mem_details = getattr(hs, "details", {}) or {}
+                details = getattr(hs, "details", {}) or {}
+                mem_details = dict(details) if isinstance(details, dict) else {"raw": details}
+                mem_details.setdefault("provider", getattr(hs, "provider", "unknown"))
+                mem_details.setdefault("healthy", getattr(hs, "healthy", True))
+            # Router history ranker honesty
+            hist = getattr(tool_router, "history", None)
+            if hist is not None and hasattr(hist, "status"):
+                hr = hist.status()
+                mem_details["history_ranker"] = hr
+                if hr.get("history_ranker_degraded"):
+                    reasons.append("history_ranker using json_emergency / degraded memory")
         except Exception as exc:  # noqa: BLE001
-            mem_details = {"error": str(exc)}
+            mem_details = {"error": str(exc), "emergency_active": True}
 
         numa_info: dict[str, object] = {}
         try:

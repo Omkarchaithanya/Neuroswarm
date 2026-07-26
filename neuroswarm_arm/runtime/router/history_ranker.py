@@ -25,6 +25,47 @@ class HistoryRanker:
     def _owner(self, agent_id: str) -> str:
         return agent_id or "default"
 
+    @property
+    def history_ranker_degraded(self) -> bool:
+        """True when history signals come from json_emergency / forced fallback."""
+        mem = self.memory
+        try:
+            if isinstance(mem, NeuroMemory) or hasattr(mem, "health"):
+                hs = mem.health()
+                details = getattr(hs, "details", None) or {}
+                if isinstance(details, dict) and details.get("emergency_active"):
+                    return True
+                provider = str(getattr(hs, "provider", "") or "").lower()
+                if provider in {"json_emergency", "json", "fallback"}:
+                    return True
+                if isinstance(details, dict):
+                    mode = str(details.get("mode", "")).lower()
+                    if mode in {"emergency_json", "json_emergency"}:
+                        return True
+            name = str(getattr(mem, "name", "") or "").lower()
+            if name in {"json_emergency", "json", "fallback"}:
+                return True
+        except Exception:
+            return True
+        return False
+
+    def status(self) -> dict[str, Any]:
+        degraded = self.history_ranker_degraded
+        out: dict[str, Any] = {"history_ranker_degraded": degraded}
+        try:
+            if hasattr(self.memory, "health"):
+                hs = self.memory.health()
+                out["provider"] = getattr(hs, "provider", "unknown")
+                details = getattr(hs, "details", {}) or {}
+                if isinstance(details, dict):
+                    out["mode"] = details.get("mode", "primary")
+                    out["emergency_active"] = bool(details.get("emergency_active", degraded))
+        except Exception as exc:
+            out["error"] = str(exc)
+            out["emergency_active"] = True
+            out["history_ranker_degraded"] = True
+        return out
+
     def record_success(
         self,
         agent_id: str,
