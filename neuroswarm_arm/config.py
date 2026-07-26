@@ -12,9 +12,9 @@ class AppConfig:
     tier1_url: str = os.getenv("NSA_TIER1_URL", "http://tier1:8080")
     tier2_url: str = os.getenv("NSA_TIER2_URL", "http://tier2:8080")
     tier3_url: str = os.getenv("NSA_TIER3_URL", "http://tier3:8080")
-    model_tier1: str = os.getenv("NSA_MODEL_TIER1", "/models/qwen2.5-0.5b-q4_k_m.gguf")
-    model_tier2: str = os.getenv("NSA_MODEL_TIER2", "/models/llama-3.2-3b-q5_k_m.gguf")
-    model_tier3: str = os.getenv("NSA_MODEL_TIER3", "/models/llama-3.1-8b-q5_k_m.gguf")
+    model_tier1: str = os.getenv("NSA_MODEL_TIER1", "/models/qwen2.5-0.5b-Instruct-q4_0.gguf")
+    model_tier2: str = os.getenv("NSA_MODEL_TIER2", "/models/Qwen2.5-3B-Instruct-Q4_0.gguf")
+    model_tier3: str = os.getenv("NSA_MODEL_TIER3", "/models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf")
     okf_root: Path = Path(os.getenv("NSA_OKF_ROOT", "okf"))
     okf_artifacts: Path = Path(os.getenv("NSA_OKF_ARTIFACTS", "okf/.okf/artifacts"))
     okf_enabled: bool = os.getenv("NSA_OKF_ENABLED", "1") not in {"0", "false", "False"}
