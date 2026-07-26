@@ -5,6 +5,32 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Any, Iterator, Mapping
 
+# Dual GenAI attrs: legacy gen_ai.system + newer gen_ai.provider.name (semconv Development).
+GEN_AI_SYSTEM = "neuroswarm"
+GEN_AI_PROVIDER = "neuroswarm"
+
+
+def gen_ai_attrs(*, operation: str = "route") -> dict[str, str]:
+    return {
+        "gen_ai.system": GEN_AI_SYSTEM,
+        "gen_ai.provider.name": GEN_AI_PROVIDER,
+        "gen_ai.operation.name": operation,
+    }
+
+
+def mcp_span_attrs(
+    *,
+    method: str,
+    session_id: str,
+    protocol_version: str,
+) -> dict[str, str]:
+    return {
+        **gen_ai_attrs(operation="mcp_tools_call"),
+        "mcp.method.name": method,
+        "mcp.session.id": session_id,
+        "mcp.protocol.version": protocol_version,
+    }
+
 
 class RouterTelemetry:
     def __init__(self, *, enabled: bool = False, endpoint: str = "") -> None:

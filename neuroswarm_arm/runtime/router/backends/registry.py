@@ -35,7 +35,7 @@ def build_vector_index(
     metric: MetricKind | str = MetricKind.COSINE,
     bit_width: int = 4,
     events: Any | None = None,
-    turbovec_min_tools: int = 100,
+    turbovec_min_tools: int = 0,
 ):
     name = (backend or "turbovec").lower()
     metric_enum = metric if isinstance(metric, MetricKind) else MetricKind(str(metric).lower())

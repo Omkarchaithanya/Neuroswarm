@@ -80,7 +80,8 @@ class RouterConfig:
     fallback_dims: int = 64
     ann_backend: str = "turbovec"
     # Use TurboVec IdMapIndex only at/above this tool count; below → exact float32.
-    turbovec_min_tools: int = 100
+    # Default 0: activate TurboVec whenever the wheel imports (exact only as real fallback).
+    turbovec_min_tools: int = 0
     metric: str = "cosine"
     cache_backend: str = "memory"
     redis_url: str = "redis://localhost:6379/1"
@@ -140,7 +141,7 @@ class RouterConfig:
             or os.getenv("FASTEMBED_CACHE_PATH"),
             fallback_dims=_i("NSA_ROUTER_FALLBACK_DIMS", 64),
             ann_backend=os.getenv("NSA_ROUTER_ANN_BACKEND", "turbovec").lower(),
-            turbovec_min_tools=_i("NSA_ROUTER_TURBOVEC_MIN_TOOLS", 100),
+            turbovec_min_tools=_i("NSA_ROUTER_TURBOVEC_MIN_TOOLS", 0),
             metric=os.getenv("NSA_ROUTER_METRIC", "cosine").lower(),
             cache_backend=os.getenv("NSA_ROUTER_CACHE", "memory").lower(),
             redis_url=os.getenv("NSA_ROUTER_REDIS_URL", "redis://localhost:6379/1"),

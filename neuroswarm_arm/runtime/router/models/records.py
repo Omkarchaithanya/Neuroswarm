@@ -57,6 +57,10 @@ class ToolRecord:
     reliability: float = 1.0
     agent_roles: list[str] = field(default_factory=list)
     workflow_stages: list[str] = field(default_factory=list)
+    # True only after live MCP tools/list reconciliation (not YAML-only).
+    executable: bool = False
+    destructive_hint: bool = False
+    readonly_hint: bool = False
 
     def index_text(self) -> str:
         parts = [

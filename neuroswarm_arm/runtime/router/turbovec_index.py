@@ -24,8 +24,9 @@ class TurboVecIndex:
     """Default ANN backend for NEXUS-ARM Semantic MCP Tool Router.
 
     Uses turbovec.IdMapIndex when available AND tool count >= min_tools_for_turbovec.
-    Below that threshold (default 100), uses ExactNumpyIndex — TurboQuant overhead
-    is not worthwhile for small catalogs. Falls back to exact if turbovec missing.
+    Default min_tools=0: activate TurboVec whenever the wheel imports. Below a raised
+    threshold (or on import failure), uses ExactNumpyIndex (exact float32).
+    TurboVec uses 2-bit/4-bit TurboQuant compression (experimental ARM64 ANN), not int8.
     """
 
     def __init__(
@@ -35,12 +36,12 @@ class TurboVecIndex:
         metric: MetricKind = MetricKind.COSINE,
         bit_width: int = 4,
         events: RouterEventBus | None = None,
-        min_tools_for_turbovec: int = 100,
+        min_tools_for_turbovec: int = 0,
     ) -> None:
         self.dims = int(dims)
         self.metric = metric
         self.bit_width = int(bit_width)
-        self.min_tools_for_turbovec = max(1, int(min_tools_for_turbovec))
+        self.min_tools_for_turbovec = max(0, int(min_tools_for_turbovec))
         self._events = events
         self._lock = threading.RLock()
         self._keys: list[str] = []
@@ -52,6 +53,7 @@ class TurboVecIndex:
         self._fallback = ExactNumpyIndex(self.dims, metric=metric)
         self._turbovec_import_ok = False
         self._using_turbovec = False
+        self._runtime_fallback = False
         self._probe_turbovec()
 
     def _probe_turbovec(self) -> None:
@@ -104,6 +106,7 @@ class TurboVecIndex:
 
             self._tv = IdMapIndex(dim=self.dims, bit_width=self.bit_width)
             self._using_turbovec = True
+            self._runtime_fallback = False
         except Exception:
             self._tv = None
             self._using_turbovec = False
@@ -120,6 +123,25 @@ class TurboVecIndex:
     @property
     def kernel_path(self) -> str:
         return "turbovec" if self._using_turbovec else "numpy"
+
+    @property
+    def active_backend(self) -> str:
+        """Honest active search path (never ambiguous turbovec+exact)."""
+        if self._using_turbovec:
+            return "turbovec"
+        return "exact_numpy"
+
+    @property
+    def fallback_reason(self) -> str:
+        if self._using_turbovec:
+            return "none"
+        if not self._turbovec_import_ok:
+            return "import_failed"
+        if self._runtime_fallback:
+            return "runtime_fallback"
+        if len(self._keys) < self.min_tools_for_turbovec:
+            return "catalog_below_min_tools"
+        return "runtime_fallback"
 
     @property
     def sve_kernels_active(self) -> bool:
@@ -257,7 +279,7 @@ class TurboVecIndex:
                     if hits:
                         return hits
                 except Exception:
-                    pass
+                    self._runtime_fallback = True
             return self._fallback.search(q, k)
 
     def exact_search(self, query: np.ndarray, k: int) -> list[SearchHit]:

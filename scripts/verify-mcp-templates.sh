@@ -22,6 +22,19 @@ echo "total_tool_schemas=$TOTAL"
 if [[ "${TOTAL:-0}" -lt 40 ]]; then
   echo "FAIL expected >=40 tool schemas, got $TOTAL"; FAIL=1
 fi
+# Advertise ↔ execute contract (YAML id leaf must exist as FastMCP fn)
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "FAIL no python for execute-contract check"; FAIL=1; PY=""
+fi
+if [[ -n "$PY" ]]; then
+  if ! $PY "$ROOT/scripts/verify-mcp-execute-contract.py"; then
+    FAIL=1
+  fi
+fi
 if [[ "$FAIL" -ne 0 ]]; then
   exit 1
 fi

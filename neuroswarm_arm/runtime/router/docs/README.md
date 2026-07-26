@@ -14,6 +14,10 @@ Default path (honest):
 
 This is an **in-process registry**, not an MCP proxy. Dual gates: expand at **0.42**, high-confidence at **0.70** (FastEmbed-calibrated).
 
+Optional execute (`NSA_MCP_EXECUTE=1`) uses **`McpServerManager`**: protocol `2025-11-25`, persistent stdio (or Streamable HTTP via `NSA_MCP_HTTP_*`), `tools/list` reconcile → `ToolRecord.executable`, approval for destructive tools. Templates remain stdio FastMCP servers; chat still injects schemas (executable-only when execute is on).
+
+Query embeds apply the BGE instruction prefix by default; measured `reduction≈0.89` is a schema-token ratio (not 40→3/92% tool-count). High-conf→256 applies on the gated tool path, not every chat turn.
+
 FAISS / HNSWlib / USearch / ScaNN remain pluggable via `NSA_ROUTER_ANN_BACKEND`.
 
 ## Quick start

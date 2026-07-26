@@ -16,7 +16,10 @@ Lifecycle: Select Pareto → Execute → ASI → Reflect → Mutate → Accept �
 - Not hardware / NUMA / thread / KleidiAI optimizer
 - Not ArmCascade redesign
 - Not MAKS (NEXUS Layer 5)
-- Not numeric knob tuner (`draft_len`, `accept_threshold` → `RuleBasedReflectionStrategy`)
+- Not numeric knob tuner (`draft_len`, `accept_threshold`, `router_top_k`, expand threshold → `RuleBasedReflectionStrategy` / AROP knobs)
+- Not the tuner of `NSA_ROUTER_HIGH_CONF_GATE` / thinking budget — those stay config + RuleBased if wired
+
+Official `gepa` package is an **optional soft bridge** (`OfficialGEPABridge`); CI/local loops use the in-repo NEXUS GEPA under `evolution/reflection/gepa/`.
 
 ## Key types
 

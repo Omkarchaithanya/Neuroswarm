@@ -34,7 +34,7 @@ In-process registry that replaces naïve injection of all MCP tool schemas with 
 | Claim | Value |
 |-------|-------|
 | Encoder | BGE-small-en-v1.5 — **384-dim**, ~33.4M params via **FastEmbed** default |
-| TurboVec | **4-bit** when tools ≥ `NSA_ROUTER_TURBOVEC_MIN_TOOLS` (100); else exact |
+| TurboVec | **4-bit** TurboQuant when tools ≥ `NSA_ROUTER_TURBOVEC_MIN_TOOLS` (default **0**); else exact float32 |
 | Expand / re-rank trigger | `NSA_ROUTER_THRESHOLD` / `NSA_ROUTER_RERANK_TRIGGER` = **0.42** |
 | High-confidence gate | `NSA_ROUTER_HIGH_CONF_GATE` = **0.70** → caps thinking budget (FastEmbed-calibrated) |
 | Live catalog | **≥40** per-tool schemas under `templates/mcp-servers/*/tools/` |
