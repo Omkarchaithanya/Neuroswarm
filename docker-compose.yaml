@@ -103,7 +103,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/qwen2.5-0.5b-q4_k_m.gguf
+      - /models/Qwen2.5-0.5B-Instruct-Q4_0.gguf
       - --host
       - 0.0.0.0
       - --port
@@ -148,7 +148,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/llama-3.2-3b-q5_k_m.gguf
+      - /models/Qwen2.5-3B-Instruct-Q4_0.gguf
       - --host
       - 0.0.0.0
       - --port
@@ -193,7 +193,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/llama-3.1-8b-q5_k_m.gguf
+      - /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
       - --host
       - 0.0.0.0
       - --port
