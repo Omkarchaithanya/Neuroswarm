@@ -1,40 +1,41 @@
 #!/usr/bin/env bash
-# Verify all 6 MCP server templates have server.py + okf-metadata.yaml and import.
+# Verify MCP server templates have server.py + ≥1 tool schema (*.tool.yaml).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
-
-SERVERS=(browser github postgres s3 slack web-search)
+BASE="$ROOT/templates/mcp-servers"
 FAIL=0
-
-for s in "${SERVERS[@]}"; do
-  base="templates/mcp-servers/$s"
+COUNT=0
+for s in browser github postgres s3 slack web-search; do
+  base="$BASE/$s"
   if [[ ! -f "$base/server.py" ]]; then
     echo "FAIL missing $base/server.py"; FAIL=1; continue
   fi
-  if [[ ! -f "$base/okf-metadata.yaml" ]]; then
-    echo "FAIL missing $base/okf-metadata.yaml"; FAIL=1; continue
+  n=$(find "$base" -name '*.tool.yaml' 2>/dev/null | wc -l | tr -d ' ')
+  if [[ "${n:-0}" -lt 1 ]]; then
+    echo "FAIL $s has no *.tool.yaml schemas"; FAIL=1; continue
   fi
-  echo "OK $s (server.py + okf-metadata.yaml)"
+  COUNT=$((COUNT + n))
+  echo "OK $s (server.py + $n tool schemas)"
 done
-
-if [[ ! -f templates/mcp-servers/_shared/server_base.py ]]; then
-  echo "FAIL missing _shared/server_base.py"; FAIL=1
+TOTAL=$(find "$BASE" -name '*.tool.yaml' 2>/dev/null | wc -l | tr -d ' ')
+echo "total_tool_schemas=$TOTAL"
+if [[ "${TOTAL:-0}" -lt 40 ]]; then
+  echo "FAIL expected >=40 tool schemas, got $TOTAL"; FAIL=1
 fi
-
-# Syntax check
-if command -v uv >/dev/null 2>&1; then
-  for s in "${SERVERS[@]}"; do
-    uv run python -m py_compile "templates/mcp-servers/$s/server.py" || FAIL=1
-  done
+# Advertise ↔ execute contract (YAML id leaf must exist as FastMCP fn)
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
 else
-  for s in "${SERVERS[@]}"; do
-    python3 -m py_compile "templates/mcp-servers/$s/server.py" || FAIL=1
-  done
+  echo "FAIL no python for execute-contract check"; FAIL=1; PY=""
 fi
-
+if [[ -n "$PY" ]]; then
+  if ! $PY "$ROOT/scripts/verify-mcp-execute-contract.py"; then
+    FAIL=1
+  fi
+fi
 if [[ "$FAIL" -ne 0 ]]; then
-  echo "MCP template verify FAILED"
   exit 1
 fi
-echo "PASS: 6 MCP templates present and compile"
+echo "mcp-templates OK"

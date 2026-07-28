@@ -67,6 +67,14 @@ class BenchmarkBody(BaseModel):
     cases: list[dict[str, Any]] | None = None
 
 
+class CallToolBody(BaseModel):
+    tool_id: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    timeout_s: float = 30.0
+    approve: bool = False
+    tenant_id: str | None = None
+
+
 def _context_from_body(body: RouteBody) -> RouteContext:
     return RouteContext(
         agent_id=body.agent_id,
@@ -124,9 +132,44 @@ def create_tool_router(runtime: SemanticToolRouter) -> APIRouter:
         payload["prompt_block"] = runtime.prompt_block(result)
         return payload
 
+    @tools_router.post("/tools/call")
+    async def call_tool(body: CallToolBody) -> dict[str, Any]:
+        """MCP execute path (NSA_MCP_EXECUTE=1). Requires tools/list reconcile + approval for destructive tools."""
+        from .mcp_executor import call_tool as mcp_call, mcp_execute_enabled
+
+        if not mcp_execute_enabled():
+            raise HTTPException(
+                status_code=503,
+                detail="MCP execute disabled. Set NSA_MCP_EXECUTE=1 and provide API keys.",
+            )
+        out = await mcp_call(
+            body.tool_id,
+            body.arguments,
+            timeout_s=body.timeout_s,
+            approve=body.approve,
+            tenant_id=body.tenant_id,
+            require_reconciled=True,
+        )
+        if not out.get("ok"):
+            code = 400
+            if out.get("error") == "not_reconciled":
+                code = 409
+            elif out.get("error") == "destructive_approval_required":
+                code = 403
+            raise HTTPException(status_code=code, detail=out)
+        return out
+
     @tools_router.post("/tools/reload")
-    def reload_tools() -> dict[str, Any]:
-        return {"status": "ok", **runtime.reload()}
+    async def reload_tools() -> dict[str, Any]:
+        out = {"status": "ok", **runtime.reload()}
+        try:
+            from .mcp_executor import mcp_execute_enabled
+
+            if mcp_execute_enabled():
+                out["mcp_reconcile"] = await runtime.reconcile_mcp_execute()
+        except Exception as exc:
+            out["mcp_reconcile_error"] = str(exc)
+        return out
 
     @tools_router.get("/tools")
     def list_tools() -> dict[str, Any]:

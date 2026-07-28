@@ -51,14 +51,18 @@ def build_router(
             model_name=config.encoder_name,
             dims=384,
             normalize=True,
+            backend=config.embedding_backend,
             use_onnx=config.use_onnx,
             use_int8=config.use_int8,
             onnx_path=config.onnx_path,
+            tokenizer_path=config.tokenizer_path,
+            fastembed_cache_dir=config.fastembed_cache_dir,
         ),
         cache=cache,
         metrics=metrics,
         workers=config.embed_workers,
         fallback_dims=config.fallback_dims,
+        allow_hash=config.allow_hash,
     )
     metric = MetricKind(config.metric) if config.metric in {m.value for m in MetricKind} else MetricKind.COSINE
     index = build_vector_index(
@@ -67,7 +71,13 @@ def build_router(
         metric=metric,
         bit_width=config.turbovec_bit_width,
         events=events,
+        turbovec_min_tools=config.turbovec_min_tools,
     )
+    if int(embedder.dims) != int(getattr(index, "dims", embedder.dims)):
+        raise ValueError(
+            f"embedder.dims ({embedder.dims}) != index.dims ({getattr(index, 'dims', None)}); "
+            "refusing to wire mismatched ANN index"
+        )
     registry = ToolRegistry(events=events)
     loader = RegistryLoader()
     for path in [config.tool_metadata_root, config.okf_root]:

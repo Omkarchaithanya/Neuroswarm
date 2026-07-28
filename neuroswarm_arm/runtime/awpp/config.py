@@ -26,7 +26,7 @@ class AWPPRuntimeConfig:
     confidence_threshold: float = float(os.getenv("NSA_AWPP_CONFIDENCE_THRESHOLD", "0.35"))
     max_concurrent_warms: int = int(os.getenv("NSA_AWPP_MAX_CONCURRENT", "4"))
     max_memory_bytes: int = int(os.getenv("NSA_AWPP_MAX_MEMORY_BYTES", str(2 * 1024**3)))
-    max_cpu_fraction: float = float(os.getenv("NSA_AWPP_MAX_CPU_FRACTION", "0.35"))
+    max_cpu_fraction: float = float(os.getenv("NSA_AWPP_MAX_CPU_FRACTION", "0.01"))
     warm_timeout_s: float = float(os.getenv("NSA_AWPP_WARM_TIMEOUT_S", "5"))
     rate_limit_per_s: float = float(os.getenv("NSA_AWPP_RATE_LIMIT", "20"))
     policy_path: str = os.getenv("NSA_AWPP_POLICY_PATH", "")

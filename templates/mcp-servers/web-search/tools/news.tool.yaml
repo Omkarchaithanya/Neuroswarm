@@ -1,0 +1,28 @@
+id: web.news
+name: Web News Search
+description: Search recent news articles for a topic.
+namespace: web-search
+category: web-search
+tags:
+- web-search
+- mcp
+params:
+  query: topic
+  limit: max articles
+example_prompts:
+- search news
+capabilities:
+- web-search
+- mcp
+endpoint: mcp://web-search/news
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: topic
+    limit:
+      type: string
+      description: max articles
+output_schema:
+  type: object

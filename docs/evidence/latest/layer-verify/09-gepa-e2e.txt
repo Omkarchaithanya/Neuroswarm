@@ -1,0 +1,13 @@
+==> GEPA optimize
+{"status":"rejected","baseline_id":"pol_baseline_a47e9346","candidate_id":"cand_69548be656","policy_id":"pol_c01c196ca1","message":"statistical validation failed","metrics":{"replay_n":0.0,"reward_scalar":0.75,"latency_ms":1120.0,"accept_rate":0.85,"baseline_reward":0.0,"shadow_delta":0.75,"ttft_ms":0.0,"tps":0.0,"cost_usd":0.0,"quality":0.0,"reasoning_tokens":0.0,"hallucination":0.0,"tool_success":0.0,"kv_usage":0.0,"memory":0.0,"cpu":0.0,"energy":0.0,"arm_pmu":0.0,"simd_util":0.0,"branch_misses":0.0,"cache_misses":0.0,"numa_traffic":0.0},"details":{"validation":"rejected improvement=0.0000 p
+candidate_id=tc_c4c6cdccc9
+==> GEPA approve
+{"approved":true,"candidate_id":"tc_c4c6cdccc9","reviewer":"smoke","reason":"e2e","at":"2026-07-21T10:31:32.849295+00:00"}
+==> GEPA deploy
+{"success":true,"candidate_id":"tc_c4c6cdccc9","paths":["work/arop/gepa/tc_c4c6cdccc9/system_prompt.md","work/arop/gepa/tc_c4c6cdccc9/governor_policy.md","work/arop/gepa/active/system_prompt.md","work/arop/gepa/active/governor_policy.md","work/arop/gepa/active/teacher.json"],"teacher":"http","message":"deployed text artifacts to work/arop/gepa"}
+
+teacher=http
+==> chat after deploy
+Hello, how can I assist you today?
+active_prompt_bytes=63 teacher=http
+OK: GEPA e2e

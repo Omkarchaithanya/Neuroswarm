@@ -40,7 +40,7 @@ class Prediction:
 class PrewarmBudget:
     max_concurrent: int = 4
     max_memory_bytes: int = 2 * 1024**3
-    max_cpu_fraction: float = 0.35
+    max_cpu_fraction: float = 0.01
     timeout_s: float = 5.0
     rate_limit_per_s: float = 20.0
     numa_node: int | None = None

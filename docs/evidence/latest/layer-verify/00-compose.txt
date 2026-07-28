@@ -1,0 +1,12 @@
+neuroswarm-arm-tier3-1 nexus-arm/llama-kleidiai:server Up 15 hours (healthy)
+neuroswarm-arm_arm-mcp_1 armlimited/arm-mcp:latest Restarting (137) 55 seconds ago
+neuroswarm-arm_gateway_1 neuroswarm-arm-gateway:dev Up 15 hours (healthy)
+neuroswarm-arm_otel-collector_1 otel/opentelemetry-collector-contrib:0.114.0 Up 16 hours (healthy)
+neuroswarm-arm_performix-bridge_1 neuroswarm-arm-gateway:dev Up 3 days (healthy)
+neuroswarm-arm_proxy_1 nginx:1.27-alpine Up 16 hours (healthy)
+neuroswarm-arm_qdrant_1 qdrant/qdrant:v1.13.6 Up 3 days
+neuroswarm-arm_tier1_1 nexus-arm/llama-kleidiai:server Up 16 hours (healthy)
+neuroswarm-arm_tier2_1 nexus-arm/llama-kleidiai:server Up 16 hours (healthy)
+inactive
+k3s_inactive
+k8s_30080_down

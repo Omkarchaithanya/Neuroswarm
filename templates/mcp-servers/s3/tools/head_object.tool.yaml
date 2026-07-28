@@ -1,0 +1,28 @@
+id: s3.head_object
+name: S3 Head Object
+description: Fetch object metadata without downloading body.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  key: key
+example_prompts:
+- s3 object metadata
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/head_object
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    key:
+      type: string
+      description: key
+output_schema:
+  type: object

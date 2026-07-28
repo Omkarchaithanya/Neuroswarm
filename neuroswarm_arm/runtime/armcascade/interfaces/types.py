@@ -190,6 +190,9 @@ class ThresholdSet:
     escalate_threshold: float = 0.4
     speculation_depth: int = 1
     max_rounds: int = 4
+    # Quality-cascade path (separate from speculative logits accept_threshold).
+    quality_accept_threshold: float = 0.55
+    quality_early_accept_floor: float = 0.52
 
 
 @dataclass(slots=True)
@@ -208,6 +211,7 @@ class ThresholdInputs:
     base_escalate_threshold: float = 0.4
     base_verify_batch: int = 1
     base_depth: int = 1
+    base_max_rounds: int = 4
 
 
 @dataclass(slots=True)

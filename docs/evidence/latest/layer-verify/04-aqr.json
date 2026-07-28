@@ -1,0 +1,9 @@
+{
+  "reasoning": "Q4_K_M",
+  "tool_call": "Q4_0",
+  "coding": "Q4_0",
+  "planner": "Q4_0",
+  "reviewer": "Q4_0",
+  "default": "Q4_0",
+  "_codebook_mentions_in_package": 0
+}

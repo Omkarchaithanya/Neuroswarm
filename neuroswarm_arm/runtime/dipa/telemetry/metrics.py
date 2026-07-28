@@ -99,6 +99,8 @@ class DIPAMetrics:
             self.set("dipa_decode_tps", completion_tokens / elapsed_s)
         self.set("dipa_backend_utilization", 0.0)
         self.set(f"dipa_last_tier", float(tier))
+        # 1.0 on single-UMA Axion is trivial locality, not NUMA-split proof.
+        # See neuroswarm_cross_numa_applicable / nexus_hw_numa_nodes gauges.
         self.set("dipa_numa_locality", 1.0)
 
     def record_prefill(

@@ -32,11 +32,15 @@ def _scratch() -> Path:
 
 
 @pytest.fixture
-def router():
+def router(monkeypatch):
+    monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
+    monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
     scratch = _scratch()
     cfg = load_router_config(REPO)
     cfg.tool_metadata_root = TOOLS
     cfg.okf_root = scratch / "okf"
+    cfg.embedding_backend = "hash"
+    cfg.allow_hash = True
     cfg.okf_root.mkdir()
     cfg.index_path = scratch / "index"
     cfg.snapshot_dir = scratch / "snapshots"
@@ -44,6 +48,7 @@ def router():
     cfg.mem_store = scratch / "mem"
     cfg.enable_hot_reload = False
     cfg.ann_backend = "exact"
+    cfg.allow_hash = True
     cfg.ensure_dirs()
     offline_mem = build_memory_runtime(
         config=MemoryRuntimeConfig(
@@ -59,7 +64,7 @@ def router():
 
 
 def test_registry_load_and_route(router):
-    assert router.registry.size() >= 6
+    assert router.registry.size() >= 40
     result = router.route("Upload an artifact to object storage")
     assert result.tools
     assert result.confidence_top1 >= 0.0
@@ -99,8 +104,8 @@ def test_snapshot_restore(router):
     router.index.clear()
     assert router.registry.size() == 0
     restored = router.restore(path)
-    assert restored["tools"] >= 6
-    assert router.index.size() >= 6
+    assert restored["tools"] >= 40
+    assert router.index.size() >= 40
 
 
 def test_hot_reload_scan(router):
@@ -182,12 +187,14 @@ def test_benchmark_runner(router):
     assert "latency_ms" in report
 
 
-def test_fault_exact_backend():
+def test_fault_exact_backend(monkeypatch):
+    monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
     scratch = _scratch()
     cfg = load_router_config(REPO)
     cfg.tool_metadata_root = TOOLS
     cfg.ann_backend = "exact"
     cfg.enable_hot_reload = False
+    cfg.allow_hash = True
     cfg.snapshot_dir = scratch / "snap"
     cfg.index_path = scratch / "idx"
     cfg.cache_dir = scratch / "cache"

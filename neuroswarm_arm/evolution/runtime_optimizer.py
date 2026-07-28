@@ -80,11 +80,12 @@ class RuntimeOptimizer:
         self._last_result: PipelineResult | None = None
 
     def ensure_baseline(self) -> RuntimePolicy:
+        self.ensure_named_policies()
         active = self.registry.active()
         if active:
             return active
-        baseline = RuntimePolicy.create(
-            policy_id=f"pol_baseline_{uuid.uuid4().hex[:8]}",
+        baseline = self.registry.get("pol_baseline") or RuntimePolicy.create(
+            policy_id="pol_baseline",
             version="v0",
             parameters={
                 "accept_threshold": self.config.default_accept_threshold,
@@ -94,6 +95,7 @@ class RuntimeOptimizer:
                 "router_top_k": self.config.default_router_top_k,
                 "verify_batch": 1,
                 "speculation_depth": 1,
+                "policy_name": "baseline",
             },
             target_layers=frozenset({"ascr", "rtg", "router"}),
             expected_reward=0.0,
@@ -105,6 +107,77 @@ class RuntimeOptimizer:
         self.knowledge.record_policy(baseline)
         self.evolution.record(baseline)
         return baseline
+
+    def ensure_named_policies(self) -> list[RuntimePolicy]:
+        """Register the three named canary policies (baseline / cost-greedy / latency-greedy)."""
+        specs = (
+            (
+                "pol_baseline",
+                "baseline",
+                {
+                    "accept_threshold": self.config.default_accept_threshold,
+                    "draft_len": self.config.default_draft_len,
+                    "escalate_threshold": self.config.default_escalate_threshold,
+                    "reasoning_cap": self.config.default_reasoning_cap,
+                    "router_top_k": self.config.default_router_top_k,
+                },
+                "balanced default policy",
+            ),
+            (
+                "pol_cost_greedy",
+                "cost-greedy",
+                {
+                    "accept_threshold": max(
+                        0.4, self.config.default_accept_threshold - 0.15
+                    ),
+                    "draft_len": max(2, self.config.default_draft_len // 2),
+                    "escalate_threshold": min(
+                        0.7, self.config.default_escalate_threshold + 0.15
+                    ),
+                    "reasoning_cap": max(128, self.config.default_reasoning_cap // 2),
+                    "router_top_k": max(1, self.config.default_router_top_k - 1),
+                    "quality_accept_threshold": 0.5,
+                },
+                "prefer cheaper early-accept / shorter drafts",
+            ),
+            (
+                "pol_latency_greedy",
+                "latency-greedy",
+                {
+                    "accept_threshold": max(
+                        0.45, self.config.default_accept_threshold - 0.1
+                    ),
+                    "draft_len": max(2, self.config.default_draft_len - 2),
+                    "escalate_threshold": min(
+                        0.65, self.config.default_escalate_threshold + 0.1
+                    ),
+                    "reasoning_cap": max(192, int(self.config.default_reasoning_cap * 0.6)),
+                    "router_top_k": self.config.default_router_top_k,
+                    "quality_early_accept_floor": 0.5,
+                },
+                "prefer faster tier1/2 accept over quality headroom",
+            ),
+        )
+        out: list[RuntimePolicy] = []
+        for pid, name, params, explanation in specs:
+            existing = self.registry.get(pid)
+            if existing:
+                out.append(existing)
+                continue
+            pol = RuntimePolicy.create(
+                policy_id=pid,
+                version="v0",
+                parameters={**params, "policy_name": name, "verify_batch": 1, "speculation_depth": 1},
+                target_layers=frozenset({"ascr", "rtg", "router"}),
+                expected_reward=0.0,
+                confidence=1.0,
+                explanation=explanation,
+            )
+            self.registry.register(pol)
+            self.knowledge.record_policy(pol)
+            self.evolution.record(pol)
+            out.append(pol)
+        return out
 
     def run_once(self) -> PipelineResult:
         if not self.enabled:

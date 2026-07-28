@@ -25,6 +25,13 @@ class InMemoryCostTelemetry:
         with self._lock:
             self._report_total += 1
             self.counters["runtime_cost_total"] += float(report.estimated_dollars)
+            self.counters["runtime_prompt_tokens_total"] += float(report.prompt_tokens or 0)
+            self.counters["runtime_completion_tokens_total"] += float(
+                report.completion_tokens or 0
+            )
+            self.counters["runtime_reasoning_tokens_total"] += float(
+                report.reasoning_tokens or 0
+            )
             self.counters[f'runtime_backend_cost{{backend="{backend}"}}'] += float(
                 report.estimated_dollars
             )
@@ -79,6 +86,15 @@ class InMemoryCostTelemetry:
             "# HELP runtime_cost_total Cumulative estimated runtime cost (optimization signal)",
             "# TYPE runtime_cost_total counter",
             f"runtime_cost_total {snap['counters'].get('runtime_cost_total', 0.0)}",
+            "# HELP runtime_prompt_tokens_total Cumulative prompt tokens from RCIS reports",
+            "# TYPE runtime_prompt_tokens_total counter",
+            f"runtime_prompt_tokens_total {snap['counters'].get('runtime_prompt_tokens_total', 0.0)}",
+            "# HELP runtime_completion_tokens_total Cumulative completion tokens from RCIS reports",
+            "# TYPE runtime_completion_tokens_total counter",
+            f"runtime_completion_tokens_total {snap['counters'].get('runtime_completion_tokens_total', 0.0)}",
+            "# HELP runtime_reasoning_tokens_total Cumulative reasoning tokens from RCIS reports",
+            "# TYPE runtime_reasoning_tokens_total counter",
+            f"runtime_reasoning_tokens_total {snap['counters'].get('runtime_reasoning_tokens_total', 0.0)}",
             "# HELP runtime_cost_per_token Last observed cost per token",
             "# TYPE runtime_cost_per_token gauge",
             "# HELP runtime_cpu_seconds Last observed CPU seconds",
@@ -94,8 +110,14 @@ class InMemoryCostTelemetry:
             "# HELP runtime_planner_prediction_error Prediction error by dimension",
             "# TYPE runtime_planner_prediction_error gauge",
         ]
+        skip = {
+            "runtime_cost_total",
+            "runtime_prompt_tokens_total",
+            "runtime_completion_tokens_total",
+            "runtime_reasoning_tokens_total",
+        }
         for k, v in sorted(snap["counters"].items()):
-            if k == "runtime_cost_total":
+            if k in skip:
                 continue
             lines.append(f"{k} {v}")
         for k, v in sorted(snap["gauges"].items()):

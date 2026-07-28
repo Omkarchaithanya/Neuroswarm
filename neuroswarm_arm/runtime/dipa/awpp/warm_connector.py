@@ -1,4 +1,4 @@
-"""AWPP warm connector — heuristic until Layer-4 predictor lands."""
+"""AWPP heuristic warm connector — fallback when predictive path skips/fails."""
 
 from __future__ import annotations
 

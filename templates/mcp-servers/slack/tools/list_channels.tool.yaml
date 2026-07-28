@@ -1,0 +1,24 @@
+id: slack.list_channels
+name: Slack List Channels
+description: List Slack channels the bot can access.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  limit: max channels
+example_prompts:
+- list slack channels
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/list_channels
+input_schema:
+  type: object
+  properties:
+    limit:
+      type: string
+      description: max channels
+output_schema:
+  type: object

@@ -1,11 +1,16 @@
-# CPU / Axion hardware policy — no fake NUMA claims
+# CPU / Axion hardware policy — dual-mode locality (no fake NUMA-split claims)
 prefill_pool_size: 2
 decode_pool_size: 4
 affinity_enabled: true
 numa_fallback_single_node: true
 
 core_partition:
-  # Logical partition on homogeneous Axion; override via NSA_DIPA_* 
+  # auto: NUMA when multi-node; else fixed UMA partitions (Axion 8-core)
+  mode: auto
+  # Logical cores for c4a-standard-8 (override via NSA_TIER*_CPUSET)
+  uma_draft: [0, 1]
+  uma_verify_mid: [2, 3, 4]
+  uma_verify_large: [5, 6, 7]
   prefill_fraction: 0.4
   decode_fraction: 0.6
 

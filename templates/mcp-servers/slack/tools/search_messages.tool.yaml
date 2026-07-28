@@ -1,0 +1,28 @@
+id: slack.search_messages
+name: Slack Search Messages
+description: Search message history across Slack.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  query: search text
+  limit: max results
+example_prompts:
+- search slack messages
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/search_messages
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: search text
+    limit:
+      type: string
+      description: max results
+output_schema:
+  type: object

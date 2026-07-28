@@ -73,6 +73,14 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
         out.setdefault("defaults", {})
         out["defaults"] = dict(out.get("defaults") or {})
         out["defaults"]["accept_threshold"] = float(v)
+    if v := os.environ.get("NSA_ASCR_QUALITY_ACCEPT_THRESHOLD"):
+        out.setdefault("defaults", {})
+        out["defaults"] = dict(out.get("defaults") or {})
+        out["defaults"]["quality_accept_threshold"] = float(v)
+    if v := os.environ.get("NSA_ASCR_QUALITY_EARLY_ACCEPT"):
+        out.setdefault("defaults", {})
+        out["defaults"] = dict(out.get("defaults") or {})
+        out["defaults"]["quality_early_accept_floor"] = float(v)
     if v := os.environ.get("NSA_ASCR_GRAPH"):
         out["default_graph"] = v.strip()
     if v := os.environ.get("NSA_ASCR_QUALITY_FALLBACK"):
@@ -89,6 +97,10 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
             "yes",
             "on",
         }
+    if v := os.environ.get("NSA_ASCR_MAX_ROUNDS"):
+        out.setdefault("defaults", {})
+        out["defaults"] = dict(out.get("defaults") or {})
+        out["defaults"]["max_rounds"] = int(v)
     return out
 
 
@@ -101,6 +113,15 @@ def default_thresholds(cfg: Mapping[str, Any] | None = None) -> ThresholdSet:
         escalate_threshold=float(d.get("escalate_threshold", 0.4)),
         speculation_depth=int(d.get("speculation_depth", 1)),
         max_rounds=int(d.get("max_rounds", 4)),
+        quality_accept_threshold=float(
+            d.get("quality_accept_threshold", d.get("accept_threshold", 0.55))
+        ),
+        quality_early_accept_floor=float(
+            d.get(
+                "quality_early_accept_floor",
+                d.get("quality_accept_threshold", 0.52),
+            )
+        ),
     )
 
 

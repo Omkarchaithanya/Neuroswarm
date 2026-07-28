@@ -170,9 +170,103 @@ class AgentGateway:
                 except Exception:
                     pass
 
+    def _fast_path_eligible(self, routed: Any) -> bool:
+        """HAOE bypass when high-confidence and no ACR memory-plane work."""
+        if self.acr is not None:
+            return False
+        return bool(getattr(routed, "high_confidence", False))
+
+    def _handle_chat_fastpath(self, req: ChatRequest, routed: Any) -> ChatResponse:
+        """Pre-routed high-conf chat → cascade/DIPA directly (skip HAOE DAG)."""
+        import anyio
+
+        tool_names = list(getattr(routed, "tool_names", None) or [])
+        tool_schemas = list(getattr(routed, "schemas", None) or [])
+        tool_confidence = float(getattr(routed, "confidence_top1", 0.0) or 0.0)
+        tool_high_confidence = bool(getattr(routed, "high_confidence", False))
+        tool_prompt_block = ""
+        if hasattr(self.semantic_router, "prompt_block"):
+            try:
+                tool_prompt_block = self.semantic_router.prompt_block(routed) or ""
+            except Exception:
+                tool_prompt_block = ""
+        high_conf_budget = int(
+            getattr(
+                getattr(self.semantic_router, "config", None),
+                "high_conf_thinking_budget",
+                256,
+            )
+            or 256
+        )
+        session_id = req.session_id or f"chat-{uuid4().hex[:16]}"
+        if self.kv_runtime is not None:
+            self.kv_runtime.create_session(session_id, agent_id=req.agent_id)
+            prompt = req.messages[-1].content if req.messages else ""
+            payload = prompt.encode("utf-8")[:4096]
+
+            async def _persist() -> None:
+                assert self.kv_runtime is not None
+                await self.kv_runtime.allocate(
+                    session_id,
+                    payload,
+                    agent_id=req.agent_id,
+                )
+
+            anyio.run(_persist)
+
+        engine = self.dipa or self.cascade
+        if engine is None:
+            raise RuntimeError("AgentGateway requires dipa or cascade")
+        handle_kwargs: dict[str, Any] = {
+            "tool_schemas": tool_schemas or None,
+            "tool_confidence": tool_confidence,
+            "tool_prompt_block": tool_prompt_block or None,
+        }
+        if tool_high_confidence:
+            handle_kwargs["tool_high_confidence"] = True
+            handle_kwargs["high_conf_thinking_budget"] = high_conf_budget
+        try:
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
+        except TypeError:
+            handle_kwargs.pop("tool_high_confidence", None)
+            handle_kwargs.pop("high_conf_thinking_budget", None)
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
+        if self.kv_runtime is not None:
+
+            async def _ckpt() -> None:
+                assert self.kv_runtime is not None
+                await self.kv_runtime.checkpoint(session_id)
+
+            anyio.run(_ckpt)
+        metrics = dict(getattr(response, "metrics", None) or {})
+        metrics["haoe_bypassed"] = 1
+        metrics["haoe_fast_path"] = 1
+        response = response.model_copy(update={"metrics": metrics})
+        return self._attach_runtime_cost_report(req, response)
+
     def _handle_chat_body(self, req: ChatRequest) -> ChatResponse:
         if self.haoe is None:
             return self._handle_chat_inline(req)
+
+        # Pre-route for HAOE fast-path decision (empty tools / no ACR).
+        query = req.messages[-1].content if req.messages else ""
+        ctx = self._route_context(req, query)
+        routed = None
+        if hasattr(self.semantic_router, "route_result"):
+            try:
+                routed = self.semantic_router.route_result(query, context=ctx)
+            except Exception:
+                routed = None
+        if routed is not None and self._fast_path_eligible(routed):
+            return self._handle_chat_fastpath(req, routed)
 
         numa_hint = 0
         if self.kv_runtime is not None:
@@ -190,6 +284,11 @@ class AgentGateway:
             memory=self.memory,
             acr=self.acr,
         )
+        # Reuse pre-route inside handlers if we already routed (avoid double embed).
+        if routed is not None and hasattr(self.semantic_router, "route_result"):
+            # Stash on request extensions for chat handlers — handlers re-route today;
+            # acceptable: fast path is the win; tool path still uses full DAG.
+            pass
         ids = correlation_from_request(req)
         if self.rof is not None:
             from neuroswarm_arm.armora.telemetry.instrumentation import bridge_haoe_ids
@@ -343,13 +442,20 @@ class AgentGateway:
             tool_names = list(routed.tool_names)
             tool_schemas = list(routed.schemas)
             tool_confidence = float(routed.confidence_top1)
+            tool_high_confidence = bool(getattr(routed, "high_confidence", False))
             tool_prompt_block = self.semantic_router.prompt_block(routed)
+            high_conf_budget = int(
+                getattr(getattr(self.semantic_router, "config", None), "high_conf_thinking_budget", 256)
+                or 256
+            )
         else:
             selected_tools = self.semantic_router.route(query)
             tool_names = [t.name for t in selected_tools]
             tool_schemas = []
             tool_confidence = 0.0
+            tool_high_confidence = False
             tool_prompt_block = ""
+            high_conf_budget = 256
         session_id = req.session_id or f"chat-{uuid4().hex[:16]}"
         if self.kv_runtime is not None:
             self.kv_runtime.create_session(session_id, agent_id=req.agent_id)
@@ -369,13 +475,28 @@ class AgentGateway:
         engine = self.dipa or self.cascade
         if engine is None:
             raise RuntimeError("AgentGateway requires dipa or cascade")
-        response = engine.handle(
-            req.model_copy(update={"session_id": session_id}),
-            tool_names,
-            tool_schemas=tool_schemas or None,
-            tool_confidence=tool_confidence,
-            tool_prompt_block=tool_prompt_block or None,
-        )
+        handle_kwargs = {
+            "tool_schemas": tool_schemas or None,
+            "tool_confidence": tool_confidence,
+            "tool_prompt_block": tool_prompt_block or None,
+        }
+        if tool_high_confidence:
+            handle_kwargs["tool_high_confidence"] = True
+            handle_kwargs["high_conf_thinking_budget"] = high_conf_budget
+        try:
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
+        except TypeError:
+            handle_kwargs.pop("tool_high_confidence", None)
+            handle_kwargs.pop("high_conf_thinking_budget", None)
+            response = engine.handle(
+                req.model_copy(update={"session_id": session_id}),
+                tool_names,
+                **handle_kwargs,
+            )
         if self.kv_runtime is not None:
 
             async def _ckpt() -> None:
