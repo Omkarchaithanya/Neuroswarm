@@ -213,6 +213,8 @@ class McpServerManager:
         self.catalog_hash: str = ""
         self.protocol_version: str = MCP_PROTOCOL_VERSION
         self._reconcile_version: int = 0
+        self._skipped_missing_deps: dict[str, str] = {}
+        self._discover_errors: dict[str, str] = {}
 
     def servers(self, root: Path | None = None) -> dict[str, McpServerSpec]:
         root = root or _templates_root()
@@ -237,6 +239,8 @@ class McpServerManager:
             "executable_count": len(self.executable_tools),
             "reconcile_version": self._reconcile_version,
             "discovered_by_server": {k: len(v) for k, v in self.discovered_by_server.items()},
+            "skipped_missing_deps": dict(getattr(self, "_skipped_missing_deps", {}) or {}),
+            "discover_errors": dict(getattr(self, "_discover_errors", {}) or {}),
         }
 
     def _conn(self, spec: McpServerSpec) -> _McpServerConn:
@@ -463,11 +467,22 @@ class McpServerManager:
         tenant_id: str | None = None,
     ) -> dict[str, Any]:
         servers = self.servers(root)
+        self._skipped_missing_deps: dict[str, str] = {}
+        self._discover_errors: dict[str, str] = {}
         for spec in servers.values():
             try:
                 await self.ensure(spec, timeout_s=timeout_s, tenant_id=tenant_id)
             except Exception as exc:
-                _LOG.warning("discover failed for %s: %s", spec.server_id, exc)
+                msg = str(exc)
+                missing = "ModuleNotFoundError" in msg or "No module named" in msg
+                if missing:
+                    # Optional servers (browser/postgres/s3) without pip deps — not a gateway fault.
+                    brief = msg.strip().splitlines()[-1] if msg.strip() else msg
+                    self._skipped_missing_deps[spec.server_id] = brief[:240]
+                    _LOG.info("discover skipped for %s (missing dep): %s", spec.server_id, brief[:160])
+                else:
+                    self._discover_errors[spec.server_id] = msg[:240]
+                    _LOG.warning("discover failed for %s: %s", spec.server_id, msg[:200])
         self._recompute_catalog_hash()
         return self.status()
 

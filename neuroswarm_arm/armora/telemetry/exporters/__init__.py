@@ -385,7 +385,15 @@ class OTLPExporter(_BaseExporter):
             if type(provider).__name__ == "ProxyTracerProvider" or not hasattr(provider, "add_span_processor"):
                 provider = TracerProvider(resource=resource)
                 trace.set_tracer_provider(provider)
-            url = endpoint if endpoint.endswith("/v1/traces") else endpoint.rstrip("/") + "/v1/traces"
+            url = endpoint.strip()
+            # Guard: HTTP exporter must not target the OTLP gRPC port (:4317).
+            if ":4317" in url and ":4318" not in url:
+                url = url.replace(":4317", ":4318")
+                logger.warning(
+                    "ROF OTLP endpoint used :4317 (gRPC); rewriting to HTTP :4318 for span export"
+                )
+            if not url.endswith("/v1/traces"):
+                url = url.rstrip("/") + "/v1/traces"
             self._span_exporter = OTLPSpanExporter(endpoint=url)
             if hasattr(provider, "add_span_processor"):
                 batch = 512

@@ -4,164 +4,248 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
       "id": 1,
       "options": {
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "neuroswarm_last_request_latency_ms",
+          "expr": "router_tools_registered{host=\"axion\"}",
+          "legendFormat": "tools",
           "refId": "A"
         }
       ],
-      "title": "Last Request Latency",
-      "type": "gauge"
+      "title": "MCP Tools Registered (live)",
+      "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 0
-      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
       "id": 2,
       "options": {
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "neuroswarm_last_tier_used",
+          "expr": "router_requests_total{host=\"axion\"}",
+          "legendFormat": "routes",
           "refId": "A"
         }
       ],
-      "title": "Last Tier Used",
-      "type": "gauge"
+      "title": "Router Requests Total (live)",
+      "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.4 },
+              { "color": "green", "value": 0.7 }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
       "id": 3,
       "options": {
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "neuroswarm_last_thinking_token_cap",
+          "expr": "router_avg_confidence{host=\"axion\"}",
+          "legendFormat": "confidence",
           "refId": "A"
         }
       ],
-      "title": "Reasoning Token Cap",
-      "type": "gauge"
+      "title": "Avg Route Confidence (live)",
+      "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
       "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
       "targets": [
         {
-          "expr": "increase(neuroswarm_requests_total[5m])",
+          "expr": "router_routing_latency_ms{host=\"axion\"}",
+          "legendFormat": "latency",
           "refId": "A"
         }
       ],
-      "title": "Requests Over 5m",
-      "type": "timeseries"
+      "title": "Last Route Latency (live)",
+      "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": { "unit": "ops", "custom": { "fillOpacity": 20, "spanNulls": false } },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
       "id": 5,
       "targets": [
         {
-          "expr": "neuroswarm_last_tool_schema_count",
+          "expr": "rate(router_requests_total{host=\"axion\"}[1m])",
+          "legendFormat": "routes/sec",
           "refId": "A"
         }
       ],
-      "title": "Tool Schemas Routed",
+      "title": "Router Request Rate (live traffic)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 15, "spanNulls": false } },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "router_avg_confidence{host=\"axion\"}",
+          "legendFormat": "confidence",
+          "refId": "A"
+        },
+        {
+          "expr": "router_avg_tools_returned{host=\"axion\"}",
+          "legendFormat": "tools returned",
+          "refId": "B"
+        }
+      ],
+      "title": "Confidence + Tools Returned (moves on each /tools/route)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "fillOpacity": 15 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "router_routing_latency_ms{host=\"axion\"}",
+          "legendFormat": "routing",
+          "refId": "A"
+        },
+        {
+          "expr": "router_embedding_latency_ms{host=\"axion\"}",
+          "legendFormat": "embedding",
+          "refId": "B"
+        }
+      ],
+      "title": "Router Latencies (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "router_tools_registered{host=\"axion\"}",
+          "legendFormat": "registered",
+          "refId": "A"
+        },
+        {
+          "expr": "router_index_size{host=\"axion\"}",
+          "legendFormat": "index size",
+          "refId": "B"
+        }
+      ],
+      "title": "Tool Index Size (real inventory)",
       "type": "timeseries"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 40,
-  "tags": [
-    "neuroswarm",
-    "axion"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-15m",
-    "to": "now"
-  },
+  "tags": ["neuroswarm", "axion", "mcp", "live"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
   "timezone": "browser",
   "title": "NeuroSwarm Axion",
   "uid": "neuroswarm-axion",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

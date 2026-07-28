@@ -20,4 +20,6 @@ timestamp: 2026-07-15T00:00:00Z
 
 # Web Search MCP
 
-Use for open-web fact gathering. Prefer institutional OKF docs when available.
+Use for open-web fact gathering via SerpAPI (Google / News / Images / Scholar engines). Prefer institutional OKF docs when available.
+
+Auth: `SERPAPI_API_KEY` (alias `SERP_API_KEY`).
