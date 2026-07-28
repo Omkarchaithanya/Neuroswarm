@@ -18,9 +18,13 @@ class EmbeddingSpec:
     model_name: str = "BAAI/bge-small-en-v1.5"
     dims: int = 384
     normalize: bool = True
+    # fastembed | sentence-transformers | onnx | hash | auto
+    backend: str = "fastembed"
     use_onnx: bool = False
     use_int8: bool = False
     onnx_path: str | None = None
+    tokenizer_path: str | None = None
+    fastembed_cache_dir: str | None = None
 
 
 @dataclass(slots=True)
@@ -53,6 +57,10 @@ class ToolRecord:
     reliability: float = 1.0
     agent_roles: list[str] = field(default_factory=list)
     workflow_stages: list[str] = field(default_factory=list)
+    # True only after live MCP tools/list reconciliation (not YAML-only).
+    executable: bool = False
+    destructive_hint: bool = False
+    readonly_hint: bool = False
 
     def index_text(self) -> str:
         parts = [
@@ -128,6 +136,7 @@ class RoutingResult:
     tools: list[ScoredTool] = field(default_factory=list)
     top_k: int = 3
     confidence_top1: float = 0.0
+    high_confidence: bool = False
     prompt_tokens_before: int = 0
     prompt_tokens_after: int = 0
     latency_breakdown_ms: dict[str, float] = field(default_factory=dict)
@@ -170,6 +179,7 @@ class RoutingResult:
             ],
             "top_k": self.top_k,
             "confidence_top1": self.confidence_top1,
+            "high_confidence": self.high_confidence,
             "prompt_tokens_before": self.prompt_tokens_before,
             "prompt_tokens_after": self.prompt_tokens_after,
             "token_reduction_ratio": self.token_reduction_ratio(),

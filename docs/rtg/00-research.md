@@ -41,7 +41,10 @@ Treat reasoning allocation as an **OS-style closed-loop controller**:
 2. Stream → observe entropy/confidence/KV/SLO/PMU
 3. Decide → hierarchical L0–L3 policy
 4. Act → continue / early-commit / rebudget / escalate / quant hint
-5. Feedback → SW-UCB + optional offline PPO
+5. Feedback → SW-UCB bandit (default live path) + optional offline PPO scaffold (`NSA_RTG_PPO=1`)
 
 Do **not** own inference (DIPA), quant (AQR), KV (MAKS), or scheduling (HAOE).
 RTG is AIM Pillar 4 peer kernel via `IReasoningHook`.
+
+**Honesty:** “PPO enabled” means the L3 scaffold is compiled in and may be opted in —
+live defaults are L0–L2 heuristics/bandit. Trained PPO weights are Phase 2.

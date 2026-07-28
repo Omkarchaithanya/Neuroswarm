@@ -1,0 +1,36 @@
+id: s3.copy_object
+name: S3 Copy Object
+description: Copy an object between buckets or keys.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  src_bucket: src
+  src_key: src key
+  dst_bucket: dst
+  dst_key: dst key
+example_prompts:
+- copy s3 object
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/copy_object
+input_schema:
+  type: object
+  properties:
+    src_bucket:
+      type: string
+      description: src
+    src_key:
+      type: string
+      description: src key
+    dst_bucket:
+      type: string
+      description: dst
+    dst_key:
+      type: string
+      description: dst key
+output_schema:
+  type: object

@@ -1,0 +1,29 @@
+id: postgres.query
+name: Postgres Query
+description: Run a read-only SQL SELECT against Postgres.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  sql: SELECT statement
+  limit: row limit
+example_prompts:
+- query postgres
+- run sql select
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/query
+input_schema:
+  type: object
+  properties:
+    sql:
+      type: string
+      description: SELECT statement
+    limit:
+      type: string
+      description: row limit
+output_schema:
+  type: object

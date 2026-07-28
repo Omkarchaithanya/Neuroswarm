@@ -1,33 +1,26 @@
 # MCP templates verification (Axion evidence)
 
-Date: 2026-07-18
+Updated: 2026-07-24 (Pillar 2 catalog expansion)
 
 ## Templates on disk (`templates/mcp-servers/`)
 
-| Template | okf-metadata.yaml | server.py |
-|---|---|---|
-| web-search | yes | yes |
-| github | yes | yes |
-| slack | yes | yes |
-| browser | yes | yes |
-| postgres | yes | yes |
-| s3 | yes | yes |
+| Template | `tools/*.tool.yaml` | `server.py` | notes |
+|---|---|---|---|
+| web-search | yes (5) | yes | schemas for routing |
+| github | yes (8) | yes | |
+| slack | yes (7) | yes | |
+| browser | yes (6) | yes | |
+| postgres | yes (7) | yes | |
+| s3 | yes (7) | yes | |
 
-**Count: 6/6** present.
+**Total tool schemas: ≥40** (per-tool `*.tool.yaml`). Server info moved to `okf-server-info.yaml` (not indexed).
 
-## Runtime router evidence
+## Runtime router evidence (target after FastEmbed gateway rebuild)
 
-From `docs/evidence/latest/run_all.json` router cases:
+- `tools_registered` / `indexed_count`: **≥40**
+- `embedding_backend`: **fastembed** (not hash)
+- `embedding_dims`: **384**
+- Top-K=3 → schema-**token** reduction vs naïve-all (live Axion FastEmbed often ≈**0.89**; not the same as a 40→3 / 92% tool-count cut)
+- High-conf gate **0.70** → `thinking_token_cap=256` when top-1 confidence clears (gated tool path; chat RTG default cap is separate)
 
-- `tools_indexed`: **6**
-- Picked sets include: web-search, github, browser, slack, postgres, s3
-
-From `docs/evidence/latest/tools-route.json` (top-k=3 sample query):
-
-- Returned top-3: web-search, github, slack
-- `candidate_count`: **6** (all templates in ANN candidate pool)
-- `token_reduction_ratio`: **0.47** on that sample
-
-Honest claim: all 6 templates are indexed and routable; top-k responses surface 3 schemas by design (semantic reduction), not because only 3 exist.
-
-Each `server.py` is a real FastMCP server (real HTTP/SDK clients), not a `tool_payload` stub. Router still indexes via `okf-metadata.yaml` only.
+Each `server.py` remains a real FastMCP **stdio** server. Optional execute: `NSA_MCP_EXECUTE=1` + `POST /tools/call` via `McpServerManager` (protocol `2025-11-25`, warm pool, env allowlists). Streamable HTTP remotes: `NSA_MCP_HTTP_<SERVER>=url`. Tools are **executable** only after live `tools/list` reconcile (YAML IDs alone are for routing). Chat path still injects schemas (not a full MCP proxy). Release controls: SSRF on browser/fetch, postgres RO SQL gate, S3 no-overwrite default, destructive `approve=true`.

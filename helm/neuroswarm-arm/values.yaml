@@ -44,12 +44,11 @@ tiers:
   tier3:
     model: DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
     threads: "3"
-    ctx: "8192"        # ← bumped from 4096
+    ctx: "8192"
     resources:
       limits:
         cpu: "3"
         memory: 8Gi
-
 resources:
   gateway:
     requests:

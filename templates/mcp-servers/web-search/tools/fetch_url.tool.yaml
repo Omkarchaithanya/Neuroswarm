@@ -1,0 +1,24 @@
+id: web.fetch_url
+name: Web Fetch URL
+description: Fetch and extract main text content from a URL.
+namespace: web-search
+category: web-search
+tags:
+- web-search
+- mcp
+params:
+  url: https url
+example_prompts:
+- fetch webpage content
+capabilities:
+- web-search
+- mcp
+endpoint: mcp://web-search/fetch_url
+input_schema:
+  type: object
+  properties:
+    url:
+      type: string
+      description: https url
+output_schema:
+  type: object

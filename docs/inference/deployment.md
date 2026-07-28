@@ -12,7 +12,9 @@ curl -s localhost:8000/ready
 Env:
 - `NSA_REQUIRE_KLEIDIAI=1` — fail readiness if `CPU_KLEIDIAI` missing from logs
 - `NSA_DIPA_KLEIDIAI=1` — mark capabilities.kleidiai
-- `GGML_KLEIDIAI_SME` — unset=auto, `0`=off
+- `GGML_KLEIDIAI_SME` — unset=auto, `0`=off (**Axion C4A has no SME2** — SVE2+I8MM only; see `GET /build-info`)
+- `NSA_AROP_CANARY_PCT` — AROP canary traffic percent (default **5**)
+- `NSA_RTG_PPO` — optional offline PPO scaffold (`0` default; live path is bandit/heuristics)
 - `NSA_DIPA_OTEL=1` — enable DIPA OpenTelemetry spans (default in compose)
 - `NSA_DIPA_OTEL_ENDPOINT` — OTLP HTTP endpoint for trace export
 - `TIER*_PARALLEL=4` — llama-server slot count per tier

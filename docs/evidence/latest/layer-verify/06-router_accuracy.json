@@ -1,0 +1,195 @@
+{
+  "status": "ok",
+  "top1_accuracy": 1.0,
+  "top3_accuracy": 1.0,
+  "top5_accuracy": 1.0,
+  "latency_ms": {
+    "p50": 54.95841850643046,
+    "p95": 61.06996149173938,
+    "p99": 62.347997090546414,
+    "mean": 48.74396583181806
+  },
+  "avg_token_reduction": 0.1569,
+  "ann_backend": "exact",
+  "cases": [
+    {
+      "query": "Search the web and summarize GitHub issues for the project",
+      "expected": "github",
+      "picked": [
+        "github",
+        "web-search",
+        "browser",
+        "slack",
+        "s3"
+      ],
+      "confidence": 0.4261943946520487,
+      "latency_ms": 54.172
+    },
+    {
+      "query": "Find a page in the browser and capture the visible text",
+      "expected": "browser",
+      "picked": [
+        "browser",
+        "web-search",
+        "slack",
+        "github",
+        "postgres"
+      ],
+      "confidence": 0.4307808912277221,
+      "latency_ms": 15.676
+    },
+    {
+      "query": "Store structured data in postgres and query rows",
+      "expected": "postgres",
+      "picked": [
+        "postgres",
+        "s3",
+        "web-search",
+        "github",
+        "slack"
+      ],
+      "confidence": 0.4282262764215469,
+      "latency_ms": 62.668
+    },
+    {
+      "query": "Use slack to send a channel update about the release",
+      "expected": "slack",
+      "picked": [
+        "slack",
+        "github",
+        "s3",
+        "browser",
+        "web-search"
+      ],
+      "confidence": 0.47255588233470913,
+      "latency_ms": 47.926
+    },
+    {
+      "query": "Upload an artifact to object storage",
+      "expected": "s3",
+      "picked": [
+        "s3",
+        "postgres",
+        "github",
+        "browser",
+        "slack"
+      ],
+      "confidence": 0.45892064373095826,
+      "latency_ms": 56.277
+    },
+    {
+      "query": "Look up a related web source before answering",
+      "expected": "web-search",
+      "picked": [
+        "web-search",
+        "browser",
+        "github",
+        "slack",
+        "postgres"
+      ],
+      "confidence": 0.43807778283357607,
+      "latency_ms": 55.745
+    }
+  ],
+  "full": {
+    "status": "ok",
+    "top1_accuracy": 1.0,
+    "top3_accuracy": 1.0,
+    "top5_accuracy": 1.0,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "latency_ms": {
+      "p50": 54.95841850643046,
+      "p95": 61.06996149173938,
+      "p99": 62.347997090546414,
+      "mean": 48.74396583181806
+    },
+    "embedding_throughput_qps": 372.55,
+    "ann_throughput_qps": 47016.44,
+    "avg_token_reduction": 0.1569,
+    "memory_mb": 966.14,
+    "ann_backend": "exact",
+    "embedding_backend": "sentence-transformers",
+    "tools_indexed": 6,
+    "cases": [
+      {
+        "query": "Search the web and summarize GitHub issues for the project",
+        "expected": "github",
+        "picked": [
+          "github",
+          "web-search",
+          "browser",
+          "slack",
+          "s3"
+        ],
+        "confidence": 0.4261943946520487,
+        "latency_ms": 54.172
+      },
+      {
+        "query": "Find a page in the browser and capture the visible text",
+        "expected": "browser",
+        "picked": [
+          "browser",
+          "web-search",
+          "slack",
+          "github",
+          "postgres"
+        ],
+        "confidence": 0.4307808912277221,
+        "latency_ms": 15.676
+      },
+      {
+        "query": "Store structured data in postgres and query rows",
+        "expected": "postgres",
+        "picked": [
+          "postgres",
+          "s3",
+          "web-search",
+          "github",
+          "slack"
+        ],
+        "confidence": 0.4282262764215469,
+        "latency_ms": 62.668
+      },
+      {
+        "query": "Use slack to send a channel update about the release",
+        "expected": "slack",
+        "picked": [
+          "slack",
+          "github",
+          "s3",
+          "browser",
+          "web-search"
+        ],
+        "confidence": 0.47255588233470913,
+        "latency_ms": 47.926
+      },
+      {
+        "query": "Upload an artifact to object storage",
+        "expected": "s3",
+        "picked": [
+          "s3",
+          "postgres",
+          "github",
+          "browser",
+          "slack"
+        ],
+        "confidence": 0.45892064373095826,
+        "latency_ms": 56.277
+      },
+      {
+        "query": "Look up a related web source before answering",
+        "expected": "web-search",
+        "picked": [
+          "web-search",
+          "browser",
+          "github",
+          "slack",
+          "postgres"
+        ],
+        "confidence": 0.43807778283357607,
+        "latency_ms": 55.745
+      }
+    ]
+  }
+}

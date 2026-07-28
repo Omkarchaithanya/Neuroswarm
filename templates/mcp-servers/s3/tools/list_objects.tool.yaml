@@ -1,0 +1,32 @@
+id: s3.list_objects
+name: S3 List Objects
+description: List objects under a prefix in a bucket.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  prefix: key prefix
+  limit: max keys
+example_prompts:
+- list s3 objects
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/list_objects
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    prefix:
+      type: string
+      description: key prefix
+    limit:
+      type: string
+      description: max keys
+output_schema:
+  type: object

@@ -82,21 +82,22 @@ Windows Performix desktop app is **optional** (SSH Targets → Axion for interac
 
 ### Day 7: First cascade prototype
 
-Stand up two llama-server instances on different NUMA nodes:
+**Axion (c4a-standard-8) is a single UMA domain** (`NUMA node(s): 1`). Do **not** use `numactl --cpunodebind=0/1` on this host — there is no second node. Prefer Compose `cpuset` + OpenMP affinity (already in `docker-compose.yaml`):
 
 ```bash
-# Tier 1 — drafter on NUMA 0
-numactl --cpunodebind=0 --membind=0 \
-  llama-server -m Qwen2.5-0.5B-Instruct-Q4_K_M.gguf \
-  --port 8081 -ngl 0 -t 16 -c 4096 --host 0.0.0.0 &
+# Preferred on Axion: docker compose (cpuset 0-1 / 2-4 / 5-7 + OMP_PROC_BIND=close)
+docker compose up -d tier1 tier2 tier3 gateway
 
-# Tier 2 — verifier on NUMA 1
-numactl --cpunodebind=1 --membind=1 \
-  llama-server -m Llama-3.2-3B-Instruct-Q5_K_M.gguf \
-  --port 8082 -ngl 0 -t 16 -c 8192 --host 0.0.0.0 \
-  --model-draft-url http://localhost:8081 &
+# Manual equivalent (cache-aware, not NUMA-split):
+taskset -c 0,1 llama-server -m Qwen2.5-0.5B-Instruct-Q4_K_M.gguf \
+  --port 8081 -ngl 0 -t 2 -c 4096 --host 0.0.0.0 &
+taskset -c 2-4 llama-server -m Llama-3.2-3B-Instruct-Q5_K_M.gguf \
+  --port 8082 -ngl 0 -t 3 -c 8192 --host 0.0.0.0 &
 
-# Smoke test
+# Only on multi-NUMA hosts (future Neoverse / multi-socket), topology-gated:
+# numactl --cpunodebind=0 --membind=0 llama-server ...   # draft
+# numactl --cpunodebind=1 --membind=1 llama-server ...   # verifier
+
 curl -X POST http://localhost:8082/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
@@ -106,7 +107,7 @@ curl -X POST http://localhost:8082/v1/chat/completions \
   }' | jq .
 ```
 
-**End of Week 1 deliverable:** Working cascade with 1.8× speedup, validated by Performix.
+See `docs/inference/axion-optimization.md` and `scripts/probe-numa.sh`. **End of Week 1 deliverable:** Working cascade with affinity locality + KleidiAI; not a fake NUMA-split claim on Axion.
 
 ---
 

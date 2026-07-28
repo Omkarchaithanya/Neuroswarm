@@ -1,0 +1,28 @@
+id: web.scholar
+name: Web Scholar Search
+description: Search scholarly papers and citations.
+namespace: web-search
+category: web-search
+tags:
+- web-search
+- mcp
+params:
+  query: paper topic
+  limit: max papers
+example_prompts:
+- search academic papers
+capabilities:
+- web-search
+- mcp
+endpoint: mcp://web-search/scholar
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: paper topic
+    limit:
+      type: string
+      description: max papers
+output_schema:
+  type: object

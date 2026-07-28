@@ -6,6 +6,9 @@
 # Demo hotspots are written ONLY when NSA_PERFORMIX_ALLOW_DEMO=1.
 # When Performix is required (NSA_AROP_PERFORMIX=1 or MCP URL set) and demo is
 # disallowed, apx failure exits non-zero without rewriting a fake snapshot.
+#
+# Evidence path: NEVER use --system-wide by default (publishes idle/k3s noise).
+# Set PERFORMIX_PID=<llama-server> or PERFORMIX_ALLOW_SYSTEM_WIDE=1 explicitly.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -57,6 +60,30 @@ print(f"Wrote {snap} source=unavailable error={err}")
 PY
 }
 
+pick_llama_pid() {
+  local pid
+  pid="$(pgrep -af 'llama-server.*llama-3.1-8b' | awk '{print $1; exit}' || true)"
+  if [[ -z "$pid" ]]; then
+    pid="$(pgrep -af 'llama-server' | grep -v 'bash\|pgrep\|refresh' | awk '{print $1; exit}' || true)"
+  fi
+  echo "${pid:-}"
+}
+
+PERFORMIX_PID="${PERFORMIX_PID:-}"
+ALLOW_SW="${PERFORMIX_ALLOW_SYSTEM_WIDE:-0}"
+if [[ -z "$PERFORMIX_PID" && "$ALLOW_SW" != "1" ]]; then
+  PERFORMIX_PID="$(pick_llama_pid)"
+fi
+if [[ -z "$PERFORMIX_PID" && "$ALLOW_SW" != "1" ]]; then
+  echo "No llama-server PID and PERFORMIX_ALLOW_SYSTEM_WIDE!=1 — refusing idle system-wide capture" >&2
+  if [[ "$REQUIRE_LIVE" == "1" && "$ALLOW_DEMO" != "1" ]]; then
+    write_unavailable "no_llama_pid_refused_system_wide"
+    exit 1
+  fi
+  echo "Leaving existing snapshot unchanged"
+  exit 0
+fi
+
 if ! command -v apx >/dev/null 2>&1; then
   echo "apx not on PATH" >&2
   if [[ "$ALLOW_DEMO" == "1" ]]; then
@@ -70,10 +97,18 @@ if ! command -v apx >/dev/null 2>&1; then
     exit 0
   fi
 else
-  echo "Running apx recipe run $RECIPE (timeout=${DURATION}s, system-wide, --deploy-tools) ..."
+  APX_SCOPE=(--pid "$PERFORMIX_PID")
+  SCOPE_DESC="pid=$PERFORMIX_PID"
+  if [[ "$ALLOW_SW" == "1" && -z "${PERFORMIX_PID:-}" ]]; then
+    APX_SCOPE=(--system-wide)
+    SCOPE_DESC="system-wide (explicit PERFORMIX_ALLOW_SYSTEM_WIDE=1)"
+  elif [[ -n "$PERFORMIX_PID" ]]; then
+    APX_SCOPE=(--pid "$PERFORMIX_PID")
+  fi
+  echo "Running apx recipe run $RECIPE (timeout=${DURATION}s, $SCOPE_DESC, --deploy-tools) ..."
   RUN_JSON="$(mktemp)"
   set +e
-  apx recipe run "$RECIPE" --system-wide --timeout "$DURATION" --deploy-tools --json \
+  apx recipe run "$RECIPE" "${APX_SCOPE[@]}" --timeout "$DURATION" --deploy-tools --json \
     >"$RUN_JSON" 2>work/performix/apx.err
   RC=$?
   set -e

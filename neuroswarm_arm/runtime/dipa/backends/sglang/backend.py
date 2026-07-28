@@ -247,5 +247,12 @@ def _extract_chat_content(payload: dict[str, Any]) -> str:
             return str(payload.get("text") or "")
         return ""
     message = choices[0].get("message") or {}
-    content = message.get("content", "")
-    return str(content) if content is not None else ""
+    content = message.get("content")
+    text = str(content) if content is not None else ""
+    if text.strip():
+        return text
+    for key in ("reasoning_content", "reasoning"):
+        alt = message.get(key)
+        if alt is not None and str(alt).strip():
+            return str(alt)
+    return text

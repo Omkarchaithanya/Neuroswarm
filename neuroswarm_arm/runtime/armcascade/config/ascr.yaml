@@ -7,8 +7,12 @@ default_graph: default_linear
 defaults:
   proposal_strategy: draft_model
   verify_strategy: block
-  draft_len: 5
+  draft_len: 8
+  # Speculative / logits path
   accept_threshold: 0.7
+  # Quality-cascade path (env: NSA_ASCR_QUALITY_ACCEPT_THRESHOLD)
+  quality_accept_threshold: 0.55
+  quality_early_accept_floor: 0.52
   escalate_threshold: 0.4
   verify_batch_size: 1
   speculation_depth: 1
@@ -16,13 +20,21 @@ defaults:
 
 confidence:
   empty_score: 0.0
-  base_score: 0.5
-  length_bonus_cap: 0.4
-  length_divisor: 8000.0
-  uncertainty_penalty: 0.2
+  base_score: 0.55
+  length_bonus_cap: 0.25
+  length_divisor: 2000.0
+  short_clear_bonus: 0.18
+  short_clear_max_chars: 480
+  short_clear_min_chars: 24
+  completeness_bonus: 0.08
+  uncertainty_penalty: 0.25
   uncertainty_phrases:
     - "I don't know"
+    - "I do not know"
     - "cannot"
+    - "I'm not sure"
+    - "i am not sure"
+    - "unclear"
   weights:
     agreement: 0.30
     quality: 0.25

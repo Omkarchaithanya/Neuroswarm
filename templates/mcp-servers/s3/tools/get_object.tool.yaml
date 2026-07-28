@@ -1,0 +1,32 @@
+id: s3.get_object
+name: S3 Get Object
+description: Download an object from S3 to a local path.
+namespace: s3
+category: s3
+tags:
+- s3
+- mcp
+params:
+  bucket: bucket
+  key: object key
+  path: local dest
+example_prompts:
+- download from s3
+capabilities:
+- s3
+- mcp
+endpoint: mcp://s3/get_object
+input_schema:
+  type: object
+  properties:
+    bucket:
+      type: string
+      description: bucket
+    key:
+      type: string
+      description: object key
+    path:
+      type: string
+      description: local dest
+output_schema:
+  type: object

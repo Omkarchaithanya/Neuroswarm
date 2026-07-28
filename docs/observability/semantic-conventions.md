@@ -45,6 +45,21 @@ Format: `nexus.<subsystem>.<operation>`
 | `nexus.outcome` | ok/error/… |
 | `nexus.error` | Error message |
 
+## GenAI + MCP (router / execute)
+
+When `NSA_ROUTER_OTEL=1`, router and MCP execute spans also emit (Development semconv — dual keys for upgrade safety):
+
+| Key | Meaning |
+|-----|---------|
+| `gen_ai.system` | Provider id (`neuroswarm`) — legacy |
+| `gen_ai.provider.name` | Provider id (`neuroswarm`) — newer |
+| `gen_ai.operation.name` | `route` / `embed` / `mcp_tools_call` |
+| `mcp.method.name` | e.g. `tools/call` |
+| `mcp.session.id` | `{server_id}:{tool}` |
+| `mcp.protocol.version` | MCP protocol (`2025-11-25`) |
+
+Existing `nexus.*` attributes remain for the Prometheus bridge.
+
 ## Events
 
 `AdmissionStarted`, `AdmissionFinished`, `PlannerStarted`, `PlannerCompleted`, `RoutingStarted`, `RoutingCompleted`, `InferenceStarted`, `InferenceFinished`, `StreamingStarted`, `StreamingFinished`, `BudgetExceeded`, `BackendFailure`, `RetryStarted`, `RetryFinished`, `ProfilerStarted`, `ProfilerFinished`, `CostReportGenerated`, `PlannerLearned`, plus custom via `register_event_type`.

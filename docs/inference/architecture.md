@@ -28,4 +28,4 @@ Boot order: detect → affinity → backends → models → warmup → ready.
 
 ## Axion honesty
 
-GCP Axion = Neoverse V2. Detect SVE2/DotProd/I8MM/BF16 at runtime. Do not hardcode Neoverse V3. SME auto via `GGML_KLEIDIAI_SME` unset. NUMA often single-node — affinity is best-effort.
+GCP Axion C4A = Neoverse **V2**: **SVE2 + I8MM** (plus DotProd/BF16 when present). **No SME2** on Axion — do not claim SME/SME2 acceleration. `GGML_KLEIDIAI_SME` unset = auto; without SME the Kleidi kernels fall back to DotProd/I8MM/SVE2. NUMA is often single-node — affinity is best-effort. See `GET /build-info` for live feature flags.

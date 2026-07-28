@@ -1,0 +1,14 @@
+### Live Axion SSH (2026-07-19 neuroswarm-axion)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-7
+available: 1 nodes (0)
+node 0 cpus: 0 1 2 3 4 5 6 7
+node 0 size: 32020 MB
+
+### Interpretation
+GCP C4A = single UMA domain. cross_numa_penalty_applicable=false.
+policy=single_uma. No numactl tier split on this host.
+
+### Re-probe after sync
+bash scripts/probe-numa.sh
+curl -s http://127.0.0.1:8000/health | jq .numa

@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import threading
 import time
 from dataclasses import dataclass
 
-import blake3
+try:
+    import blake3 as _blake3
+except ImportError:  # gateway image may omit optional blake3 wheel
+    _blake3 = None
 
 
 @dataclass(slots=True)
@@ -35,7 +39,9 @@ class BlockHashSlotAffinity:
 
     def hash_block(self, content: bytes | str) -> str:
         data = content.encode("utf-8") if isinstance(content, str) else content
-        return blake3.blake3(data).hexdigest()
+        if _blake3 is not None:
+            return _blake3.blake3(data).hexdigest()
+        return hashlib.sha256(data).hexdigest()
 
     def get_slot(self, block_hash: str) -> int | None:
         now = time.monotonic()

@@ -151,6 +151,12 @@ fi
   grep -E 'asimd|sve|sve2|i8mm|dotprod|bf16' /proc/cpuinfo 2>/dev/null | head -20 || true
 } > "$RESULTS_DIR/01-axion-system-info.txt"
 
+# NUMA topology truth (Axion = single UMA; cross_numa_penalty_applicable=false)
+if [[ -x "$PROJECT_ROOT/scripts/probe-numa.sh" ]] || [[ -f "$PROJECT_ROOT/scripts/probe-numa.sh" ]]; then
+  echo "==> scripts/probe-numa.sh"
+  bash "$PROJECT_ROOT/scripts/probe-numa.sh" || echo "WARN: probe-numa.sh failed" >&2
+fi
+
 # Publish a judge-visible copy (benchmarks/results is gitignored).
 EVIDENCE_PUB="${PROJECT_ROOT}/docs/evidence/latest"
 mkdir -p "$EVIDENCE_PUB"
@@ -158,6 +164,8 @@ cp -f "$RESULTS_DIR/health.json" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/ready.json" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/run_all.json" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/docker-compose-ps.txt" "$EVIDENCE_PUB/" 2>/dev/null || true
+cp -f "$EVIDENCE_PUB/numa-status.json" "$RESULTS_DIR/numa-status.json" 2>/dev/null || true
+cp -f "$EVIDENCE_PUB/numa-probe.txt" "$RESULTS_DIR/numa-probe.txt" 2>/dev/null || true
 cp -f "$RESULTS_DIR/kleidiai-runtime-gate.txt" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/prometheus-metrics.txt" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/01-axion-system-info.txt" "$EVIDENCE_PUB/" 2>/dev/null || true

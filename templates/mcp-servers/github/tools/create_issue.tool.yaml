@@ -1,0 +1,33 @@
+id: github.create_issue
+name: GitHub Create Issue
+description: Create a new GitHub issue with title and body.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  repo: owner/name
+  title: issue title
+  body: issue body
+example_prompts:
+- create github issue
+- file a bug
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/create_issue
+input_schema:
+  type: object
+  properties:
+    repo:
+      type: string
+      description: owner/name
+    title:
+      type: string
+      description: issue title
+    body:
+      type: string
+      description: issue body
+output_schema:
+  type: object

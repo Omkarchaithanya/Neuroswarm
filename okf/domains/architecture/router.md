@@ -25,9 +25,19 @@ timestamp: 2026-07-16T00:00:00Z
 
 # Semantic MCP Tool Router
 
-Replaces naïve injection of all MCP tool schemas with Top-K semantic routing:
+In-process registry that replaces naïve injection of all MCP tool schemas with Top-K semantic routing (**not** a transparent MCP proxy):
 
-`BGE-small → TurboVec → hybrid retrieval → rerank → Top-K schemas → DIPA`
+`BGE-small-en-v1.5 (33.4M, 384-dim) → TurboVec (default 4-bit) → hybrid → rerank → Top-K schemas → DIPA`
+
+## Honest defaults
+
+| Claim | Value |
+|-------|-------|
+| Encoder | BGE-small-en-v1.5 — **384-dim**, ~33.4M params via **FastEmbed** default |
+| TurboVec | **4-bit** TurboQuant when tools ≥ `NSA_ROUTER_TURBOVEC_MIN_TOOLS` (default **0**); else exact float32 |
+| Expand / re-rank trigger | `NSA_ROUTER_THRESHOLD` / `NSA_ROUTER_RERANK_TRIGGER` = **0.42** |
+| High-confidence gate | `NSA_ROUTER_HIGH_CONF_GATE` = **0.70** → caps thinking budget (FastEmbed-calibrated) |
+| Live catalog | **≥40** per-tool schemas under `templates/mcp-servers/*/tools/` |
 
 ## Package
 
@@ -48,6 +58,7 @@ Replaces naïve injection of all MCP tool schemas with Top-K semantic routing:
 
 ```bash
 pytest tests/runtime/router -q
+uv run python benchmarks/router_mcpga.py
 python benchmarks/router_full.py
 ```
 

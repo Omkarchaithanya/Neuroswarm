@@ -1,11 +1,7 @@
-"""GitHub MCP server — REAL implementation (FastMCP + GitHub REST API v3).
+"""GitHub MCP server — FastMCP + GitHub REST API v3.
 
-Replaces the fake stub that only echoed its own tool description back.
-Auth: export GITHUB_TOKEN=ghp_xxx (repo scope minimum for private repos;
-public repos work unauthenticated but at 60 req/hr instead of 5000 req/hr).
-
-Run: python server.py          (stdio, for local MCP clients)
-Test: npx @modelcontextprotocol/inspector python server.py
+Auth: export GITHUB_TOKEN=ghp_xxx (optional for public repos).
+Tool names match templates/mcp-servers/github/tools/*.tool.yaml IDs.
 """
 from __future__ import annotations
 
@@ -47,6 +43,25 @@ async def _get(path: str, params: dict[str, Any] | None = None) -> Any:
         return resp.json()
 
 
+async def _request(method: str, path: str, *, json_body: dict[str, Any] | None = None) -> Any:
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.request(
+            method, f"{GITHUB_API}{path}", headers=_headers(), json=json_body
+        )
+        if resp.status_code >= 400:
+            raise ValueError(f"GitHub HTTP {resp.status_code}: {resp.text[:300]}")
+        if resp.status_code == 204 or not resp.content:
+            return {"ok": True}
+        return resp.json()
+
+
+def _split_repo(repo: str) -> tuple[str, str]:
+    if "/" not in repo:
+        raise ValueError('repo must be "owner/name", e.g. "ggml-org/llama.cpp"')
+    owner, name = repo.split("/", 1)
+    return owner, name
+
+
 @mcp.tool(
     annotations={
         "readOnlyHint": True,
@@ -60,17 +75,9 @@ async def list_issues(
     state: str = "open",
     limit: int = 10,
 ) -> list[dict[str, Any]]:
-    """List issues for a GitHub repository.
-
-    Args:
-        repo: "owner/name", e.g. "ggml-org/llama.cpp"
-        state: "open", "closed", or "all"
-        limit: max issues to return (1-100)
-    """
-    if "/" not in repo:
-        raise ValueError('repo must be "owner/name", e.g. "ggml-org/llama.cpp"')
+    """List issues for a GitHub repository."""
     limit = max(1, min(limit, 100))
-    owner, name = repo.split("/", 1)
+    owner, name = _split_repo(repo)
     data = await _get(f"/repos/{owner}/{name}/issues", {"state": state, "per_page": limit})
     return [
         {
@@ -94,13 +101,7 @@ async def list_issues(
     },
 )
 async def search_code(query: str, repo: str | None = None, limit: int = 10) -> list[dict[str, Any]]:
-    """Search code across GitHub (or scoped to one repo).
-
-    Args:
-        query: search terms, e.g. "GGML_CPU_KLEIDIAI"
-        repo: optional "owner/name" to scope the search
-        limit: max results (1-50)
-    """
+    """Search code across GitHub (or scoped to one repo)."""
     limit = max(1, min(limit, 50))
     q = query if not repo else f"{query} repo:{repo}"
     data = await _get("/search/code", {"q": q, "per_page": limit})
@@ -120,9 +121,7 @@ async def search_code(query: str, repo: str | None = None, limit: int = 10) -> l
 )
 async def get_repo(repo: str) -> dict[str, Any]:
     """Fetch metadata for a repo (stars, description, default branch, license)."""
-    if "/" not in repo:
-        raise ValueError('repo must be "owner/name", e.g. "ggml-org/llama.cpp"')
-    owner, name = repo.split("/", 1)
+    owner, name = _split_repo(repo)
     data = await _get(f"/repos/{owner}/{name}")
     return {
         "full_name": data["full_name"],
@@ -132,6 +131,137 @@ async def get_repo(repo: str) -> dict[str, Any]:
         "license": (data.get("license") or {}).get("spdx_id"),
         "url": data["html_url"],
     }
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    },
+)
+async def create_issue(repo: str, title: str, body: str = "") -> dict[str, Any]:
+    """Create an issue on a GitHub repository."""
+    if not title:
+        raise ValueError("title is required")
+    owner, name = _split_repo(repo)
+    data = await _request(
+        "POST", f"/repos/{owner}/{name}/issues", json_body={"title": title, "body": body or ""}
+    )
+    return {
+        "number": data.get("number"),
+        "title": data.get("title"),
+        "url": data.get("html_url"),
+        "state": data.get("state"),
+    }
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def get_file(repo: str, path: str, ref: str | None = None) -> dict[str, Any]:
+    """Fetch a file's content metadata from a repository."""
+    if not path:
+        raise ValueError("path is required")
+    owner, name = _split_repo(repo)
+    params = {"ref": ref} if ref else None
+    data = await _get(f"/repos/{owner}/{name}/contents/{path.lstrip('/')}", params)
+    return {
+        "path": data.get("path"),
+        "sha": data.get("sha"),
+        "size": data.get("size"),
+        "encoding": data.get("encoding"),
+        "content": data.get("content"),
+        "url": data.get("html_url"),
+    }
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def list_commits(repo: str, limit: int = 10, sha: str | None = None) -> list[dict[str, Any]]:
+    """List recent commits for a repository."""
+    limit = max(1, min(limit, 100))
+    owner, name = _split_repo(repo)
+    params: dict[str, Any] = {"per_page": limit}
+    if sha:
+        params["sha"] = sha
+    data = await _get(f"/repos/{owner}/{name}/commits", params)
+    return [
+        {
+            "sha": c.get("sha"),
+            "message": (c.get("commit") or {}).get("message"),
+            "author": ((c.get("commit") or {}).get("author") or {}).get("name"),
+            "url": c.get("html_url"),
+        }
+        for c in data
+    ]
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def list_pull_requests(
+    repo: str, state: str = "open", limit: int = 10
+) -> list[dict[str, Any]]:
+    """List pull requests for a repository."""
+    limit = max(1, min(limit, 100))
+    owner, name = _split_repo(repo)
+    data = await _get(
+        f"/repos/{owner}/{name}/pulls", {"state": state, "per_page": limit}
+    )
+    return [
+        {
+            "number": p.get("number"),
+            "title": p.get("title"),
+            "state": p.get("state"),
+            "url": p.get("html_url"),
+            "user": (p.get("user") or {}).get("login"),
+        }
+        for p in data
+    ]
+
+
+@mcp.tool(
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+)
+async def search_issues(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Search issues/PRs across GitHub."""
+    if not query or not query.strip():
+        raise ValueError("query is required")
+    limit = max(1, min(limit, 50))
+    data = await _get("/search/issues", {"q": query.strip(), "per_page": limit})
+    return [
+        {
+            "number": item.get("number"),
+            "title": item.get("title"),
+            "state": item.get("state"),
+            "url": item.get("html_url"),
+            "repository": (item.get("repository_url") or "").rsplit("/", 2)[-2:],
+        }
+        for item in data.get("items", [])
+    ]
 
 
 if __name__ == "__main__":
