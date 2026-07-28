@@ -16,6 +16,7 @@ from .armora.telemetry.bridges import (
     CallablePrometheusSource,
     MetricsStoreSource,
     RCISTelemetrySource,
+    ROFCostTelemetryBridge,
     RPFTelemetrySource,
 )
 from .armora.telemetry.bridges.arop_provider import ROFObservationProvider
@@ -104,6 +105,8 @@ budget_service = build_budget_service(okf_root=cfg.okf_root)
 rof.register_metric_source(BudgetTelemetrySource(budget_service))
 # ARMORA Runtime Cost Intelligence System — learning signal (not admit gate)
 rcis = build_rcis()
+# Wire RCIS cost reports into ROF counters (nexus_*_tokens) so Grafana token panels move.
+rcis.telemetry = ROFCostTelemetryBridge(rcis.telemetry, rof=rof)
 rof.register_metric_source(RCISTelemetrySource(rcis))
 # ARMORA Runtime Profiling Framework — observation plane (not admit / not cost)
 rpf = build_rpf()
