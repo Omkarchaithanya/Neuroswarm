@@ -1,0 +1,233 @@
+{
+  "base_url": "http://127.0.0.1:8082",
+  "tier": 2,
+  "sessions": 4,
+  "turns": 4,
+  "health": {
+    "status_code": 200,
+    "body": {
+      "status": "ok"
+    },
+    "raw": "{\"status\":\"ok\"}"
+  },
+  "metrics": {
+    "status_code": 200,
+    "kv_cache_gauges": {},
+    "has_kv_cache_tokens": false
+  },
+  "slots_before": {
+    "status_code": 200,
+    "slot_count": 1,
+    "slots": [
+      {
+        "id": 0,
+        "n_token_total": null,
+        "is_processing": false
+      }
+    ]
+  },
+  "slot_save": {
+    "status_code": 200,
+    "body": {
+      "id_slot": 0,
+      "filename": "kv-probe.bin",
+      "n_saved": 382,
+      "n_written": 14089052,
+      "timings": {
+        "save_ms": 2964.438
+      }
+    },
+    "latency_ms": 2992.974,
+    "n_saved": 382
+  },
+  "sessions_detail": [
+    {
+      "session_id": "kv-audit-s0",
+      "turns": [
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 15,
+          "cached_tokens": 362,
+          "cache_n": 362,
+          "prompt_n": 1,
+          "latency_ms": 33929.851,
+          "turn": 0
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 17,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 3809.383,
+          "turn": 1
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 10,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 2203.324,
+          "turn": 2
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 10,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 2627.339,
+          "turn": 3
+        }
+      ]
+    },
+    {
+      "session_id": "kv-audit-s1",
+      "turns": [
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 13,
+          "cached_tokens": 352,
+          "cache_n": 352,
+          "prompt_n": 11,
+          "latency_ms": 5288.352,
+          "turn": 0
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 12,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 4742.627,
+          "turn": 1
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 8,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 3390.192,
+          "turn": 2
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 8,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 3273.292,
+          "turn": 3
+        }
+      ]
+    },
+    {
+      "session_id": "kv-audit-s2",
+      "turns": [
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 6,
+          "cached_tokens": 352,
+          "cache_n": 352,
+          "prompt_n": 11,
+          "latency_ms": 3351.122,
+          "turn": 0
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 5,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 1559.782,
+          "turn": 1
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 11,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 2041.602,
+          "turn": 2
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 15,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 3246.601,
+          "turn": 3
+        }
+      ]
+    },
+    {
+      "session_id": "kv-audit-s3",
+      "turns": [
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 13,
+          "cached_tokens": 352,
+          "cache_n": 352,
+          "prompt_n": 11,
+          "latency_ms": 4661.46,
+          "turn": 0
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 5,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 3717.486,
+          "turn": 1
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 9,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 2040.17,
+          "turn": 2
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 363,
+          "completion_tokens": 20,
+          "cached_tokens": 355,
+          "cache_n": 355,
+          "prompt_n": 8,
+          "latency_ms": 5067.659,
+          "turn": 3
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "turn1_cached_mean": 354.5,
+    "turn2_cached_mean": 355.0,
+    "turn3_cached_mean": 355.0,
+    "turn4_cached_mean": 355.0,
+    "slot_reuse_rate": 0.0
+  },
+  "errors": []
+}

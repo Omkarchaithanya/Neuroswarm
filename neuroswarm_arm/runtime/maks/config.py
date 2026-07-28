@@ -50,7 +50,9 @@ class MAKSConfig:
     )
     enable_scheduler: bool = field(default_factory=lambda: _env_bool("NSA_MAKS_SCHEDULER", "1"))
     scheduler_interval_s: float = field(default_factory=lambda: _env_float("NSA_MAKS_SCHEDULER_INTERVAL", 1.0))
-    enable_dedup: bool = field(default_factory=lambda: _env_bool("NSA_MAKS_DEDUP", "1"))
+    enable_dedup: bool = field(
+        default_factory=lambda: _env_bool("NSA_MAKS_ENABLE_DEDUP", os.getenv("NSA_MAKS_DEDUP", "1"))
+    )
     enable_prefix_reuse: bool = field(default_factory=lambda: _env_bool("NSA_MAKS_PREFIX", "1"))
     orphan_grace_s: float = field(default_factory=lambda: _env_float("NSA_MAKS_ORPHAN_GRACE", 300.0))
     max_memory_bytes: int = field(default_factory=lambda: _env_int("NSA_MAKS_MAX_MEMORY", 0))

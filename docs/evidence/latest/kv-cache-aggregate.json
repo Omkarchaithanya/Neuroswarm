@@ -1,0 +1,22 @@
+{
+  "summary_table": [
+    {
+      "tier": 3,
+      "turn1_cached": null,
+      "turn2_cached": null,
+      "turn3_cached": null,
+      "turn4_cached": null,
+      "slot_reuse_rate": null
+    }
+  ],
+  "tiers": {
+    "3": {
+      "base_url": "http://127.0.0.1:8083",
+      "tier": 3,
+      "errors": [
+        "probe_failed:3"
+      ],
+      "summary": {}
+    }
+  }
+}

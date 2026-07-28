@@ -13,6 +13,8 @@ class SharingEngine:
     def __init__(self) -> None:
         self._perms: dict[str, SharePermission] = {}  # token -> perm
         self._by_kv: dict[str, set[str]] = {}  # kv_id -> tokens
+        self._mte_tags: dict[tuple[str, str], int] = {}  # (kv_id, consumer) -> tag 1..15
+        self._mte_tokens: dict[tuple[str, str], str] = {}  # stable share token per (kv_id, consumer)
         self._lock = RLock()
 
     def grant(
@@ -38,11 +40,52 @@ class SharingEngine:
             self._by_kv.setdefault(kv_id, set()).add(token)
         return perm
 
+    def grant_mte(
+        self,
+        kv_id: str,
+        owner: str,
+        consumer: str,
+        tag: int,
+        *,
+        can_read: bool = True,
+        can_write: bool = False,
+    ) -> SharePermission:
+        """Grant read access with an MTE tag; reuses token for same (kv_id, consumer)."""
+        key = (kv_id, consumer)
+        with self._lock:
+            existing = self._mte_tokens.get(key)
+            if existing is not None:
+                perm = self._perms.get(existing)
+                if perm is not None:
+                    self._mte_tags[key] = tag
+                    return perm
+            perm = self.grant(kv_id, owner, consumer, can_read=can_read, can_write=can_write)
+            self._mte_tags[key] = tag
+            self._mte_tokens[key] = perm.token
+            return perm
+
+    def mte_tag(self, kv_id: str, consumer: str) -> int | None:
+        with self._lock:
+            return self._mte_tags.get((kv_id, consumer))
+
+    def mte_token(self, kv_id: str, consumer: str) -> str | None:
+        with self._lock:
+            return self._mte_tokens.get((kv_id, consumer))
+
+    def kv_for_consumer(self, consumer_id: str) -> str | None:
+        with self._lock:
+            for perm in self._perms.values():
+                if perm.consumer == consumer_id and perm.can_read:
+                    return perm.kv_id
+            return None
+
     def revoke(self, token: str) -> None:
         with self._lock:
             perm = self._perms.pop(token, None)
             if perm is None:
                 return
+            self._mte_tags.pop((perm.kv_id, perm.consumer), None)
+            self._mte_tokens.pop((perm.kv_id, perm.consumer), None)
             tokens = self._by_kv.get(perm.kv_id)
             if tokens is not None:
                 tokens.discard(token)
@@ -53,7 +96,10 @@ class SharingEngine:
         with self._lock:
             tokens = self._by_kv.pop(kv_id, set())
             for t in tokens:
-                self._perms.pop(t, None)
+                perm = self._perms.pop(t, None)
+                if perm is not None:
+                    self._mte_tags.pop((perm.kv_id, perm.consumer), None)
+                    self._mte_tokens.pop((perm.kv_id, perm.consumer), None)
 
     def check_read(self, kv_id: str, agent_id: str, token: str = "") -> bool:
         with self._lock:

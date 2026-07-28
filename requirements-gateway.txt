@@ -21,6 +21,7 @@ orjson>=3.11
 
 # Router + runtime numerics (neuroswarm_arm/runtime/router/*)
 numpy>=2.3
+blake3>=1.0.9
 
 # KV / MAKS default compression (zstd)
 zstandard>=0.23

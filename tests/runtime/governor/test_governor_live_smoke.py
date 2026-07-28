@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -28,6 +29,22 @@ def test_governor_live_module_imports() -> None:
     assert hasattr(mod, "PLAN_TIGHT")
 
 
+def test_governor_live_http_mocked() -> None:
+    mod = _load_governor_live()
+    fake = {
+        "status": "ok",
+        "sample_size": 2,
+        "pct_reduction": 55.0,
+        "mean_cap_loose": 4096,
+        "mean_cap_tight": 256,
+    }
+    with patch.object(mod, "run_live_governor", return_value=fake):
+        result = mod.run_live_governor()
+    assert result["status"] == "ok"
+    assert result["sample_size"] > 0
+
+
+@pytest.mark.live
 @pytest.mark.skip(reason="requires live tier3 server")
 def test_governor_live_http() -> None:
     mod = _load_governor_live()

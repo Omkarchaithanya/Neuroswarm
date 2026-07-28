@@ -95,6 +95,7 @@ class DIPAReasoningHook:
             "force_close_message": self.rtg.config.force_close_message
             if decision.force_close
             else "",
+            "thinking_close_token": self.rtg.config.thinking_close_token,
             "policy_layer": decision.policy_layer,
         }
 

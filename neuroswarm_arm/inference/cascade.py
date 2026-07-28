@@ -6,6 +6,7 @@ keeps the historical ``CascadeRouter.handle`` API used by gateway / tests.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -76,6 +77,8 @@ class CascadeRouter:
         # Preserved path for unit tests that construct CascadeRouter with clients only.
         from ..metrics import metrics
         from ..schemas import ChatChoice, ChatUsage, Message, PlanState
+        from neuroswarm_arm.runtime.armcascade.classifier.hardness import HardnessTierMapper
+        from neuroswarm_arm.runtime.dipa.interfaces.types import InferenceRequest
         import time
 
         if self.tier1 is None or self.tier2 is None or self.tier3 is None:
@@ -95,28 +98,39 @@ class CascadeRouter:
         messages = [m.model_dump() for m in req.messages]
         messages = [{"role": "system", "content": self.governor.prompt(plan)}] + messages
 
-        start = time.monotonic()
-        tier1 = self.tier1.chat(
-            messages, max_tokens=min(req.max_tokens, cap), temperature=req.temperature
+        infer_req = InferenceRequest(
+            messages=[{"role": m["role"], "content": m["content"]} for m in messages],
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+            agent_role=req.agent_role,
+            session_id=req.session_id or "",
+            tool_names=list(tool_names),
         )
-        tier1_text = self._extract_text(tier1)
-        conf = self._confidence(tier1_text)
-        tier_used = 1
-        content = tier1_text
+        hardness = HardnessTierMapper().classify(infer_req)
+        start_tier = hardness.start_tier
 
-        if conf < self.confidence_threshold:
-            tier_used = 2
-            tier2 = self.tier2.chat(
-                messages, max_tokens=req.max_tokens, temperature=req.temperature
+        start = time.monotonic()
+        tier_used = start_tier
+        content = ""
+        conf = 0.0
+        tier_clients = {1: self.tier1, 2: self.tier2, 3: self.tier3}
+        thresholds = {1: self.confidence_threshold, 2: 0.5, 3: 0.0}
+
+        for tier_id in range(start_tier, 4):
+            client = tier_clients[tier_id]
+            kwargs: dict[str, Any] = {}
+            if tier_id == 3:
+                kwargs["chat_template_kwargs"] = {"enable_thinking": False}
+            max_tok = min(req.max_tokens, cap) if tier_id == start_tier else req.max_tokens
+            payload = client.chat(
+                messages, max_tokens=max_tok, temperature=req.temperature, **kwargs
             )
-            content = self._extract_text(tier2)
+            content = self._extract_text(payload)
             conf = self._confidence(content)
-            if conf < 0.5:
-                tier_used = 3
-                tier3 = self.tier3.chat(
-                    messages, max_tokens=req.max_tokens, temperature=req.temperature
-                )
-                content = self._extract_text(tier3)
+            tier_used = tier_id
+            threshold = thresholds.get(tier_id, 0.0)
+            if conf >= threshold or tier_id >= 3:
+                break
 
         elapsed_ms = (time.monotonic() - start) * 1000.0
         prompt_tokens = self._approx_tokens(prompt_text)
@@ -182,7 +196,13 @@ class CascadeRouter:
 
     def _extract_text(self, payload: dict) -> str:
         try:
-            return payload["choices"][0]["message"]["content"]
+            msg = payload["choices"][0]["message"]
+            content = str(msg.get("content") or "").strip()
+            if not content:
+                content = str(msg.get("reasoning_content") or "").strip()
+            think_end = "" + "/think>"
+            content = re.sub(rf"(?s)^[\s\S]*?(?:{re.escape(think_end)})\s*", "", content).strip()
+            return content
         except Exception:
             return str(payload)
 
