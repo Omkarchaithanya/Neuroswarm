@@ -63,6 +63,10 @@ class RTGRuntimeConfig:
         "NSA_RTG_FORCE_CLOSE",
         "Due to time constraints, I need to give my answer now.",
     )
+    thinking_close_token: str = os.getenv(
+        "NSA_RTG_THINKING_CLOSE_TOKEN",
+        "</think>",
+    )
     policy: dict[str, Any] = field(default_factory=dict)
     thresholds: dict[str, Any] = field(default_factory=dict)
     hardware: dict[str, Any] = field(default_factory=dict)
@@ -122,4 +126,8 @@ def load_rtg_config(root: Path | None = None) -> RTGRuntimeConfig:
     cfg.policy = policy
     cfg.thresholds = thresholds
     cfg.hardware = hardware
+    if policy.get("force_close_message"):
+        cfg.force_close_message = str(policy["force_close_message"])
+    if policy.get("thinking_close_token"):
+        cfg.thinking_close_token = str(policy["thinking_close_token"])
     return cfg

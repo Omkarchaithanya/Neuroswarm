@@ -1,0 +1,65 @@
+{
+  "status": "ok",
+  "config": {
+    "agents": 8,
+    "prompts_per_agent": 20,
+    "docs_path": "C:\\Users\\Tejas\\neuroswarm-arm-gcp-axion\\benchmarks\\test-data\\docs.json",
+    "identity": {
+      "model_id": "llama-3.1-8b",
+      "quantization": "q4_k_m"
+    }
+  },
+  "dedup_run": {
+    "provider_used_bytes": 6218,
+    "allocator_used_bytes": 83898,
+    "pool_used_bytes": 83898,
+    "per_agent_logical_bytes": {
+      "a0": 83898,
+      "a1": 83898,
+      "a2": 83898,
+      "a3": 83898,
+      "a4": 83898,
+      "a5": 83898,
+      "a6": 83898,
+      "a7": 83898
+    },
+    "dedup_ratio": 0.875,
+    "sharing_ratio": 1.0,
+    "shared_pages": 20,
+    "pages": 20,
+    "refcount_gt1": 20,
+    "unique_kv_ids": 20,
+    "total_creates": 160,
+    "ram_budget_bytes": 536870912,
+    "dedup_enabled": true
+  },
+  "control_run": {
+    "provider_used_bytes": 49744,
+    "allocator_used_bytes": 671184,
+    "pool_used_bytes": 671184,
+    "per_agent_logical_bytes": {
+      "a0": 83898,
+      "a1": 83898,
+      "a2": 83898,
+      "a3": 83898,
+      "a4": 83898,
+      "a5": 83898,
+      "a6": 83898,
+      "a7": 83898
+    },
+    "dedup_ratio": 0.0,
+    "sharing_ratio": 0.0,
+    "shared_pages": 0,
+    "pages": 160,
+    "refcount_gt1": 0,
+    "unique_kv_ids": 160,
+    "total_creates": 160,
+    "ram_budget_bytes": 536870912,
+    "dedup_enabled": false
+  },
+  "dedup_savings_pct": 87.5,
+  "sharing_savings_pct": 100.0,
+  "avg_kv_size_bytes": 4194.9,
+  "concurrent_agents_supported": 127981,
+  "summary_table": "dedup_savings=87.5% | sharing=100.0% | agents@budget=127981 | refcount>1=20"
+}

@@ -175,5 +175,18 @@ echo "==> 13 Kleidi image proof"
   docker image inspect nexus-arm/llama-kleidiai:server --format 'Id={{.Id}} Created={{.Created}}' 2>/dev/null || echo "kleidi_image_missing"
 } | tee "$OUT/13-kleidi.txt"
 
+echo "==> 14 MAKS multi-agent dedup"
+MAKS_OUT="$ROOT/work/benchmarks/maks_multi_agent_dedup.json"
+if command -v uv >/dev/null 2>&1; then
+  uv run python benchmarks/maks_multi_agent_dedup_bench.py --out "$MAKS_OUT" \
+    || printf '{"status":"error"}\n' > "$MAKS_OUT"
+else
+  python3 benchmarks/maks_multi_agent_dedup_bench.py --out "$MAKS_OUT" \
+    || printf '{"status":"error"}\n' > "$MAKS_OUT"
+fi
+mkdir -p "$ROOT/docs/evidence/latest/layer-verify"
+cp -f "$MAKS_OUT" "$OUT/14-maks-dedup.json"
+cp -f "$MAKS_OUT" "$ROOT/docs/evidence/latest/layer-verify/14-maks-dedup.json"
+
 echo "layer-verify done $(date -u +%Y-%m-%dT%H:%M:%SZ) → $OUT"
 ls -la "$OUT" | head -40

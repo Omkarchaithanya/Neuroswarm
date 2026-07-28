@@ -1,81 +1,70 @@
-# Layer live verification scorecard (Axion)
+# Layer scorecard (honest status)
 
-**When:** 2026-07-21T10:29–10:36Z UTC  
-**Host:** neuroswarm-axion Compose-only (`k3s` inactive, NodePort 30080 down)  
-**Base URL:** `http://127.0.0.1` (nginx → gateway)  
-**Unit packs (local):** `90 passed` (`tests/runtime/{haoe,armcascade,router,dipa}` + `tests/evolution`)  
-**Artifacts:** [`docs/evidence/latest/layer-verify/`](layer-verify/) · driver [`scripts/layer-live-verify.sh`](../../../scripts/layer-live-verify.sh)
+Source: code audit + `MEASURED.md` + Prometheus capture (2026-07-25).
 
-Verdict key: **PASS** = live IO matches honest architecture · **PARTIAL** = works but pitch overstated / fallback · **FAIL** = broken smoke · **Marketing-only** = no implementation for the pitch wording
+| Layer | Status | Notes |
+|-------|--------|-------|
+| **ASCR / speculative cascade** | PARTIAL | App-level quality cascade works; native `tier-spec` in-process spec for measured gain |
+| **Native llama.cpp spec (`tier-spec`)** | PASS (when deployed) | `--spec-type draft-simple` + Qwen 0.5B draft / 3B target |
+| **RTG reasoning governor** | PARTIAL | L0–L3 policies live; streaming `</think>` injection on `stream=true` |
+| **Semantic MCP router** | PASS | 83.3% top-1, 16% avg token reduction, 6 tools |
+| **KleidiAI build** | PASS | `GGML_CPU_KLEIDIAI=ON`; +26–64% measured on Axion |
+| **Performix** | PASS | `code_hotspots` + instruction mix via `performix-bridge` |
+| **NUMA-split** | N/A | 1 NUMA node on c4a-standard-8 — cache-aware cpuset only |
+| **SGLang PD** | OFF | Stub present; `NSA_DIPA_PD_MODE=off` |
+| **GSM8K/HumanEval RTG accuracy** | PARTIAL | `benchmarks/governor_accuracy.py` |
+| **MAKS / Multi-Agent KV Sharing** | PARTIAL | Memory OS tested; MTE + 2× agents Marketing-only |
 
----
+Do **not** headline unmeasured 1.8–2.3× or 40–60% accuracy delta until gates in `docs/armcascade/benchmark.md` pass.
 
-## Scorecard vs pitch
+**Verdict key:** **PASS** = measured + wired on Axion · **PARTIAL** = code live, gaps or no live bench · **Marketing-only** = pitch claim, not shippable on Axion today · **FAIL** = broken or absent
 
-| Pitch claim | Verdict | Live evidence |
-|---|---|---|
-| **HAOE** — SVE2 task scheduler, 60–80% latency cut | **PARTIAL** (kernel) + **Marketing-only** (SVE2/60–80%) | Chat `planner_id=haoe.chat`; metrics `haoe_workflows_total`, `haoe_workflow_latency_ms≈20.7s`. `/health` has no `haoe` blob. **No** `nexus_hw_sve2_utilization`. `json_sve2.c` remains stub. |
-| **AQR** — per-role quant + codebook in vector registers | **PARTIAL** (policy) + **Marketing-only** (codebook) | `pick_quant_primary`: reasoning=`Q4_K_M`, others=`Q4_0`; chat `quant_policy=Q4_0`. Package codebook mentions = **0**. |
-| **ARM-Native Inference** — NUMA + Kleidi + llama/SGLang | **PASS** (Kleidi+cascade) · **PARTIAL** (NUMA/SGLang) | Tiers = `nexus-arm/llama-kleidiai:server`. Chat OK, `tier_used=3`. NUMA nodes=**1**, `locality_mode=cache_aware` (not NUMA-split). SGLang: **arm64 in manifest** PASS; PD off (`pd_enabled=0`). |
-| **Speculative Cascade (ASCR)** — 3-tier, 2–4× | **PARTIAL** | Live logits smoke: `accept_mode=speculative_logits`, modes=`speculative`×3, `ascr_acceptance_rate≈0.92–0.96`, `ascr_speculation_gain≈0.33`. Ordinary chat still often `ascr_mode=quality_cascade` with `logits_available=0` / gain 0. **Not** proven 2–4× throughput. |
-| **Cost-Aware Orchestrator** — xRouter RL + GEPA + budget + MCP | **PARTIAL** + **Marketing-only** (xRouter RL) | Budget dims live (`budget_remaining{cost_usd,tokens,latency_ms,…}`, `budget_admit_total`). `/v1/cost/economics` returns costs. GEPA e2e: **approve+deploy OK**, `teacher=http`. AROP `/arop/optimize` often **rejected** by statistical validation (honest). **No** `xRouter` module / PPO. |
-| **Self-Optimizing Loop** — Performix → GEPA → thresholds | **PARTIAL** | GEPA text path works. Performix snapshot at verify time: `source=unavailable` (`apx_recipe_failed`) — honest empty; prior PID capture still on metrics (`libggml-cpu` ~79%). GEPA does **not** own ASCR thresholds (ADR). |
-| **Semantic MCP Router** — BGE+FAISS, 40→3, 92% cut | **PARTIAL** | Live chat selected **3** schemas (`S3`,`Postgres`,`GitHub`). Index size **6**. Bench: top-1/3/5 = **100%**, `avg_token_reduction=15.69%`, `ann_backend=exact` (gateway runtime uses turbovec). MCP templates **PASS (6)**. Pitch **40 tools / 92%** not measured. |
+## 8. MAKS — Multi-Agent KV Sharing
 
----
+| Capability | Verdict | Rationale |
+|------------|---------|-----------|
+| Memory OS (dedup, page pool, sharing, migration, DIPA connector) | **PARTIAL** | `KVManager` + pool + sharing implemented and tested; live swarm dedup bench not wired yet |
+| ARM MTE zero-copy sharing | **Marketing-only** | Stub backend; no user-space MTE on Axion |
+| 2× concurrent agents (pitch claim) | **Marketing-only** | No measured `concurrent_agents_supported` until bench lands |
 
-## Per-layer detail
+### Code refs
 
-### 1. HAOE
-- **Working:** orchestration planner on chat path; workflow counters increment.
-- **Not working as pitched:** SVE2 JSON scheduler / 60–80% latency reduction — not measured; no SVE util metric.
-- Cite: `01-health-summary.json`, `03-metrics-filtered.txt`, `02-chat.json` (`planner_id`).
+| File | Lines | Role |
+|------|-------|------|
+| `neuroswarm_arm/runtime/maks/manager.py` | 678 | `KVManager`: create/share/dedup/migrate/telemetry |
+| `neuroswarm_arm/runtime/maks/pool.py` | 275 | Global page pool, refcount, CoW |
+| `neuroswarm_arm/runtime/maks/sharing.py` | 85 | `SharingEngine` grants/revokes |
+| `neuroswarm_arm/runtime/maks/backends/future_mte_backend.py` | stub | `AVAILABLE=False` |
 
-### 2. AQR
-- **Working:** role→GGUF string policy used on live chat.
-- **Not working as pitched:** codebook in Neon/SVE registers.
-- Cite: `04-aqr.json`, chat `metrics.quant_policy`.
+### MTE honesty (do not claim shipping)
 
-### 3. ARM-Native Inference
-- **Working:** KleidiAI llama.cpp 3-tier cascade produces coherent completions.
-- **Honest NUMA:** single UMA + cache-aware cpusets (`0-1` / `2-4` / `5-7`).
-- **SGLang:** image multi-arch OK; soft/native PD not exercised this run.
-- Cite: `13-kleidi.txt`, `02-chat-summary.json`, `01-health-summary.json`, `11-sglang.txt`.
+MTE native shim raises `NotImplementedError` (`native/mte/__init__.py`); `FutureMTEBackend` raises `KVProviderUnavailableError` on all ops (`backends/future_mte_backend.py`); AQR feature detector reports `mte=UNAVAILABLE` (`aqr/hardware/profiler.py`); Axion `/proc/cpuinfo` has no MTE flag (`01-axion-system-info.txt`). `future_mte` is a feature-flag placeholder for AmpereOne / Orion-O6 / future Graviton — **not shipping on GCP Axion**.
 
-### 4. Speculative Cascade / ASCR
-- **Working:** 3-tier path; logits smoke reaches speculative accept with non-zero gain.
-- **Fallback still real:** quality_cascade on short chat without logits.
-- Cite: `05-ascr-smoke.txt`, `12-product-gaps.txt`, chat `metrics.ascr_mode`.
+Do **not** claim: MTE shipping; 2× concurrent agents; CXL sub-µs wins (see `docs/maks/axion-compatibility.md`).
 
-### 5. Cost / GEPA / “xRouter”
-- **Working:** ARMORA budget gauges, RCIS economics, GEPA text approve/deploy with HTTP teacher.
-- **Not working as pitched:** xRouter RL / PPO closed loop.
-- Cite: `08-economics.json`, `09-gepa-e2e.txt`, `09-arop-optimize.json`.
+### Tests (`tests/runtime/maks/`)
 
-### 6. Performix → GEPA → thresholds
-- **Working:** GEPA independent of threshold knobs; prior Performix hotspots still scraped.
-- **Gap:** live refresh failed this window; ASCR not bound to AROP policy registry for auto threshold drift.
-- Cite: `10-performix.json`, `09-gepa-e2e.txt`.
+`uv run pytest tests/runtime/maks -q` → **38 passed** (2026-07-25).
 
-### 7. Semantic MCP tool router
-- **Working:** Top-K tool schemas on live chat; accuracy bench 100% on 6-tool set; ~16% avg token reduction.
-- **Not working as pitched:** 40→3 / 92% context cut.
-- Cite: `06-router_accuracy.json`, `07-mcp-templates.txt`, chat `tool_schemas_used`.
+`test_integration.py` (7): `test_dipa_connector_roundtrip`, `test_dipa_connector_q8_compression`, `test_identity_mismatch_no_blind_share`, `test_concurrent_creates`, `test_refcount_race`, `test_pressure_relief`, `test_sqlite_registry_persist`
 
----
+`test_mte_backend.py` (6): `test_mte_available_allocate_store_load`, `test_mte_unavailable_raises`, `test_mte_unavailable_hwcap2_unset`, `test_tag_grant_flow`, `test_grant_mte_revoke_clears_tag`, `test_feature_matrix_reflects_mte`
 
-## Smoke blockers fixed this pass
+`test_q8_codec.py` (7): `test_f32_roundtrip_cosine[64|768|4096]`, `test_per_block_symmetric_no_zero_point`, `test_compression_ratio_f32_vectors`, `test_byte_roundtrip`, `test_v1_backward_compat`
 
-1. [`scripts/layer-live-verify.sh`](../../../scripts/layer-live-verify.sh) — router bench via `uv run` / `.venv` (system `python3` lacked pydantic).
-2. Synced missing [`scripts/verify-mcp-templates.sh`](../../../scripts/verify-mcp-templates.sh) to Axion; MCP templates re-smoke **PASS**.
+`test_unit.py` (18): `test_hasher_identity_differs_by_quant`, `test_lifecycle_transitions`, `test_refcount_orphan_zombie`, `test_create_share_release`, `test_dedup_reuse`, `test_pin_blocks_delete`, `test_migrate_ram_to_mmap`, `test_prefix_lookup`, `test_mte_unavailable`, `test_page_pool_registers_on_create`, `test_scored_eviction_default`, `test_capability_matrix_no_cross_model`, `test_connector_capability_surface`, `test_s3fifo_policy_selects_victims`, `test_q8_codec_roundtrip`, `test_semantic_cache_minhash_hit`, `test_pressure_monitor_unified`, `test_cow_share_increments_pool`
 
----
+Key honesty signals: `test_mte_unavailable`, `test_dedup_reuse`, `test_concurrent_creates`.
 
-## Deploy honesty
+### Benchmark evidence
 
-- Compose gateway + Kleidi tiers + proxy + OTEL + qdrant up.
-- `k3s` **inactive**; dual-stack contention from prior incident remains cleared for this scorecard.
+| Artifact | Status |
+|----------|--------|
+| `docs/evidence/latest/layer-verify/14-maks-dedup.json` | **PENDING** — `benchmarks/maks_multi_agent_dedup_bench.py` + `scripts/layer-live-verify.sh` step 14 not wired yet; do not fabricate `dedup_savings_pct` or `concurrent_agents_supported` |
+| `prometheus-metrics.txt` `maks_dedup_ratio` (~0.68) | Runtime scrape only — not a multi-agent swarm bench |
 
-## What judges should hear
+## Smoke blockers
 
-Ship **working** Kleidi cascade, ASCR (with honest speculative vs quality modes), AQR policy strings, semantic Top-K router (6 tools), ARMORA budgets, GEPA text evolution, and HAOE as a Python planner/kernel. Do **not** claim SVE2 HAOE scheduling, AQR vector-register codebooks, xRouter RL, 40-tool/92% routing, or unconditional 2–4× speculative throughput.
+- `14-maks-dedup.json` missing — multi-agent dedup bench not wired into layer-verify
+- MTE zero-copy and 2× concurrent agents remain **Marketing-only** until bench + hardware path exist
+- Do not headline MAKS dedup/concurrency wins in pitch until `14-maks-dedup.json` is captured on Axion

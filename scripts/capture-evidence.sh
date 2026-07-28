@@ -113,6 +113,12 @@ else
   fi
 fi
 
+echo "==> optional P1/P4 benchmarks (best-effort)"
+if command -v uv >/dev/null 2>&1; then
+  (cd "$PROJECT_ROOT" && uv run python benchmarks/governor_accuracy.py \
+    --out "$RESULTS_DIR/governor_accuracy.json") || true
+fi
+
 # Fail loud if still a silent skip stub.
 if grep -q '"status"[[:space:]]*:[[:space:]]*"skipped"' "$RESULTS_DIR/run_all.json" 2>/dev/null; then
   echo "ERROR: run_all.json still skipped — fix host deps (uv sync --all-groups)" >&2
@@ -166,5 +172,6 @@ cp -f "$RESULTS_DIR/01-axion-system-info.txt" "$EVIDENCE_PUB/" 2>/dev/null || tr
 # chat/tools may contain long text — still useful for judges
 cp -f "$RESULTS_DIR/chat-completion.json" "$EVIDENCE_PUB/" 2>/dev/null || true
 cp -f "$RESULTS_DIR/tools-route.json" "$EVIDENCE_PUB/" 2>/dev/null || true
+cp -f "$RESULTS_DIR/governor_accuracy.json" "$EVIDENCE_PUB/" 2>/dev/null || true
 
 printf 'Evidence captured in %s (published copy: %s)\n' "$RESULTS_DIR" "$EVIDENCE_PUB"

@@ -1,4 +1,4 @@
-﻿.venv/
+.venv/
 __pycache__/
 *.pyc
 .env
@@ -161,4 +161,3 @@ work/arop/
 !.cursor/mcp.json.example
 # Observability nginx basic-auth (generated; never commit secrets)
 ops/nginx/obs.htpasswd
-

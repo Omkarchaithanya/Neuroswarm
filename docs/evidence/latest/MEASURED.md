@@ -13,6 +13,7 @@ Sources: `docs/evidence/latest/run_all.json` (2026-07-18) + live layer verify 20
 | ASCR acceptance rate | **≈0.92–0.96** (logits smoke) / **~0.42** (older scrape) | Speculative logits path live; ordinary chat may still be `quality_cascade` |
 | ASCR speculation gain | **≈0.33** (logits smoke) / **0** (quality-cascade chat) | Not a 2–4× throughput proof |
 | Governor mean cap | **268** | vs legacy **666** (2026-07-18) |
+| Governor token reduction (stub GSM8K/HumanEval) | **~54%** | `benchmarks/governor_accuracy.py` |
 | Economics savings score | **0.57** | `run_all` economics (2026-07-18) |
 | Budget admit | **accept** | `budget_admit_total{result="accept"}` live; USD/tokens/latency dims present |
 | GEPA e2e | **OK** | approve+deploy; `teacher=http` (2026-07-21) |
@@ -23,3 +24,6 @@ Sources: `docs/evidence/latest/run_all.json` (2026-07-18) + live layer verify 20
 | NUMA nodes | **1** | `locality_mode=cache_aware`; cpusets 0-1/2-4/5-7 |
 | SGLang image | **arm64 in manifest** | PD profile not required for scorecard |
 | Unit packs | **90 passed** | haoe + armcascade + router + dipa + evolution |
+| MAKS multi-agent dedup savings | **87.5%** | 8 agents × 20 prompts; `layer-verify/14-maks-dedup.json` |
+| MAKS sharing savings | **100%** | shared_pages/pages on dedup run |
+| MAKS concurrent agents @ RAM budget | **127981** | `ram_budget / avg_kv_size` from dedup run |

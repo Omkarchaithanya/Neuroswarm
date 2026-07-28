@@ -110,6 +110,13 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
         if classification.task_kind == TaskKind.REASONING:
             thresholds.accept_threshold = min(0.95, thresholds.accept_threshold + 0.05)
 
+        force_quality_cascade = classification.task_kind in (
+            TaskKind.CODE,
+            TaskKind.TOOL_USE,
+        )
+        if force_quality_cascade:
+            graph = "tool_then_verify"
+
         tiers = list(self.config.get("tiers") or [])
         draft_backend = "tier1"
         verify_backend = "tier2"
@@ -140,6 +147,7 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
             metadata={
                 "task_kind": classification.task_kind.value,
                 "complexity": classification.complexity,
+                "force_quality_cascade": force_quality_cascade,
                 "aqr_quality_floor": meta.get("aqr_quality_floor"),
                 "aqr_preferred_quants": meta.get("aqr_preferred_quants"),
                 "aqr_max_bits": meta.get("aqr_max_bits"),

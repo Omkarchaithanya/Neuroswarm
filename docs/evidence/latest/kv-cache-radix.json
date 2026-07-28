@@ -1,0 +1,41 @@
+{
+  "gateway_url": "http://127.0.0.1:8000",
+  "sessions": 4,
+  "turns": 4,
+  "max_radix_prefix_hit_total": 0.0,
+  "radix_pass": false,
+  "sessions_detail": [
+    {
+      "session_id": "radix-s0",
+      "turns": []
+    },
+    {
+      "session_id": "radix-s1",
+      "turns": []
+    },
+    {
+      "session_id": "radix-s2",
+      "turns": []
+    },
+    {
+      "session_id": "radix-s3",
+      "turns": [
+        {
+          "turn": 0,
+          "tier_used": 0,
+          "cached_tokens": null,
+          "radix_prefix_hit_total": 0.0,
+          "radix_match_len": null,
+          "id_slot": null,
+          "latency_ms": 161027.56
+        }
+      ]
+    }
+  ],
+  "errors": [
+    "radix-s0:turn0:HTTP 0",
+    "radix-s1:turn0:HTTP 0",
+    "radix-s2:turn0:HTTP 0",
+    "radix-s3:turn1:HTTP 0"
+  ]
+}

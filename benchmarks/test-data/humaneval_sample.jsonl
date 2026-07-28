@@ -1,0 +1,5 @@
+{"task_id": "sample/0", "prompt": "def add(a, b):\n    \"\"\"Return sum of a and b.\"\"\"\n", "entry_point": "add", "test": "assert add(2, 3) == 5\nassert add(-1, 1) == 0"}
+{"task_id": "sample/1", "prompt": "def is_even(n):\n    \"\"\"Return True if n is even.\"\"\"\n", "entry_point": "is_even", "test": "assert is_even(2) is True\nassert is_even(3) is False"}
+{"task_id": "sample/2", "prompt": "def reverse_string(s):\n    \"\"\"Reverse string s.\"\"\"\n", "entry_point": "reverse_string", "test": "assert reverse_string('abc') == 'cba'"}
+{"task_id": "sample/3", "prompt": "def max_of_two(a, b):\n    \"\"\"Return larger of a and b.\"\"\"\n", "entry_point": "max_of_two", "test": "assert max_of_two(1, 2) == 2\nassert max_of_two(5, 5) == 5"}
+{"task_id": "sample/4", "prompt": "def factorial(n):\n    \"\"\"Return n! for n >= 0.\"\"\"\n", "entry_point": "factorial", "test": "assert factorial(0) == 1\nassert factorial(4) == 24"}

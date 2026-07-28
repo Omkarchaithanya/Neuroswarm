@@ -4,17 +4,29 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from neuroswarm_arm.runtime.armcascade.classifier.hardness import HardnessTierMapper
 from neuroswarm_arm.runtime.armcascade.interfaces.proposal import RequestClassifier
 from neuroswarm_arm.runtime.armcascade.interfaces.types import Classification, TaskKind
 
 if TYPE_CHECKING:
     from neuroswarm_arm.runtime.dipa.interfaces.types import ExecutionPlan, InferenceRequest
 
+_hardness_mapper = HardnessTierMapper()
+
 _CODE_HINTS = ("```", "def ", "class ", "function", "compile", "bug", "stacktrace", "python", "rust")
-_REASON_HINTS = ("reason", "think step", "prove", "why ", "analyze", "chain of thought", "cot")
+_REASON_HINTS = ("reason", "think step", "step by step", "solve", "prove", "why ", "analyze", "chain of thought", "cot")
 _JSON_HINTS = ("json", "schema", "{\"", "response_format")
 _RAG_HINTS = ("according to", "document", "context:", "retrieve", "citation")
 _PLAN_HINTS = ("plan", "roadmap", "steps to", "breakdown", "milestone")
+_EXPLAIN_HINTS = ("explain", "describe", "tell me about", "overview of", "what is", "how does")
+_STYLE_ONLY_HINTS = (
+    "in an advanced way",
+    "advanced way",
+    "in depth",
+    "in detail",
+    "comprehensive",
+    "thorough",
+)
 _FACT_HINTS = ("what is", "who is", "when did", "capital of", "define ")
 
 
@@ -45,14 +57,14 @@ class HeuristicRequestClassifier(RequestClassifier):
         verify = "block"
         graph = "default_linear"
 
-        if tools or req.tool_schemas or "tool" in workload:
+        if tools or req.tool_schemas:
             kind = TaskKind.TOOL_USE
             complexity = 0.55
             entropy = 0.5
             expected_accept = 0.65
             strategy = "draft_model"
             graph = "tool_then_verify"
-        if any(h in text for h in _CODE_HINTS) or "coding" in workload:
+        if any(h in text for h in _CODE_HINTS) or workload == "coding":
             kind = TaskKind.CODE
             complexity = 0.7
             entropy = 0.65
@@ -60,7 +72,7 @@ class HeuristicRequestClassifier(RequestClassifier):
             expected_accept = 0.55
             strategy = "draft_model"
             verify = "block"
-        if any(h in text for h in _REASON_HINTS) or "reasoning" in workload:
+        if any(h in text for h in _REASON_HINTS) or workload == "reasoning":
             kind = TaskKind.REASONING
             complexity = 0.85
             entropy = 0.8
@@ -85,6 +97,11 @@ class HeuristicRequestClassifier(RequestClassifier):
             complexity = 0.75
             reasoning_depth = 0.6
             expected_accept = 0.5
+        style_only = any(h in text for h in _STYLE_ONLY_HINTS)
+        if any(h in text for h in _EXPLAIN_HINTS) and kind == TaskKind.CHAT:
+            kind = TaskKind.CHAT
+            complexity = 0.38 if style_only else 0.5
+            expected_accept = 0.72
         if any(h in text for h in _FACT_HINTS) and kind == TaskKind.CHAT:
             kind = TaskKind.FACTUAL
             complexity = 0.3
@@ -110,6 +127,7 @@ class HeuristicRequestClassifier(RequestClassifier):
         }:
             strategy = "self_speculation"
 
+        hardness = _hardness_classification(req, plan, kind, complexity)
         return Classification(
             task_kind=kind,
             complexity=complexity,
@@ -120,9 +138,24 @@ class HeuristicRequestClassifier(RequestClassifier):
             recommended_strategy=strategy,
             recommended_verify=verify,
             recommended_graph=graph,
+            recommended_start_tier=int(hardness.start_tier),
+            hardness_band=str(hardness.band.value),
             signals={
                 "tool_count": float(len(tools)),
                 "prompt_tokens_approx": float(max(1, len(words))),
                 "streaming": 1.0 if streaming else 0.0,
             },
         )
+
+
+def _hardness_classification(
+    req: InferenceRequest,
+    plan: ExecutionPlan | None,
+    kind: TaskKind,
+    complexity: float,
+):
+    partial = Classification(
+        task_kind=kind,
+        complexity=complexity,
+    )
+    return _hardness_mapper.classify(req, plan, classification=partial)

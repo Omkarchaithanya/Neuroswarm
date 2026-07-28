@@ -10,7 +10,10 @@ from neuroswarm_arm.runtime.armcascade.acceptance.engine import AdaptiveAcceptan
 from neuroswarm_arm.runtime.armcascade.arm.adapters import ArmRuntimeAdapter, PerformixHook
 from neuroswarm_arm.runtime.armcascade.classifier.heuristic import HeuristicRequestClassifier
 from neuroswarm_arm.runtime.armcascade.confidence.engine import FusedConfidenceEngine
-from neuroswarm_arm.runtime.armcascade.escalation.engine import GraphEscalationEngine
+from neuroswarm_arm.runtime.armcascade.escalation.engine import (
+    GraphEscalationEngine,
+    resolve_cascade_start_node,
+)
 from neuroswarm_arm.runtime.armcascade.interfaces.proposal import (
     AcceptanceEngine,
     CascadePolicyEngine,
@@ -149,8 +152,11 @@ class ASCREngine(ICascadeEngine):
         if graph is None:
             raise RuntimeError("no escalation graph configured")
 
+        start_node = resolve_cascade_start_node(graph, int(plan.cascade_start_tier or 1))
+        start_tier = max(1, min(3, int(plan.cascade_start_tier or 1)))
+
         esc_state = EscalationState(
-            current=graph.start,
+            current=start_node,
             tool_needed=bool(req.tool_names or req.tool_schemas),
             memory_needed=classification.task_kind.value in {"rag", "multi_agent"},
         )
@@ -161,6 +167,10 @@ class ASCREngine(ICascadeEngine):
 
         # Quality-cascade path when plan disables speculation or strategy unavailable.
         use_quality = False
+        plan_meta = dict(getattr(plan, "metadata", None) or {})
+        policy_meta = dict(getattr(policy, "metadata", None) or {})
+        if plan_meta.get("force_quality_cascade") or policy_meta.get("force_quality_cascade"):
+            use_quality = True
         if not plan.speculation and not plan.self_speculation:
             if policy.proposal_strategy not in {"self_speculation", "ngram", "suffix"}:
                 use_quality = policy.quality_cascade_fallback
@@ -169,7 +179,7 @@ class ASCREngine(ICascadeEngine):
         last_verify_text = ""
         last_backend = policy.draft_backend
         last_model = policy.draft_backend
-        tier_used = 1
+        tier_used = start_tier
         last_logits = True
         last_agreement: float | None = None
         saw_logits = False

@@ -7,12 +7,14 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from ..interfaces.types import (
+    DecodeRequest,
     ExecutionPhase,
     ExecutionPlan,
     GenerateRequest,
     GenerateResult,
     InferenceRequest,
     InferenceResponse,
+    TokenChunk,
     WorkloadClass,
 )
 from .execution_context import ExecutionContext
@@ -235,47 +237,14 @@ class ExecutionPipeline:
         else:
             result = self._run_fused_or_cascade(ctx, plan, req, kv_handle)
 
-        # Streaming control tick on completed text (chunk-level for HTTP backends)
         rtg_sid = str(req.baggage.get("rtg_session_id") or req.session_id or "")
-        if rtg_sid and result.text:
-            decision = rt.reasoning_hook.on_chunk(
-                rtg_sid,
-                result.text,
-                tokens=max(1, result.completion_tokens or len(result.text.split())),
-                latency_ms=float(result.latency_ms or 0.0),
-                cascade_tier=int(result.tier_used or plan.cascade_start_tier or 1),
-                model_confidence=float(result.metrics.get("confidence", 0.0) or 0.0),
+        if rtg_sid and result.text and not result.metrics.get("rtg_streaming_applied"):
+            result = self._apply_rtg_post_generation(
+                rt, req, plan, result, rtg_sid, ctx
             )
-            result.metrics["rtg_action"] = 1.0 if decision.get("terminal") else 0.0
-            result.metrics["rtg_force_close"] = 1.0 if decision.get("force_close") else 0.0
-            if decision.get("escalate_to_tier") and int(decision["escalate_to_tier"]) > int(
-                result.tier_used or 1
-            ):
-                escalate_tier = int(decision["escalate_to_tier"])
-                if plan.use_cascade and escalate_tier > int(result.tier_used or 1):
-                    plan.cascade_start_tier = escalate_tier
-                    escalated = rt._run_async(rt.cascade_engine.run(req, plan, ctx))
-                    result = escalated
-            if decision.get("force_close") and decision.get("force_close_message"):
-                close = str(decision["force_close_message"])
-                if close and close not in result.text:
-                    result = GenerateResult(
-                        text=result.text.rstrip() + "\n" + close,
-                        prompt_tokens=result.prompt_tokens,
-                        completion_tokens=result.completion_tokens,
-                        latency_ms=result.latency_ms,
-                        ttft_ms=result.ttft_ms,
-                        backend=result.backend,
-                        model=result.model,
-                        quant=result.quant,
-                        tier_used=result.tier_used,
-                        raw=result.raw,
-                        metrics=result.metrics,
-                    )
-            rt.reasoning_hook.on_complete(rtg_sid, result.text)
 
         ctx.mark(ExecutionPhase.STREAMING)
-        if plan.stream and result.text:
+        if plan.stream and result.text and not result.metrics.get("rtg_streaming_applied"):
             rt.stream_manager.publish_complete(req.session_id, result.text)
 
         rt._run_async(
@@ -410,6 +379,9 @@ class ExecutionPipeline:
         backend = rt.backends.get(plan.backend)
         if backend is None:
             raise RuntimeError(f"backend unavailable: {plan.backend}")
+        if plan.stream and hasattr(backend, "decode"):
+            ctx.mark(ExecutionPhase.DECODE)
+            return self._run_streaming_with_rtg(ctx, plan, req, kv_handle, backend)
         gen_req = GenerateRequest(
             messages=self._messages(req),
             max_tokens=req.max_tokens,
@@ -422,6 +394,187 @@ class ExecutionPipeline:
         )
         result = rt._run_async(backend.generate(gen_req, ctx))
         ctx.mark(ExecutionPhase.DECODE)
+        return result
+
+    def _run_streaming_with_rtg(
+        self,
+        ctx: ExecutionContext,
+        plan: ExecutionPlan,
+        req: InferenceRequest,
+        kv_handle: str | None,
+        backend: Any,
+    ) -> GenerateResult:
+        """Per-token decode with mid-stream RTG early-commit."""
+        rt = self.runtime
+        t0 = time.perf_counter()
+        messages = self._messages(req)
+        rtg_sid = str(req.baggage.get("rtg_session_id") or req.session_id or "")
+        thinking_close = _thinking_close_token(rt)
+
+        async def _collect() -> GenerateResult:
+            accumulated = ""
+            completion_tokens = 0
+            chunk_index = 0
+            injected_close = False
+            streamer = None
+            if req.session_id:
+                streamer = rt.stream_manager.get(req.session_id)
+                if streamer is None:
+                    streamer = rt.stream_manager.open(req.session_id)
+
+            decode_req = DecodeRequest(
+                messages=messages,
+                max_tokens=req.max_tokens,
+                temperature=req.temperature,
+                session_id=req.session_id,
+                quant=plan.quant,
+                kv_handle=kv_handle,
+                stream=True,
+            )
+
+            async for piece in backend.decode(decode_req, ctx):
+                if piece.finished and not piece.text:
+                    break
+                if piece.text:
+                    accumulated += piece.text
+                    completion_tokens += max(1, len(piece.text.split()))
+                    if streamer is not None:
+                        streamer.write(
+                            TokenChunk(
+                                text=piece.text,
+                                index=chunk_index,
+                                finished=False,
+                            )
+                        )
+                        chunk_index += 1
+
+                if rtg_sid and accumulated:
+                    decision = rt.reasoning_hook.on_chunk(
+                        rtg_sid,
+                        accumulated,
+                        tokens=completion_tokens,
+                        latency_ms=(time.perf_counter() - t0) * 1000.0,
+                        cascade_tier=int(plan.cascade_start_tier or 1),
+                        model_confidence=float(
+                            piece.metrics.get("confidence", 0.0) if piece.text else 0.0
+                        ),
+                        kv_pressure=_kv_pressure_from_runtime(rt),
+                    )
+                    if (
+                        not injected_close
+                        and (decision.get("force_close") or decision.get("terminal"))
+                    ):
+                        close_tok = str(
+                            decision.get("thinking_close_token") or thinking_close
+                        )
+                        if close_tok and close_tok not in accumulated:
+                            accumulated = accumulated.rstrip() + "\n" + close_tok + "\n"
+                            if streamer is not None:
+                                streamer.write(
+                                    TokenChunk(
+                                        text="\n" + close_tok + "\n",
+                                        index=chunk_index,
+                                        finished=False,
+                                    )
+                                )
+                                chunk_index += 1
+                        injected_close = True
+                        if decision.get("terminal"):
+                            break
+
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            if streamer is not None:
+                streamer.write(
+                    TokenChunk(text="", index=chunk_index, finished=True)
+                )
+                streamer.close()
+
+            metrics = {
+                "rtg_streaming_applied": 1.0,
+                "rtg_force_close": 1.0 if injected_close else 0.0,
+            }
+            if rtg_sid:
+                rt.reasoning_hook.on_complete(rtg_sid, accumulated)
+
+            return GenerateResult(
+                text=accumulated,
+                prompt_tokens=max(1, len(" ".join(messages[-1].get("content", "").split()))),
+                completion_tokens=completion_tokens,
+                latency_ms=latency_ms,
+                ttft_ms=latency_ms,
+                backend=getattr(backend, "name", plan.backend),
+                model=plan.model,
+                quant=plan.quant,
+                tier_used=int(plan.cascade_start_tier or 1),
+                metrics=metrics,
+            )
+
+        return rt._run_async(_collect())
+
+    def _apply_rtg_post_generation(
+        self,
+        rt: Any,
+        req: InferenceRequest,
+        plan: ExecutionPlan,
+        result: GenerateResult,
+        rtg_sid: str,
+        ctx: ExecutionContext,
+    ) -> GenerateResult:
+        """Post-hoc RTG tick for non-streaming generate paths."""
+        decision = rt.reasoning_hook.on_chunk(
+            rtg_sid,
+            result.text,
+            tokens=max(1, result.completion_tokens or len(result.text.split())),
+            latency_ms=float(result.latency_ms or 0.0),
+            cascade_tier=int(result.tier_used or plan.cascade_start_tier or 1),
+            model_confidence=float(result.metrics.get("confidence", 0.0) or 0.0),
+            kv_pressure=_kv_pressure_from_runtime(rt),
+        )
+        result.metrics = dict(result.metrics)
+        result.metrics["rtg_action"] = 1.0 if decision.get("terminal") else 0.0
+        result.metrics["rtg_force_close"] = 1.0 if decision.get("force_close") else 0.0
+        if decision.get("escalate_to_tier") and int(decision["escalate_to_tier"]) > int(
+            result.tier_used or 1
+        ):
+            escalate_tier = int(decision["escalate_to_tier"])
+            if plan.use_cascade and escalate_tier > int(result.tier_used or 1):
+                plan.cascade_start_tier = escalate_tier
+                result = rt._run_async(rt.cascade_engine.run(req, plan, ctx))
+        if decision.get("force_close"):
+            close_tok = str(
+                decision.get("thinking_close_token") or _thinking_close_token(rt)
+            )
+            if close_tok and close_tok not in result.text:
+                result = GenerateResult(
+                    text=result.text.rstrip() + "\n" + close_tok + "\n",
+                    prompt_tokens=result.prompt_tokens,
+                    completion_tokens=result.completion_tokens,
+                    latency_ms=result.latency_ms,
+                    ttft_ms=result.ttft_ms,
+                    backend=result.backend,
+                    model=result.model,
+                    quant=result.quant,
+                    tier_used=result.tier_used,
+                    raw=result.raw,
+                    metrics=result.metrics,
+                )
+            elif decision.get("force_close_message"):
+                close = str(decision["force_close_message"])
+                if close and close not in result.text:
+                    result = GenerateResult(
+                        text=result.text.rstrip() + "\n" + close,
+                        prompt_tokens=result.prompt_tokens,
+                        completion_tokens=result.completion_tokens,
+                        latency_ms=result.latency_ms,
+                        ttft_ms=result.ttft_ms,
+                        backend=result.backend,
+                        model=result.model,
+                        quant=result.quant,
+                        tier_used=result.tier_used,
+                        raw=result.raw,
+                        metrics=result.metrics,
+                    )
+        rt.reasoning_hook.on_complete(rtg_sid, result.text)
         return result
 
     def _messages(self, req: InferenceRequest) -> list[dict[str, str]]:
@@ -456,10 +609,14 @@ class ExecutionPipeline:
         t0: float,
     ) -> InferenceResponse:
         elapsed_ms = (time.monotonic() - t0) * 1000.0
+        hardness_meta = dict(plan.metadata.get("hardness") or {})
         metrics: dict[str, float | str] = {
             "latency_ms": elapsed_ms,
             "ttft_ms": result.ttft_ms,
             "tier_used": float(result.tier_used),
+            "cascade_start_tier": float(plan.cascade_start_tier or 1),
+            "hardness_band": str(hardness_meta.get("band", "")),
+            "hardness_complexity": float(hardness_meta.get("complexity", 0.0) or 0.0),
             "quant_policy": plan.quant,
             "backend": result.backend or plan.backend,
             "model": result.model or plan.model,
@@ -497,6 +654,28 @@ class ExecutionPipeline:
             metrics=metrics,
             degraded=False,
         )
+
+
+def _kv_pressure_from_runtime(rt: Any) -> float:
+    loader = getattr(rt, "kv_loader", None)
+    conn = getattr(loader, "connector", None) if loader is not None else None
+    sharing = None
+    if conn is not None:
+        sharing = getattr(conn, "_sharing", None) or getattr(conn, "_manager", None)
+    if sharing is not None and hasattr(sharing, "pressure_snapshot"):
+        snap = sharing.pressure_snapshot()
+        if isinstance(snap, dict):
+            return float(snap.get("pressure", snap.get("kv_pressure", 0.0)) or 0.0)
+    return 0.0
+
+
+def _thinking_close_token(rt: Any) -> str:
+    hook = getattr(rt, "reasoning_hook", None)
+    rtg = getattr(hook, "rtg", None)
+    cfg = getattr(rtg, "config", None)
+    if cfg is not None:
+        return str(getattr(cfg, "thinking_close_token", "</think>"))
+    return "</think>"
 
 
 def _maybe_performix_sample(*, op: str, session_id: str) -> None:

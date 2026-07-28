@@ -10,6 +10,31 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-GcpProjectId {
+  param([string]$Value)
+  if (-not [string]::IsNullOrWhiteSpace($Value)) {
+    return $Value.Trim()
+  }
+  if (-not [string]::IsNullOrWhiteSpace($env:GCP_PROJECT)) {
+    return $env:GCP_PROJECT.Trim()
+  }
+  $gcloudBin = Join-Path $env:LOCALAPPDATA "Google\Cloud SDK\google-cloud-sdk\bin"
+  if (Test-Path $gcloudBin) { $env:Path = "$gcloudBin;$env:Path" }
+  if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
+    throw "ProjectId required. Install gcloud or pass -ProjectId YOUR_GCP_PROJECT_ID"
+  }
+  $resolved = (& gcloud config get-value project 2>$null | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($resolved) -or $resolved -eq "(unset)") {
+    throw "ProjectId required. Run: gcloud config set project YOUR_GCP_PROJECT_ID  OR  pass -ProjectId"
+  }
+  return $resolved
+}
+
+$ProjectId = Resolve-GcpProjectId $ProjectId
+if ([string]::IsNullOrWhiteSpace($HostAlias) -or $HostAlias -match '\.$') {
+  $HostAlias = "neuroswarm-axion.us-central1-a.$ProjectId"
+}
+
 function Get-RemoteHome {
   if ($PreferGcloud -and -not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
     throw "gcloud was requested with -PreferGcloud but was not found on PATH."

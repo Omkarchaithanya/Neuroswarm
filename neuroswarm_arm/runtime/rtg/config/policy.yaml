@@ -6,6 +6,7 @@ layers:
   L3_ppo_scaffold: false
 
 force_close_message: "Due to time constraints, I need to give my answer now."
+thinking_close_token: "</think>"
 
 escalation:
   low_confidence: 0.45

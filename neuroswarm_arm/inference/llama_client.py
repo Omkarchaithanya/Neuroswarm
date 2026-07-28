@@ -9,13 +9,20 @@ from urllib import error, request
 class LlamaClient:
     base_url: str
 
-    def chat(self, messages: list[dict], max_tokens: int = 512, temperature: float = 0.2) -> dict:
-        payload = {
+    def chat(
+        self,
+        messages: list[dict],
+        max_tokens: int = 512,
+        temperature: float = 0.2,
+        **extra: object,
+    ) -> dict:
+        payload: dict[str, object] = {
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
             "stream": False,
         }
+        payload.update(extra)
         return self._post("/v1/chat/completions", payload)
 
     def complete(self, prompt: str, max_tokens: int = 256) -> dict:
