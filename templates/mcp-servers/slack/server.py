@@ -53,9 +53,17 @@ def _map_slack_error(exc: SlackApiError) -> ValueError:
             "Slack auth failed. Check SLACK_BOT_TOKEN is a valid xoxb- bot token and not revoked."
         )
     if err_l in ("missing_scope",):
-        return ValueError(
-            "Missing Slack OAuth scope. Add chat:write and channels:history (and groups:history if private)."
-        )
+        needed = ""
+        try:
+            resp = exc.response
+            if isinstance(resp, dict):
+                needed = str(resp.get("needed") or "")
+            elif resp is not None and hasattr(resp, "get"):
+                needed = str(resp.get("needed") or "")
+        except Exception:
+            needed = ""
+        hint = needed or "channels:read (list), chat:write (post), users:read (lookup)"
+        return ValueError(f"Missing Slack OAuth scope. Add Bot Token Scope(s): {hint}. Then Reinstall to Workspace.")
     return ValueError(f"Slack API error: {err or exc}")
 
 
@@ -155,8 +163,10 @@ async def get_user(user: str) -> dict[str, Any]:
 async def list_channels(limit: int = 100) -> list[dict[str, Any]]:
     """List conversations the bot can see."""
     limit = max(1, min(int(limit), 200))
+    # public_channel needs channels:read; private_channel also needs groups:read.
+    # Prefer public-only so a bot with channels:read works without groups:read.
     try:
-        resp = await _client().conversations_list(limit=limit, types="public_channel,private_channel")
+        resp = await _client().conversations_list(limit=limit, types="public_channel")
     except SlackApiError as exc:
         raise _map_slack_error(exc) from None
     data = resp.data if hasattr(resp, "data") else dict(resp)

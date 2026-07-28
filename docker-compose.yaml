@@ -32,7 +32,8 @@ services:
       NSA_RMF_OTLP_INSECURE: ${NSA_RMF_OTLP_INSECURE:-1}
       NSA_RMF_PERFORMIX: ${NSA_RMF_PERFORMIX:-1}
       NSA_RMF_PERFORMIX_PATH: ${NSA_RMF_PERFORMIX_PATH:-work/performix/snapshot.json}
-      NSA_ROF_OTLP_ENDPOINT: ${NSA_ROF_OTLP_ENDPOINT:-http://otel-collector:4317}
+      # ROF uses OTLP *HTTP* span exporter — must hit :4318/v1/traces (not gRPC :4317).
+      NSA_ROF_OTLP_ENDPOINT: ${NSA_ROF_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
       NSA_ROF_OTLP_INSECURE: ${NSA_ROF_OTLP_INSECURE:-1}
       NSA_ROF_EXPORTERS: ${NSA_ROF_EXPORTERS:-otlp,prometheus}
       NSA_AROP_PERFORMIX: ${NSA_AROP_PERFORMIX:-1}

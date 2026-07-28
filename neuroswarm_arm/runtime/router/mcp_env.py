@@ -40,6 +40,8 @@ _SERVER_ALLOW: dict[str, tuple[str, ...]] = {
         "AWS_SESSION_TOKEN",
         "AWS_REGION",
         "AWS_DEFAULT_REGION",
+        "S3_BUCKET",
+        "AWS_S3_BUCKET",
         "S3_ENDPOINT_URL",
     ),
     "browser": (
@@ -48,7 +50,12 @@ _SERVER_ALLOW: dict[str, tuple[str, ...]] = {
         "NSA_MCP_BROWSER_MAX_BYTES",
         "NSA_MCP_TENANT_ID",
     ),
-    "web-search": ("BRAVE_API_KEY", "NSA_MCP_TENANT_ID", "NSA_MCP_BROWSER_HOST_ALLOWLIST"),
+    "web-search": (
+        "SERPAPI_API_KEY",
+        "SERP_API_KEY",
+        "NSA_MCP_TENANT_ID",
+        "NSA_MCP_BROWSER_HOST_ALLOWLIST",
+    ),
 }
 
 

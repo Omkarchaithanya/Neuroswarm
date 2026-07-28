@@ -32,6 +32,11 @@ lz4>=4.3
 psutil>=6.1
 blake3>=1.0
 mcp>=1.12
+# MCP template stdio servers (web-search / github / slack / s3) spawned by NSA_MCP_EXECUTE
+fastmcp==3.4.4
+slack_sdk>=3.33
+aiohttp>=3.10
+boto3>=1.35
 
 # Observability (NSA_DIPA_OTEL defaults on)
 opentelemetry-api>=1.36
