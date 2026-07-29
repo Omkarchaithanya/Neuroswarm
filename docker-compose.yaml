@@ -75,6 +75,7 @@ services:
       - "${TIER1_CTX:-4096}"
       - --parallel
       - "${TIER1_PARALLEL:-4}"
+      - --slots
       - --cache-reuse
       - "64"
       - --slot-save-path
@@ -122,6 +123,7 @@ services:
       - "${TIER2_CTX:-4096}"
       - --parallel
       - "${TIER2_PARALLEL:-4}"
+      - --slots
       - --cache-reuse
       - "64"
       - --slot-save-path
@@ -169,6 +171,7 @@ services:
       - "${TIER3_CTX:-4096}"
       - --parallel
       - "${TIER3_PARALLEL:-2}"
+      - --slots
       - --cache-reuse
       - "64"
       - --reasoning
@@ -259,7 +262,6 @@ services:
           cpus: "0.50"
           memory: 512M
 
-volumes:
   grafana:
     image: grafana/grafana:11.4.0
     platform: linux/arm64

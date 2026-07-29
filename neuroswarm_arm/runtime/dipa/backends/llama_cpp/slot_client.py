@@ -14,6 +14,36 @@ class SlotClient:
         self.base_url = base_url.rstrip("/")
         self.timeout_s = timeout_s
 
+    def health(self) -> dict[str, Any]:
+        for path in ("/health", "/v1/models"):
+            try:
+                data = self._get(path)
+                return {"ok": True, "path": path, "body": data}
+            except Exception as exc:  # noqa: BLE001
+                last = str(exc)
+        return {"ok": False, "error": last}
+
+    def props(self) -> dict[str, Any]:
+        data = self._get("/props")
+        return data if isinstance(data, dict) else {}
+
+    def metrics_text(self) -> str:
+        req = request.Request(self.base_url + "/metrics", method="GET")
+        try:
+            with request.urlopen(req, timeout=self.timeout_s) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+        except error.HTTPError as exc:
+            raise RuntimeError(f"metrics HTTP {exc.code}") from exc
+        except error.URLError as exc:
+            raise RuntimeError(f"metrics unavailable: {exc.reason}") from exc
+
+    def tokenize(self, content: str) -> list[int]:
+        data = self._post("/tokenize", {"content": content})
+        tokens = data.get("tokens") if isinstance(data, dict) else None
+        if isinstance(tokens, list):
+            return [int(t) for t in tokens]
+        return []
+
     def save_slot(self, id_slot: int, filename: str) -> dict[str, Any]:
         return self._post_slot_action(id_slot, "save", {"filename": filename})
 
@@ -24,16 +54,16 @@ class SlotClient:
         return self._post_slot_action(id_slot, "erase", {})
 
     def slots(self) -> list[dict[str, Any]]:
-        for path in ("/slots", "/props"):
-            try:
-                data = self._get(path)
-                if path == "/slots" and isinstance(data, list):
-                    return data
-                if isinstance(data, dict) and "slots" in data:
-                    slots = data.get("slots")
-                    return list(slots) if isinstance(slots, list) else []
-            except Exception:
-                continue
+        try:
+            data = self._get("/slots")
+            if isinstance(data, list):
+                return [s for s in data if isinstance(s, dict)]
+            if isinstance(data, dict):
+                slots = data.get("slots")
+                if isinstance(slots, list):
+                    return [s for s in slots if isinstance(s, dict)]
+        except Exception:
+            return []
         return []
 
     def busy_ratio(self) -> float:
@@ -47,6 +77,23 @@ class SlotClient:
             ):
                 busy += 1
         return busy / max(1, len(slots))
+
+    def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        body = json.dumps(payload).encode("utf-8")
+        req = request.Request(
+            self.base_url + path,
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=self.timeout_s) as resp:
+                raw = resp.read().decode("utf-8")
+                return json.loads(raw) if raw else {}
+        except error.HTTPError as exc:
+            raise RuntimeError(f"HTTP {exc.code}") from exc
+        except error.URLError as exc:
+            raise RuntimeError(f"unavailable: {exc.reason}") from exc
 
     def _post_slot_action(
         self, id_slot: int, action: str, payload: dict[str, Any]
@@ -76,6 +123,11 @@ class SlotClient:
                 raw = resp.read().decode("utf-8")
                 return json.loads(raw) if raw else {}
         except error.HTTPError as exc:
-            raise RuntimeError(f"slots HTTP {exc.code}") from exc
+            body = exc.read().decode("utf-8", errors="replace")
+            try:
+                parsed = json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                parsed = {"error": body}
+            raise RuntimeError(f"HTTP {exc.code}: {parsed}") from exc
         except error.URLError as exc:
-            raise RuntimeError(f"slots unavailable: {exc.reason}") from exc
+            raise RuntimeError(f"unavailable: {exc.reason}") from exc

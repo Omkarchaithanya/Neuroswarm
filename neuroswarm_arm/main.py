@@ -648,6 +648,21 @@ def chat(req: ChatRequest) -> dict:
     return response.model_dump()
 
 
+@app.get("/v1/kv-cache/status")
+def kv_cache_status(tier: int | None = None) -> dict:
+    """Live per-tier llama-server KV slot occupancy (transformer cache, not MAKS)."""
+    from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kv_cache_status import (
+        fetch_all_tier_kv_cache_status,
+        fetch_tier_kv_cache_status,
+    )
+
+    if tier is not None:
+        statuses = [fetch_tier_kv_cache_status(int(tier))]
+    else:
+        statuses = fetch_all_tier_kv_cache_status()
+    return {"tiers": [s.to_dict() for s in statuses]}
+
+
 @app.get("/v1/cost/economics")
 def cost_economics(limit: int = 200) -> dict:
     return rcis.unit_economics(limit=limit).model_dump()
