@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import os
-import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from .slot_client import SlotClient
+try:
+    from .slot_client import SlotClient
+except ImportError:  # standalone script import via importlib
+    from slot_client import SlotClient  # type: ignore[no-redef]
 
 TIER_LABELS = {
     1: "tier1",
