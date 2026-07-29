@@ -75,25 +75,49 @@ def test_next_token_list_parsing() -> None:
         "next_token": [{"n_decoded": 25, "n_remain": 39}],
         "is_processing": False,
     }
-    kv, _, _, n_prompt, decoded, _ = _estimate_slot_kv_tokens(slot, is_processing=False)
+    kv, _, _, n_prompt, decoded, method = _estimate_slot_kv_tokens(slot, is_processing=False)
     assert decoded == 25
     assert n_prompt == 60
-    assert kv == 60
+    assert kv == 85
+    assert method == "prompt_plus_decoded_idle"
 
 
-def test_reconcile_slots_with_metrics_peak() -> None:
+def test_apply_metrics_peak_caps_and_bumps() -> None:
     from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kv_cache_status import (
         SlotKvStatus,
-        _reconcile_slots_with_metrics_peak,
+        _apply_metrics_peak,
     )
 
     slots = [
         SlotKvStatus(id=0, n_ctx=512, kv_tokens=0, state="empty"),
-        SlotKvStatus(id=1, n_ctx=512, kv_tokens=60, state="cached"),
+        SlotKvStatus(
+            id=1,
+            n_ctx=512,
+            kv_tokens=60,
+            prompt_tokens_total=60,
+            n_decoded=25,
+            state="cached",
+        ),
     ]
-    _reconcile_slots_with_metrics_peak(slots, 99.0)
-    assert slots[0].kv_tokens == 0
-    assert slots[1].kv_tokens == 99
+    _apply_metrics_peak(slots, 99.0)
+    assert slots[1].kv_tokens == 85
+
+    stale = [
+        SlotKvStatus(
+            id=0,
+            n_ctx=2048,
+            kv_tokens=95,
+            prompt_tokens_total=40,
+            n_decoded=55,
+            state="cached",
+        )
+    ]
+    _apply_metrics_peak(stale, 122.0)
+    assert stale[0].kv_tokens == 95
+
+    severe = [SlotKvStatus(id=0, n_ctx=512, kv_tokens=6, state="cached")]
+    _apply_metrics_peak(severe, 151.0)
+    assert severe[0].kv_tokens == 151
 
 
 def test_processing_slot_prompt_plus_decoded() -> None:

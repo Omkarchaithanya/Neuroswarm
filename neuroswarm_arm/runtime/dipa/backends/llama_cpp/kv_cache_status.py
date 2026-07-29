@@ -172,15 +172,18 @@ def _estimate_slot_kv_tokens(
         kv = cache + processed + n_decoded
         return kv, cache, processed, n_prompt, n_decoded, "processing_cache_processed_decoded"
 
-    # Idle or post-generation: prefer n_prompt_tokens; metrics peak reconciles upward.
+    # Idle or post-generation: n_prompt_tokens plus completion tokens when known.
     if n_prompt is not None:
         if is_processing:
             kv = n_prompt + n_decoded
             method = "processing_prompt_plus_decoded"
         else:
-            completion = generated_n
+            completion = n_decoded if n_decoded > 0 else generated_n
             kv = n_prompt + completion
-            method = "prompt_plus_generated" if completion else "prompt_tokens_only"
+            if completion:
+                method = "prompt_plus_decoded_idle" if n_decoded > 0 else "prompt_plus_generated"
+            else:
+                method = "prompt_tokens_only"
         return kv, cache, processed, n_prompt, n_decoded, method
 
     prompt_text = slot.get("prompt")
@@ -207,11 +210,11 @@ def _estimate_slot_kv_tokens(
     return n_decoded, cache, processed, n_prompt, n_decoded, "decoded_only"
 
 
-def _reconcile_slots_with_metrics_peak(
+def _apply_metrics_peak(
     slots: list[SlotKvStatus],
     n_tokens_max: float | None,
 ) -> None:
-    """Align single occupied slot with llamacpp:n_tokens_max (peak prompt.n_tokens())."""
+    """Cap/bump slot KV using llamacpp:n_tokens_max without stale-peak inflation."""
     if n_tokens_max is None or n_tokens_max <= 0:
         return
     peak = int(n_tokens_max)
@@ -219,10 +222,17 @@ def _reconcile_slots_with_metrics_peak(
     if len(active) != 1:
         return
     slot = active[0]
-    if slot.kv_tokens < peak:
+    prompt = slot.prompt_tokens_total or 0
+    decoded = slot.n_decoded
+    if prompt and decoded:
+        slot.kv_tokens = min(max(slot.kv_tokens, prompt + decoded), peak)
+    elif slot.kv_tokens > peak:
         slot.kv_tokens = peak
-        if slot.n_ctx > 0:
-            slot.utilization_pct = round(slot.kv_tokens / slot.n_ctx * 100.0, 2)
+    # Severe under-parse (e.g. stale processed=1): trust metrics peak for this slot.
+    if slot.kv_tokens <= 10 and peak > slot.kv_tokens:
+        slot.kv_tokens = peak
+    if slot.n_ctx > 0:
+        slot.utilization_pct = round(slot.kv_tokens / slot.n_ctx * 100.0, 2)
 
 
 def _normalize_slots(
@@ -373,7 +383,7 @@ def fetch_tier_kv_cache_status(
         tokenize=tokenize,
     )
     peak = status.metrics.get("llamacpp:n_tokens_max")
-    _reconcile_slots_with_metrics_peak(status.slots, peak)
+    _apply_metrics_peak(status.slots, peak)
     status.total_kv_tokens = sum(s.kv_tokens for s in status.slots)
     status.total_kv_capacity = sum(s.n_ctx for s in status.slots)
     if status.total_kv_capacity > 0:
