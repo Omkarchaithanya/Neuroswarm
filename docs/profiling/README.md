@@ -20,6 +20,8 @@ ARM Performix is **one optional provider**, never a hard dependency.
 - [developer.md](developer.md)
 - [telemetry.md](telemetry.md)
 - [benchmark.md](benchmark.md)
+- [linux-perf-ebpf.md](linux-perf-ebpf.md) — open-source `perf` + bpftrace on Axion (not ProfInfer)
+- [llama-native.md](llama-native.md) — completion timings, llama-bench, tier `/metrics`
 
 ## Quick start
 
@@ -47,6 +49,9 @@ print(profile.profiler_used, profile.hardware.ipc)
 | `NSA_RPF_EXPORTER` | `json` | json\|sqlite\|duckdb\|parquet |
 | `NSA_RPF_OTEL` | `0` | Enable OTel bridge |
 | `NSA_RPF_PLUGINS` | `` | Comma module paths |
+| `NSA_PERF_PID` | `` | Attach Linux perf / eBPF to this PID (Kleidi llama-server) |
+| `NSA_EBPF_PROFILE` | `0` | Enable live bpftrace sampling in `EbpfProfilerProvider` |
+| `NSA_EBPF_BINARY` | `` | Optional ELF path for uprobes |
 
 ## Tests
 

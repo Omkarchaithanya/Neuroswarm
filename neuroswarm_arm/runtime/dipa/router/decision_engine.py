@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from neuroswarm_arm.runtime.armcascade.classifier.hardness import (
-    HardnessTierMapper,
-    hardness_routing_config,
-)
-
 from ..interfaces.types import (
     ExecutionPlan,
     InferenceRequest,
@@ -44,8 +39,6 @@ class DecisionEngine:
         self.speculation_router = speculation_router
         self.planner = planner
         self.config = config
-        cascade_cfg = dict(getattr(config, "cascade", None) or {})
-        self._hardness_mapper = HardnessTierMapper(hardness_routing_config(cascade_cfg))
 
     def decide(self, req: InferenceRequest) -> ExecutionPlan:
         plan = self.planner.plan(req)
@@ -96,18 +89,7 @@ class DecisionEngine:
             plan.use_cascade = False
 
         if plan.use_cascade:
-            if self._hardness_mapper.enabled:
-                hardness = self._hardness_mapper.classify(req, plan)
-                plan.cascade_start_tier = hardness.start_tier
-                plan.metadata["hardness"] = {
-                    "band": hardness.band.value,
-                    "start_tier": hardness.start_tier,
-                    "complexity": hardness.complexity,
-                    "confidence": hardness.confidence,
-                    "signals": hardness.signals,
-                }
-            else:
-                plan.cascade_start_tier = 1
+            plan.cascade_start_tier = 1
         else:
             plan.cascade_start_tier = _tier_from_name(plan.model)
 
@@ -133,15 +115,12 @@ class DecisionEngine:
         except Exception:
             pass
 
-        hardness_meta = dict(plan.metadata.get("hardness") or {})
         plan.metadata.setdefault("decision", {})
         plan.metadata["decision"].update(
             {
                 "model": plan.model,
                 "backend": plan.backend,
                 "use_cascade": plan.use_cascade,
-                "cascade_start_tier": plan.cascade_start_tier,
-                "hardness_band": str(hardness_meta.get("band", "")),
                 "pd_enabled": plan.pd_enabled,
                 "pd_mode": plan.pd_mode.value,
                 "prefill_backend": plan.prefill_backend,

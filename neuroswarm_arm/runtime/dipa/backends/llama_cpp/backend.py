@@ -390,6 +390,24 @@ class LlamaCppBackend(InferenceBackend):
             "slot_reused": 1.0 if slot_reused else 0.0,
             "ttft_seconds": ttft_seconds,
         }
+        if isinstance(raw, dict) and isinstance(raw.get("timings"), dict):
+            t = raw["timings"]
+            for src, dst in (
+                ("prompt_ms", "llama_prompt_ms"),
+                ("predicted_ms", "llama_predicted_ms"),
+                ("prompt_n", "llama_prompt_n"),
+                ("predicted_n", "llama_predicted_n"),
+                ("prompt_per_second", "llama_prompt_per_second"),
+                ("predicted_per_second", "llama_predicted_per_second"),
+                ("prompt_per_token_ms", "llama_prompt_per_token_ms"),
+                ("predicted_per_token_ms", "llama_predicted_per_token_ms"),
+            ):
+                if t.get(src) is None:
+                    continue
+                try:
+                    metrics[dst] = float(t[src])
+                except (TypeError, ValueError):
+                    continue
         if isinstance(slot_id, int):
             metrics["slot_id"] = float(slot_id)
             metrics["id_slot"] = float(slot_id)

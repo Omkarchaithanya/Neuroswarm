@@ -58,8 +58,6 @@ class Classification:
     recommended_strategy: str = "draft_model"
     recommended_verify: str = "block"
     recommended_graph: str = "default_linear"
-    recommended_start_tier: int = 1
-    hardness_band: str = "basic"
     signals: dict[str, float] = field(default_factory=dict)
 
 

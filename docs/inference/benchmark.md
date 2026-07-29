@@ -9,9 +9,15 @@ pytest tests/runtime/dipa/test_control_plane.py tests/runtime/dipa/test_inferenc
 ## llama-bench (inside KleidiAI image)
 
 ```bash
-docker compose run --rm tier2 llama-bench -m /models/llama-3.2-3b-q5_k_m.gguf -t $(nproc)
+# One-shot
+docker compose run --rm --entrypoint llama-bench tier2 \
+  -m /models/Qwen2.5-3B-Instruct-Q4_0.gguf -t $(nproc)
+
+# Matrix sweep → work/profiling/llama-bench-*.json
+TIER=2 bash scripts/run-llama-bench-sweep.sh
 ```
 
+See also [llama-native.md](../profiling/llama-native.md) for completion `timings` capture and tier `/metrics`.
 ## Cascade acceptance
 
 ```bash

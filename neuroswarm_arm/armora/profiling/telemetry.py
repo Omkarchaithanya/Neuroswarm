@@ -40,6 +40,13 @@ class InMemoryProfileTelemetry:
             self.gauges["profile_branch_misses"] = float(profile.hardware.branch_misses)
             self.gauges["profile_cycles"] = float(profile.hardware.cycles)
             self.gauges["profile_instructions"] = float(profile.hardware.instructions)
+            self.gauges["profile_pmu_available"] = 1.0 if profile.hardware.pmu_available else 0.0
+            ext = dict(profile.hardware.extensions or {})
+            self.gauges["profile_sve_events_available"] = float(
+                ext.get("sve_events_available") or (1.0 if profile.hardware.sve2_available else 0.0)
+            )
+            self.gauges["profile_sve_inst_retired"] = float(ext.get("sve_inst_retired") or 0.0)
+            self.gauges["profile_perf_target_pid"] = float(ext.get("target_pid") or 0.0)
             self.gauges["profile_planner_ms"] = float(profile.planner.planner_time_ms)
             self.gauges["profile_routing_ms"] = float(profile.planner.routing_time_ms)
             self.gauges["profile_execution_ms"] = float(profile.execution.execution_time_ms)

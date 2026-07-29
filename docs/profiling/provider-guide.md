@@ -5,10 +5,10 @@
 | Name | When available | Metrics |
 |------|----------------|---------|
 | `performix` | `apx` on PATH + `NSA_RPF_ALLOW_PERFORMIX=1` | Recipe hotspots, optional HW |
-| `perf` | Linux + `perf` binary | cycles, instructions, cache/branch |
+| `perf` | Linux + `perf` binary | cycles, instructions, cache/branch, IPC; optional Arm/SVE events; attach via `NSA_PERF_PID` |
 | `psutil` | `psutil` importable | CPU%, RSS/VMS, threads, affinity, ctx switches |
 | `mock` | always | Deterministic synthetic |
-| `ebpf` | bcc or bpftrace present | Interface ready; empty until instrumented |
+| `ebpf` | bpftrace/bcc + `NSA_EBPF_PROFILE=1` + `NSA_PERF_PID` | ggml/llama uprobe hit counts (or on-CPU fallback); else UNAVAILABLE with reasons |
 | `parca` | `NSA_RPF_PARCA_URL` set | Continuous sink reachability |
 | `pyroscope` | `NSA_RPF_PYROSCOPE_URL` set | Continuous sink reachability |
 
@@ -43,3 +43,9 @@ Load with `NSA_RPF_PLUGINS=my.package.mod` and `NSA_RPF_PROVIDER=mine`.
 - Do not claim SVE2 / I8MM / PMU unless detector says so
 - Performix wins require evidence (`apx` + successful recipe)
 - Missing hardware → `UNAVAILABLE`, never raise
+- `hardware.sve_events_available=0` with empty Arm event list is honest (not a bug)
+- eBPF without `NSA_EBPF_PROFILE=1` stays UNAVAILABLE — no fake operator zeros
+
+## Host capture scripts
+
+See [linux-perf-ebpf.md](linux-perf-ebpf.md): `scripts/install-host-profilers.sh`, `scripts/capture-linux-perf.sh`, `scripts/capture-ebpf-llamacpp.sh`.
