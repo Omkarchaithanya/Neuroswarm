@@ -66,7 +66,37 @@ def test_idle_slot_ignores_stale_processed_counter() -> None:
     assert method == "prompt_plus_generated"
 
 
-def test_idle_slot_prompt_plus_decoded_when_streaming() -> None:
+def test_next_token_list_parsing() -> None:
+    slot = {
+        "id": 0,
+        "n_prompt_tokens": 60,
+        "n_prompt_tokens_cache": 0,
+        "n_prompt_tokens_processed": 1,
+        "next_token": [{"n_decoded": 25, "n_remain": 39}],
+        "is_processing": False,
+    }
+    kv, _, _, n_prompt, decoded, _ = _estimate_slot_kv_tokens(slot, is_processing=False)
+    assert decoded == 25
+    assert n_prompt == 60
+    assert kv == 60
+
+
+def test_reconcile_slots_with_metrics_peak() -> None:
+    from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kv_cache_status import (
+        SlotKvStatus,
+        _reconcile_slots_with_metrics_peak,
+    )
+
+    slots = [
+        SlotKvStatus(id=0, n_ctx=512, kv_tokens=0, state="empty"),
+        SlotKvStatus(id=1, n_ctx=512, kv_tokens=60, state="cached"),
+    ]
+    _reconcile_slots_with_metrics_peak(slots, 99.0)
+    assert slots[0].kv_tokens == 0
+    assert slots[1].kv_tokens == 99
+
+
+def test_processing_slot_prompt_plus_decoded() -> None:
     slot = {
         "id": 0,
         "n_prompt_tokens": 38,
@@ -75,19 +105,21 @@ def test_idle_slot_prompt_plus_decoded_when_streaming() -> None:
         "next_token": {"n_decoded": 85},
         "is_processing": True,
     }
-    kv, _, _, _, decoded, method = _estimate_slot_kv_tokens(slot, is_processing=True)
+    kv, _, processed, _, decoded, method = _estimate_slot_kv_tokens(slot, is_processing=True)
     assert kv == 123
+    assert processed == 38
     assert decoded == 85
+    assert method == "processing_cache_processed_decoded"
 
 
 def test_normalize_slots_fills_empty_slots() -> None:
     slots = _normalize_slots(
-        [{"id": 0, "n_ctx": 1024, "n_prompt_tokens_cache": 100, "n_prompt_tokens_processed": 5}],
+        [{"id": 0, "n_ctx": 1024, "n_prompt_tokens": 100, "n_prompt_tokens_processed": 5}],
         default_n_ctx=1024,
         total_slots=2,
     )
     assert len(slots) == 2
-    assert slots[0].kv_tokens == 105
+    assert slots[0].kv_tokens == 100
     assert slots[0].state == "cached"
     assert slots[1].kv_tokens == 0
     assert slots[1].state == "empty"

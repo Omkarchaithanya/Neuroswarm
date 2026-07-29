@@ -123,6 +123,18 @@ def _parse_prometheus(text: str) -> dict[str, float]:
     return out
 
 
+def _next_token_dict(slot: dict[str, Any]) -> dict[str, Any]:
+    """llama-server returns next_token as dict or single-element list."""
+    raw = slot.get("next_token")
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict):
+                return item
+    return {}
+
+
 def _slot_state(
     *,
     kv_tokens: int,
@@ -145,7 +157,7 @@ def _estimate_slot_kv_tokens(
     is_processing: bool = False,
 ) -> tuple[int, int | None, int | None, int | None, int, str]:
     """Return (kv_tokens, cache, processed, n_prompt_tokens, n_decoded, method)."""
-    next_token = slot.get("next_token") if isinstance(slot.get("next_token"), dict) else {}
+    next_token = _next_token_dict(slot)
     n_decoded = _first_int(next_token, "n_decoded") or 0
 
     cache = _first_int(
@@ -187,12 +199,15 @@ def _estimate_slot_kv_tokens(
         kv = cache + processed + n_decoded
         return kv, cache, processed, n_prompt, n_decoded, "processing_cache_processed_decoded"
 
-    # Idle or post-generation: n_prompt_tokens is input prompt size; completions
-    # live in next_token.n_decoded while streaming, or in `generated` after idle.
+    # Idle or post-generation: prefer n_prompt_tokens; metrics peak reconciles upward.
     if n_prompt is not None:
-        completion = n_decoded if n_decoded > 0 else generated_n
-        kv = n_prompt + completion
-        method = "prompt_plus_decoded" if n_decoded > 0 else "prompt_plus_generated"
+        if is_processing:
+            kv = n_prompt + n_decoded
+            method = "processing_prompt_plus_decoded"
+        else:
+            completion = generated_n
+            kv = n_prompt + completion
+            method = "prompt_plus_generated" if completion else "prompt_tokens_only"
         return kv, cache, processed, n_prompt, n_decoded, method
 
     prompt_text = slot.get("prompt")
@@ -212,11 +227,42 @@ def _estimate_slot_kv_tokens(
         except Exception:
             pass
 
-    if cache is not None and processed is not None:
+    if is_processing and cache is not None and processed is not None:
         kv = cache + processed + n_decoded
         return kv, cache, processed, n_prompt, n_decoded, "fallback_cache_processed_decoded"
 
     return n_decoded, cache, processed, n_prompt, n_decoded, "decoded_only"
+
+
+def _reconcile_slots_with_metrics_peak(
+    slots: list[SlotKvStatus],
+    n_tokens_max: float | None,
+) -> None:
+    """Align single occupied slot with llamacpp:n_tokens_max (peak prompt.n_tokens())."""
+    if n_tokens_max is None or n_tokens_max <= 0:
+        return
+    peak = int(n_tokens_max)
+    active = [s for s in slots if s.kv_tokens > 0 or s.state == "cached"]
+    if len(active) != 1:
+        return
+    slot = active[0]
+    if slot.kv_tokens < peak:
+        # #region agent log
+        _debug_log(
+            "E",
+            "kv_cache_status._reconcile_slots_with_metrics_peak",
+            "metrics_peak_reconcile",
+            {
+                "slot_id": slot.id,
+                "kv_before": slot.kv_tokens,
+                "kv_after": peak,
+                "n_tokens_max": peak,
+            },
+        )
+        # #endregion
+        slot.kv_tokens = peak
+        if slot.n_ctx > 0:
+            slot.utilization_pct = round(slot.kv_tokens / slot.n_ctx * 100.0, 2)
 
 
 def _normalize_slots(
@@ -385,8 +431,9 @@ def fetch_tier_kv_cache_status(
         total_slots=status.total_slots,
         tokenize=tokenize,
     )
-    # #region agent log
     peak = status.metrics.get("llamacpp:n_tokens_max")
+    _reconcile_slots_with_metrics_peak(status.slots, peak)
+    # #region agent log
     _debug_log(
         "E",
         "kv_cache_status.fetch_tier_kv_cache_status",
