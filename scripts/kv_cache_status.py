@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
 import time
 import types
@@ -74,7 +75,15 @@ def main() -> int:
         default=15.0,
         help="HTTP timeout per tier (default: 15)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Write NDJSON debug logs to debug-e496d4.log (repo root)",
+    )
     args = parser.parse_args()
+
+    if args.debug:
+        os.environ["NSA_KV_CACHE_DEBUG"] = "1"
 
     try:
         kv = _load_kv_cache_api()

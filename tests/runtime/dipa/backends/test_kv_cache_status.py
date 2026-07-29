@@ -28,12 +28,56 @@ def test_estimate_slot_kv_tokens_from_cache_fields() -> None:
         "n_prompt_tokens_cache": 355,
         "n_prompt_tokens_processed": 8,
         "next_token": {"n_decoded": 12},
+        "is_processing": True,
     }
-    kv, cache, processed, total, decoded = _estimate_slot_kv_tokens(slot)
+    kv, cache, processed, total, decoded, method = _estimate_slot_kv_tokens(
+        slot, is_processing=True
+    )
     assert kv == 375
     assert cache == 355
     assert processed == 8
     assert decoded == 12
+    assert method == "processing_cache_processed_decoded"
+
+
+def test_idle_slot_ignores_stale_processed_counter() -> None:
+    """Idle slot with processed=1 must not report kv_tokens=1."""
+    slot = {
+        "id": 1,
+        "n_ctx": 512,
+        "n_prompt_tokens": 36,
+        "n_prompt_tokens_cache": 0,
+        "n_prompt_tokens_processed": 1,
+        "next_token": {"n_decoded": 0},
+        "generated": "x" * 200,
+        "is_processing": False,
+    }
+
+    def _fake_tokenize(text: str) -> list[int]:
+        return list(range(max(1, len(text) // 4)))
+
+    kv, _, processed, n_prompt, decoded, method = _estimate_slot_kv_tokens(
+        slot, tokenize=_fake_tokenize, is_processing=False
+    )
+    assert processed == 1
+    assert n_prompt == 36
+    assert decoded == 0
+    assert kv > 36
+    assert method == "prompt_plus_generated"
+
+
+def test_idle_slot_prompt_plus_decoded_when_streaming() -> None:
+    slot = {
+        "id": 0,
+        "n_prompt_tokens": 38,
+        "n_prompt_tokens_cache": 0,
+        "n_prompt_tokens_processed": 38,
+        "next_token": {"n_decoded": 85},
+        "is_processing": True,
+    }
+    kv, _, _, _, decoded, method = _estimate_slot_kv_tokens(slot, is_processing=True)
+    assert kv == 123
+    assert decoded == 85
 
 
 def test_normalize_slots_fills_empty_slots() -> None:

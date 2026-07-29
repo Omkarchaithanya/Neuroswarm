@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
+import time
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
 
 try:
@@ -78,6 +81,30 @@ def _first_int(data: dict[str, Any], *keys: str) -> int | None:
     return None
 
 
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
+    """Append NDJSON debug line when NSA_KV_CACHE_DEBUG=1."""
+    if os.getenv("NSA_KV_CACHE_DEBUG", "").strip() not in {"1", "true", "yes"}:
+        return
+    # #region agent log
+    try:
+        root = Path(__file__).resolve().parents[5]
+        log_path = root / "debug-e496d4.log"
+        payload = {
+            "sessionId": "e496d4",
+            "runId": os.getenv("NSA_KV_CACHE_DEBUG_RUN", "pre-fix"),
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, default=str) + "\n")
+    except Exception:
+        pass
+    # #endregion
+
+
 def _parse_prometheus(text: str) -> dict[str, float]:
     out: dict[str, float] = {}
     if not text:
@@ -115,7 +142,9 @@ def _estimate_slot_kv_tokens(
     slot: dict[str, Any],
     *,
     tokenize: Any | None = None,
-) -> tuple[int, int | None, int | None, int | None, int]:
+    is_processing: bool = False,
+) -> tuple[int, int | None, int | None, int | None, int, str]:
+    """Return (kv_tokens, cache, processed, n_prompt_tokens, n_decoded, method)."""
     next_token = slot.get("next_token") if isinstance(slot.get("next_token"), dict) else {}
     n_decoded = _first_int(next_token, "n_decoded") or 0
 
@@ -131,7 +160,7 @@ def _estimate_slot_kv_tokens(
         "prompt_tokens_processed",
         "prompt_n",
     )
-    total_prompt = _first_int(
+    n_prompt = _first_int(
         slot,
         "n_prompt_tokens",
         "n_token_total",
@@ -139,25 +168,55 @@ def _estimate_slot_kv_tokens(
         "n_tokens_cached",
     )
 
-    if cache is not None and processed is not None:
-        kv = cache + processed + n_decoded
-        return kv, cache, processed, total_prompt, n_decoded
+    generated = slot.get("generated")
+    generated_n = 0
+    if (
+        not is_processing
+        and n_decoded == 0
+        and isinstance(generated, str)
+        and generated.strip()
+        and tokenize is not None
+    ):
+        try:
+            generated_n = len(tokenize(generated))
+        except Exception:
+            generated_n = 0
 
-    if total_prompt is not None:
-        kv = total_prompt + n_decoded
-        return kv, cache, processed, total_prompt, n_decoded
+    # Active prefill/decode: llama-server exposes incremental counters.
+    if is_processing and cache is not None and processed is not None:
+        kv = cache + processed + n_decoded
+        return kv, cache, processed, n_prompt, n_decoded, "processing_cache_processed_decoded"
+
+    # Idle or post-generation: n_prompt_tokens is input prompt size; completions
+    # live in next_token.n_decoded while streaming, or in `generated` after idle.
+    if n_prompt is not None:
+        completion = n_decoded if n_decoded > 0 else generated_n
+        kv = n_prompt + completion
+        method = "prompt_plus_decoded" if n_decoded > 0 else "prompt_plus_generated"
+        return kv, cache, processed, n_prompt, n_decoded, method
 
     prompt_text = slot.get("prompt")
     if isinstance(prompt_text, str) and prompt_text.strip() and tokenize is not None:
         try:
             tokens = tokenize(prompt_text)
             if tokens:
-                kv = len(tokens) + n_decoded
-                return kv, cache, processed, len(tokens), n_decoded
+                kv = len(tokens) + (n_decoded if n_decoded > 0 else generated_n)
+                return (
+                    kv,
+                    cache,
+                    processed,
+                    len(tokens),
+                    n_decoded,
+                    "tokenized_prompt_plus_completion",
+                )
         except Exception:
             pass
 
-    return n_decoded, cache, processed, total_prompt, n_decoded
+    if cache is not None and processed is not None:
+        kv = cache + processed + n_decoded
+        return kv, cache, processed, n_prompt, n_decoded, "fallback_cache_processed_decoded"
+
+    return n_decoded, cache, processed, n_prompt, n_decoded, "decoded_only"
 
 
 def _normalize_slots(
@@ -183,9 +242,30 @@ def _normalize_slots(
         is_processing = bool(raw.get("is_processing"))
         has_task = bool(raw.get("id_task") or raw.get("params"))
 
-        kv_tokens, cache, processed, total_prompt, n_decoded = _estimate_slot_kv_tokens(
-            raw, tokenize=tokenize
+        kv_tokens, cache, processed, total_prompt, n_decoded, method = _estimate_slot_kv_tokens(
+            raw,
+            tokenize=tokenize,
+            is_processing=is_processing,
         )
+        # #region agent log
+        _debug_log(
+            "A",
+            "kv_cache_status._normalize_slots",
+            "slot_kv_estimate",
+            {
+                "slot_id": slot_id,
+                "is_processing": is_processing,
+                "method": method,
+                "kv_tokens": kv_tokens,
+                "cache": cache,
+                "processed": processed,
+                "n_prompt_tokens": total_prompt,
+                "n_decoded": n_decoded,
+                "has_generated": bool(raw.get("generated")),
+                "raw_keys": sorted(raw.keys()),
+            },
+        )
+        # #endregion
         util = (kv_tokens / n_ctx * 100.0) if n_ctx > 0 else 0.0
         normalized.append(
             SlotKvStatus(
@@ -305,6 +385,22 @@ def fetch_tier_kv_cache_status(
         total_slots=status.total_slots,
         tokenize=tokenize,
     )
+    # #region agent log
+    peak = status.metrics.get("llamacpp:n_tokens_max")
+    _debug_log(
+        "E",
+        "kv_cache_status.fetch_tier_kv_cache_status",
+        "tier_slots_summary",
+        {
+            "tier": tier,
+            "url": url,
+            "slot_count": len(raw_slots),
+            "n_tokens_max": peak,
+            "sum_kv_tokens": sum(s.kv_tokens for s in status.slots),
+            "raw_slots": raw_slots,
+        },
+    )
+    # #endregion
     status.total_kv_tokens = sum(s.kv_tokens for s in status.slots)
     status.total_kv_capacity = sum(s.n_ctx for s in status.slots)
     if status.total_kv_capacity > 0:
