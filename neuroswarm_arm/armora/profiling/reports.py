@@ -109,7 +109,34 @@ class ProfileReportBuilder:
                 llc_misses=get_float(values, "hardware.llc_misses"),
                 sve2_available=bool(get_float(values, "hardware.sve2_available")),
                 i8mm_available=bool(get_float(values, "hardware.i8mm_available")),
-                pmu_available=bool(get_float(values, "hardware.pmu_available")),
+                pmu_available=bool(
+                    get_float(
+                        values,
+                        "hardware.pmu_available",
+                        "hardware.sve_events_available",
+                    )
+                    or cycles > 0
+                ),
+                extensions={
+                    k.removeprefix("hardware."): float(v)
+                    for k, v in values.items()
+                    if k.startswith("hardware.")
+                    and k
+                    not in {
+                        "hardware.cycles",
+                        "hardware.instructions",
+                        "hardware.ipc",
+                        "hardware.cache_misses",
+                        "hardware.cache_references",
+                        "hardware.branch_misses",
+                        "hardware.branch_instructions",
+                        "hardware.llc_loads",
+                        "hardware.llc_misses",
+                        "hardware.sve2_available",
+                        "hardware.i8mm_available",
+                        "hardware.pmu_available",
+                    }
+                },
             ),
             backend=BackendMetrics(
                 backend=phases.backend,

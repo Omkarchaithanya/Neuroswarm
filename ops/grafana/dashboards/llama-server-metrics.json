@@ -1,0 +1,163 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops", "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "rate(llamacpp:tokens_predicted_total{job=\"llama-server-tiers\"}[2m])",
+          "legendFormat": "tier{{tier}} predicted",
+          "refId": "A"
+        }
+      ],
+      "title": "Predicted tokens / s (decode rate)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops", "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "rate(llamacpp:prompt_tokens_total{job=\"llama-server-tiers\"}[2m])",
+          "legendFormat": "tier{{tier}} prompt",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt tokens / s (prefill rate)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops", "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "llamacpp:predicted_tokens_seconds{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} avg decode t/s",
+          "refId": "A"
+        },
+        {
+          "expr": "llamacpp:prompt_tokens_seconds{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} avg prompt t/s",
+          "refId": "B"
+        }
+      ],
+      "title": "Avg tok/s gauges (llama-server)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 7 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "llamacpp:kv_cache_usage_ratio{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} kv",
+          "refId": "A"
+        }
+      ],
+      "title": "KV cache usage ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 7 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "llamacpp:requests_processing{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} processing",
+          "refId": "A"
+        },
+        {
+          "expr": "llamacpp:requests_deferred{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} deferred",
+          "refId": "B"
+        }
+      ],
+      "title": "Requests processing / deferred",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops", "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 7 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "nexus_tokens_per_second",
+          "legendFormat": "nexus tok/s",
+          "refId": "A"
+        },
+        {
+          "expr": "dipa_decode_tps",
+          "legendFormat": "dipa decode tps",
+          "refId": "B"
+        },
+        {
+          "expr": "dipa_prefill_tps",
+          "legendFormat": "dipa prefill tps",
+          "refId": "C"
+        }
+      ],
+      "title": "Gateway DIPA tok/s (from llama timings)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "dipa_prefill_ms",
+          "legendFormat": "prefill ms",
+          "refId": "A"
+        },
+        {
+          "expr": "dipa_decode_ms",
+          "legendFormat": "decode ms",
+          "refId": "B"
+        }
+      ],
+      "title": "Prefill / decode ms (gateway last)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "up{job=\"llama-server-tiers\"}",
+          "legendFormat": "tier{{tier}} up",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrape UP (llama-server-tiers)",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["neuroswarm", "llama", "profiling"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "NeuroSwarm Llama Server Metrics",
+  "uid": "neuroswarm-llama-server",
+  "version": 1
+}
