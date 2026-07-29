@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import os
-import time
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 from typing import Any
 
 try:
@@ -79,30 +76,6 @@ def _first_int(data: dict[str, Any], *keys: str) -> int | None:
         if isinstance(value, float):
             return int(value)
     return None
-
-
-def _debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
-    """Append NDJSON debug line when NSA_KV_CACHE_DEBUG=1."""
-    if os.getenv("NSA_KV_CACHE_DEBUG", "").strip() not in {"1", "true", "yes"}:
-        return
-    # #region agent log
-    try:
-        root = Path(__file__).resolve().parents[5]
-        log_path = root / "debug-e496d4.log"
-        payload = {
-            "sessionId": "e496d4",
-            "runId": os.getenv("NSA_KV_CACHE_DEBUG_RUN", "pre-fix"),
-            "hypothesisId": hypothesis_id,
-            "location": location,
-            "message": message,
-            "data": data,
-            "timestamp": int(time.time() * 1000),
-        }
-        with log_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(payload, default=str) + "\n")
-    except Exception:
-        pass
-    # #endregion
 
 
 def _parse_prometheus(text: str) -> dict[str, float]:
@@ -247,19 +220,6 @@ def _reconcile_slots_with_metrics_peak(
         return
     slot = active[0]
     if slot.kv_tokens < peak:
-        # #region agent log
-        _debug_log(
-            "E",
-            "kv_cache_status._reconcile_slots_with_metrics_peak",
-            "metrics_peak_reconcile",
-            {
-                "slot_id": slot.id,
-                "kv_before": slot.kv_tokens,
-                "kv_after": peak,
-                "n_tokens_max": peak,
-            },
-        )
-        # #endregion
         slot.kv_tokens = peak
         if slot.n_ctx > 0:
             slot.utilization_pct = round(slot.kv_tokens / slot.n_ctx * 100.0, 2)
@@ -288,30 +248,11 @@ def _normalize_slots(
         is_processing = bool(raw.get("is_processing"))
         has_task = bool(raw.get("id_task") or raw.get("params"))
 
-        kv_tokens, cache, processed, total_prompt, n_decoded, method = _estimate_slot_kv_tokens(
+        kv_tokens, cache, processed, total_prompt, n_decoded, _method = _estimate_slot_kv_tokens(
             raw,
             tokenize=tokenize,
             is_processing=is_processing,
         )
-        # #region agent log
-        _debug_log(
-            "A",
-            "kv_cache_status._normalize_slots",
-            "slot_kv_estimate",
-            {
-                "slot_id": slot_id,
-                "is_processing": is_processing,
-                "method": method,
-                "kv_tokens": kv_tokens,
-                "cache": cache,
-                "processed": processed,
-                "n_prompt_tokens": total_prompt,
-                "n_decoded": n_decoded,
-                "has_generated": bool(raw.get("generated")),
-                "raw_keys": sorted(raw.keys()),
-            },
-        )
-        # #endregion
         util = (kv_tokens / n_ctx * 100.0) if n_ctx > 0 else 0.0
         normalized.append(
             SlotKvStatus(
@@ -433,21 +374,6 @@ def fetch_tier_kv_cache_status(
     )
     peak = status.metrics.get("llamacpp:n_tokens_max")
     _reconcile_slots_with_metrics_peak(status.slots, peak)
-    # #region agent log
-    _debug_log(
-        "E",
-        "kv_cache_status.fetch_tier_kv_cache_status",
-        "tier_slots_summary",
-        {
-            "tier": tier,
-            "url": url,
-            "slot_count": len(raw_slots),
-            "n_tokens_max": peak,
-            "sum_kv_tokens": sum(s.kv_tokens for s in status.slots),
-            "raw_slots": raw_slots,
-        },
-    )
-    # #endregion
     status.total_kv_tokens = sum(s.kv_tokens for s in status.slots)
     status.total_kv_capacity = sum(s.n_ctx for s in status.slots)
     if status.total_kv_capacity > 0:
