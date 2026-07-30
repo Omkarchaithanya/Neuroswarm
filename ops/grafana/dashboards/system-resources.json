@@ -138,12 +138,13 @@
       },
       "targets": [
         {
-          "expr": "dipa_latency_ms{host=\"axion\"}",
-          "legendFormat": "dipa",
+          "expr": "arop_metric{name=\"dipa_latency_ms\",host=\"axion\"} or arop_metric{name=\"haoe_workflow_latency_ms\",host=\"axion\"} or (arop_metric{name=\"nexus_request_latency_seconds_last\",job=\"neuroswarm-gateway\",host=\"axion\"} * 1000)",
+          "legendFormat": "latency_ms",
           "refId": "A"
         }
       ],
       "title": "Chat/DIPA Latency (overlay)",
+      "description": "Prefers DIPA end-to-end chat latency (ms). Falls back to HAOE workflow latency, then last gateway request latency×1000 (includes health scrapes ~few ms — run a chat to populate dipa_latency_ms).",
       "type": "stat"
     },
     {
@@ -245,8 +246,8 @@
       },
       "targets": [
         {
-          "expr": "dipa_latency_ms{host=\"axion\"}",
-          "legendFormat": "dipa_ms",
+          "expr": "arop_metric{name=\"dipa_latency_ms\",host=\"axion\"} or arop_metric{name=\"haoe_workflow_latency_ms\",host=\"axion\"} or (arop_metric{name=\"nexus_request_latency_seconds_last\",job=\"neuroswarm-gateway\",host=\"axion\"} * 1000)",
+          "legendFormat": "latency_ms",
           "refId": "A"
         },
         {
@@ -256,6 +257,7 @@
         }
       ],
       "title": "Inference latency vs container CPU pressure",
+      "description": "Latency series: dipa_latency_ms (after a real chat) with gateway/HAOE fallbacks. CPU series: Glances container CPU — not latency.",
       "type": "timeseries"
     }
   ],
