@@ -2,17 +2,79 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import os
+from pathlib import Path
+from types import TracebackType
 from typing import Any
 from urllib import error, parse, request
+
+
+class SlotKVError(RuntimeError):
+    """Raised when slot save/restore fails (missing file, HTTP error)."""
+
+
+def _default_slot_dir() -> Path:
+    return Path(os.getenv("NSA_LLAMA_SLOT_DIR", "/tmp/neuroswarm-slots"))
 
 
 class SlotClient:
     """Best-effort llama-server slots / props probes (version-tolerant)."""
 
-    def __init__(self, base_url: str, timeout_s: float = 5.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout_s: float = 5.0,
+        *,
+        slot_dir: Path | None = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout_s = timeout_s
+        self.slot_dir = slot_dir or _default_slot_dir()
+        self.slot_dir.mkdir(parents=True, exist_ok=True)
+
+    def resolve_filename(self, handle: str) -> str:
+        """Map opaque kv_handle to llama-server slot filename."""
+        if not handle:
+            raise SlotKVError("kv_handle is empty")
+        path = Path(handle)
+        if path.is_absolute():
+            return str(path)
+        safe = handle.replace("/", "_").replace("\\", "_")
+        if not safe.endswith(".kv"):
+            safe = f"{safe}.kv"
+        return str(self.slot_dir / safe)
+
+    def kv_export(self, id_slot: int, filename: str) -> dict[str, Any]:
+        """Thin wrapper: persist slot KV to *filename*."""
+        try:
+            return self.save_slot(id_slot, filename)
+        except RuntimeError as exc:
+            raise SlotKVError(
+                f"kv_export failed for slot {id_slot} file {filename!r}: {exc}"
+            ) from exc
+
+    def kv_import(self, id_slot: int, filename: str) -> dict[str, Any]:
+        """Thin wrapper: restore slot KV from *filename*."""
+        path = Path(filename)
+        if path.is_file():
+            resolved = str(path)
+        elif path.is_absolute():
+            resolved = str(path)
+        else:
+            resolved = self.resolve_filename(filename)
+        if not Path(resolved).is_file():
+            raise SlotKVError(
+                f"kv_import: slot file not found for handle {filename!r} "
+                f"(resolved {resolved!r})"
+            )
+        try:
+            return self.restore_slot(id_slot, resolved)
+        except RuntimeError as exc:
+            raise SlotKVError(
+                f"kv_import failed for slot {id_slot} file {resolved!r}: {exc}"
+            ) from exc
 
     def health(self) -> dict[str, Any]:
         for path in ("/health", "/v1/models"):
@@ -78,6 +140,26 @@ class SlotClient:
                 busy += 1
         return busy / max(1, len(slots))
 
+    def free_slot_count(self) -> int:
+        slots = self.slots()
+        if not slots:
+            return 0
+        return sum(
+            1
+            for s in slots
+            if isinstance(s, dict)
+            and not s.get("is_processing")
+            and s.get("state") not in {"processing", "busy"}
+        )
+
+    def slot_counts(self) -> tuple[int, int]:
+        """Return (free, total) slot counts from /slots."""
+        slots = self.slots()
+        total = len(slots)
+        if total == 0:
+            return 0, 0
+        return self.free_slot_count(), total
+
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload).encode("utf-8")
         req = request.Request(
@@ -131,3 +213,36 @@ class SlotClient:
             raise RuntimeError(f"HTTP {exc.code}: {parsed}") from exc
         except error.URLError as exc:
             raise RuntimeError(f"unavailable: {exc.reason}") from exc
+
+
+class SlotContext:
+    """Async context manager: save SOURCE slot on entry, restore TARGET on exit."""
+
+    def __init__(
+        self,
+        *,
+        source: SlotClient,
+        target: SlotClient,
+        id_slot: int,
+        filename: str,
+        slot_dir: Path | None = None,
+    ) -> None:
+        self.source = source
+        self.target = target
+        self.id_slot = int(id_slot)
+        self.filename = source.resolve_filename(filename)
+        if slot_dir is not None:
+            self.source.slot_dir = slot_dir
+            self.target.slot_dir = slot_dir
+
+    async def __aenter__(self) -> SlotContext:
+        await asyncio.to_thread(self.source.kv_export, self.id_slot, self.filename)
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        await asyncio.to_thread(self.target.kv_import, self.id_slot, self.filename)

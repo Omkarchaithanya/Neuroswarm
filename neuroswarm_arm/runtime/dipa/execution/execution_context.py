@@ -21,6 +21,7 @@ class ExecutionContext:
     ids: CorrelationIds = field(default_factory=CorrelationIds)
     baggage: dict[str, Any] = field(default_factory=dict)
     kv_handle: str | None = None
+    id_slot: int | None = None
     quant: str = ""
     backend_name: str = ""
     model_name: str = ""

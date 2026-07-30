@@ -49,6 +49,7 @@ class DraftModelProposer(ProposalStrategy):
             quant=req.quant,
             stream=False,
             kv_handle=req.kv_handle,
+            id_slot=req.id_slot,
             speculative=True,
         )
         result = await backend.generate(gen, self._ctx_exec)
@@ -56,6 +57,7 @@ class DraftModelProposer(ProposalStrategy):
         conf = 0.6
         if result.metrics.get("confidence") is not None:
             conf = float(result.metrics["confidence"])
+        slot_id = result.metrics.get("slot_id")
         proposal = Proposal.from_text(
             text,
             strategy=self.name,
@@ -66,6 +68,8 @@ class DraftModelProposer(ProposalStrategy):
                 "model": result.model,
                 "latency_ms": result.latency_ms,
                 "prompt_tokens": result.prompt_tokens or approx_tokens(req.prompt_text),
+                "slot_id": slot_id,
+                "id_slot": slot_id,
             },
         )
         return proposal

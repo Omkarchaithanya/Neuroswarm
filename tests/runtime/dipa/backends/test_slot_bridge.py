@@ -49,7 +49,10 @@ def test_llama_chat_extra_uses_slot_router() -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_uses_cache_prompt_and_id_slot() -> None:
+async def test_generate_uses_cache_prompt_and_id_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "0")
     backend = LlamaCppBackend(name="tier2", base_url="http://127.0.0.1:8080", tier=2)
     backend._slot_router = SlotRouter(registry=SlotRegistry(total_slots=4))
     backend._client = MagicMock()

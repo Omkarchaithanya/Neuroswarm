@@ -37,6 +37,7 @@ class VerifyMode(str, Enum):
     HIERARCHICAL = "hierarchical"
     TREE = "tree"
     QUALITY = "quality"
+    LOGITS = "logits"
 
 
 @dataclass(slots=True)
@@ -114,8 +115,36 @@ class ProposalRequest:
     session_id: str = ""
     quant: str = ""
     kv_handle: str | None = None
+    id_slot: int | None = None
     classification: Classification | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class LogitsTopEntry:
+    token: str
+    logprob: float
+    token_id: int | None = None
+
+
+@dataclass(slots=True)
+class LogitsStep:
+    token: str
+    logprob: float
+    token_id: int | None = None
+    top: list[LogitsTopEntry] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class LogitsBundle:
+    steps: list[LogitsStep] = field(default_factory=list)
+    draft_tokens: list[str] = field(default_factory=list)
+    draft_token_ids: list[int] = field(default_factory=list)
+    draft_logprobs: list[float] = field(default_factory=list)
+    draft_ranks: list[int] = field(default_factory=list)
+    top_n: int = 0
+    completion_text: str = ""
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -129,6 +158,7 @@ class VerifyRequest:
     session_id: str = ""
     quant: str = ""
     kv_handle: str | None = None
+    id_slot: int | None = None
     verifier_tier: int = 2
     batch_size: int = 1
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -150,6 +180,7 @@ class VerifyResult:
     tier_used: int = 2
     metrics: dict[str, float] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict)
+    bonus_token: str = ""
 
 
 @dataclass(slots=True)

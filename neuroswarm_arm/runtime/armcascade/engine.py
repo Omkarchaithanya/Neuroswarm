@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any
@@ -52,6 +53,11 @@ from neuroswarm_arm.runtime.dipa.interfaces.types import (
     GenerateRequest,
     GenerateResult,
     InferenceRequest,
+)
+from neuroswarm_arm.runtime.dipa.reasoning_emit import (
+    tier_model_name,
+    tier_quant_label,
+    trace_emit,
 )
 
 if TYPE_CHECKING:
@@ -107,6 +113,20 @@ class ASCREngine(ICascadeEngine):
         # Optional ACR peer — connectors not ownership
         self.memory_connector = memory_connector
         self._history_accept = 0.7
+        self.reasoning_emitter: Any | None = None
+        self.dipa_runtime: Any | None = None
+
+    def _trace(
+        self,
+        ctx: ExecutionContext,
+        req: InferenceRequest,
+        kind: str,
+        data: Mapping[str, Any],
+    ) -> None:
+        sid = str(req.session_id or "")
+        if not sid:
+            return
+        trace_emit(self.reasoning_emitter or ctx.baggage.get("reasoning_emitter") or self, sid, kind, data)
 
     async def run(
         self,
@@ -174,6 +194,20 @@ class ASCREngine(ICascadeEngine):
         if not plan.speculation and not plan.self_speculation:
             if policy.proposal_strategy not in {"self_speculation", "ngram", "suffix"}:
                 use_quality = policy.quality_cascade_fallback
+        # Starting above tier1 must use full generate — unless tier-3 speculative path.
+        tier3_spec = (
+            policy.proposal_strategy == "speculative_from_tier1"
+            or bool(plan_meta.get("tier3_speculative"))
+            or bool(policy_meta.get("tier3_speculative"))
+        )
+        spec_draft_strategies = {"draft_model", "speculative_from_tier1"}
+        can_spec_from_tier1 = bool(
+            plan.speculation
+            and policy.proposal_strategy in spec_draft_strategies
+        )
+        if start_tier >= 2 and not tier3_spec and not can_spec_from_tier1:
+            use_quality = True
+            state.mode = "quality_cascade"
 
         committed = ""
         last_verify_text = ""
@@ -227,6 +261,17 @@ class ASCREngine(ICascadeEngine):
             tier_id = int(node.tier_id or 1)
             tier_used = tier_id
             backend_name = self._backend_for_tier(tier_id, policy)
+            self._trace(
+                ctx,
+                req,
+                "reason.cascade.start",
+                {
+                    "round": state.rounds,
+                    "tier": tier_id,
+                    "model": tier_model_name(tier_id),
+                    "quant": tier_quant_label(plan.quant),
+                },
+            )
 
             if use_quality or state.mode == "quality_cascade":
                 q_thresh = float(
@@ -236,9 +281,14 @@ class ASCREngine(ICascadeEngine):
                         thresholds.accept_threshold,
                     )
                 )
-                result = await self._quality_cascade_tier(
-                    req, ctx, backend_name, tier_id, q_thresh
-                )
+                if tier_id >= 3 and req.stream:
+                    result = await self._quality_cascade_tier_stream(
+                        req, ctx, backend_name, tier_id, q_thresh
+                    )
+                else:
+                    result = await self._quality_cascade_tier(
+                        req, ctx, backend_name, tier_id, q_thresh
+                    )
                 committed = result.text
                 last_verify_text = result.text
                 last_backend = result.backend or backend_name
@@ -265,6 +315,18 @@ class ASCREngine(ICascadeEngine):
                 edge = self.escalation.next(graph, esc_state)
                 if edge is None:
                     break
+                next_tier = int(graph.nodes.get(edge.target).tier_id or tier_id + 1) if edge.target in graph.nodes else tier_id + 1
+                self._trace(
+                    ctx,
+                    req,
+                    "reason.cascade.escalate",
+                    {
+                        "round": state.rounds,
+                        "from": tier_id,
+                        "to": next_tier,
+                        "reason": "low_conf",
+                    },
+                )
                 esc_state.visited.append(esc_state.current)
                 esc_state.current = edge.target
                 state.escalations += 1
@@ -272,6 +334,11 @@ class ASCREngine(ICascadeEngine):
                 continue
 
             # --- Speculative propose/verify ---
+            if policy.proposal_strategy == "speculative_from_tier1":
+                thresholds.draft_len = min(thresholds.draft_len, 32)
+                thresholds.accept_threshold = float(
+                    os.getenv("NSA_ASCR_TIER1_ACCEPT", "0.78") or 0.78
+                )
             if hasattr(proposer, "backend_name") and tier_id == 1:
                 proposer.backend_name = policy.draft_backend  # type: ignore[attr-defined]
             if hasattr(verifier, "set_backend"):
@@ -288,6 +355,7 @@ class ASCREngine(ICascadeEngine):
                 session_id=req.session_id,
                 quant=plan.quant,
                 kv_handle=getattr(ctx, "kv_handle", None),
+                id_slot=getattr(ctx, "id_slot", None),
                 classification=classification,
             )
             try:
@@ -298,7 +366,21 @@ class ASCREngine(ICascadeEngine):
                 use_quality = True
                 continue
 
+            sid = proposal.metadata.get("slot_id") or proposal.metadata.get("id_slot")
+            if sid is not None:
+                ctx.id_slot = int(sid)
+
             state.draft_tokens += proposal.draft_len
+            self._trace(
+                ctx,
+                req,
+                "reason.cascade.propose",
+                {
+                    "round": state.rounds,
+                    "confidence": round(float(proposal.confidence or 0.0), 3),
+                    "draft_tokens": int(proposal.draft_len or approx_tokens(proposal.text)),
+                },
+            )
             if not proposal.text.strip():
                 # Empty draft → quality path on current tier.
                 use_quality = True
@@ -314,6 +396,7 @@ class ASCREngine(ICascadeEngine):
                 session_id=req.session_id,
                 quant=plan.quant,
                 kv_handle=getattr(ctx, "kv_handle", None),
+                id_slot=getattr(ctx, "id_slot", None),
                 verifier_tier=max(2, tier_id),
                 batch_size=thresholds.verify_batch_size,
             )
@@ -327,6 +410,16 @@ class ASCREngine(ICascadeEngine):
             last_verify_text = vres.text or proposal.text
             last_backend = vres.backend or last_backend
             last_model = vres.model or last_model
+            self._trace(
+                ctx,
+                req,
+                "reason.cascade.verify",
+                {
+                    "round": state.rounds,
+                    "accepted": bool(vres.accepted_prefix_len > 0 or vres.agreement >= thresholds.accept_threshold),
+                    "accepted_tokens": int(vres.accepted_prefix_len or 0),
+                },
+            )
 
             if not vres.logits_available and policy.quality_cascade_fallback:
                 # Text-agreement interim mode — do not claim true speculative gain.
@@ -398,6 +491,18 @@ class ASCREngine(ICascadeEngine):
                 if edge is None:
                     committed = committed or last_verify_text or proposal.text
                     break
+                next_tier = int(graph.nodes.get(edge.target).tier_id or tier_id + 1) if edge.target in graph.nodes else tier_id + 1
+                self._trace(
+                    ctx,
+                    req,
+                    "reason.cascade.escalate",
+                    {
+                        "round": state.rounds,
+                        "from": tier_id,
+                        "to": next_tier,
+                        "reason": "low_conf",
+                    },
+                )
                 esc_state.visited.append(esc_state.current)
                 esc_state.current = edge.target
                 state.escalations += 1
@@ -533,6 +638,65 @@ class ASCREngine(ICascadeEngine):
         if tier_id == 2:
             return policy.verify_backend
         return policy.escalate_backend
+
+    async def _quality_cascade_tier_stream(
+        self,
+        req: InferenceRequest,
+        ctx: ExecutionContext,
+        backend_name: str,
+        tier_id: int,
+        threshold: float,
+    ) -> GenerateResult:
+        from neuroswarm_arm.runtime.armcascade.confidence.engine import text_quality_score
+        from neuroswarm_arm.runtime.dipa.interfaces.types import DecodeRequest
+        from neuroswarm_arm.runtime.dipa.streaming.token_pipeline import (
+            stream_decode_request,
+            stream_tokens_to_manager,
+        )
+
+        rt = self.dipa_runtime
+        backend = self.registry.require(backend_name)
+        if rt is None or not hasattr(backend, "decode"):
+            return await self._quality_cascade_tier(
+                req, ctx, backend_name, tier_id, threshold
+            )
+        plan = ctx.plan
+        decode_req = DecodeRequest(
+            messages=build_messages(req.messages, req.system_prompt),
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+            session_id=req.session_id,
+            quant=getattr(ctx, "quant", "") or "",
+            kv_handle=getattr(ctx, "kv_handle", None),
+            stream=True,
+        )
+
+        async def _token_iter():
+            async for chunk in stream_decode_request(backend, decode_req, ctx):
+                yield chunk
+
+        result = await stream_tokens_to_manager(
+            rt,
+            req=req,
+            plan=plan,
+            ctx=ctx,
+            token_iter=_token_iter(),
+            backend_name=backend_name,
+        )
+        conf = text_quality_score(result.text, self.config.get("confidence"))
+        return GenerateResult(
+            text=result.text,
+            prompt_tokens=result.prompt_tokens,
+            completion_tokens=result.completion_tokens,
+            latency_ms=result.latency_ms,
+            ttft_ms=result.ttft_ms,
+            backend=result.backend or backend_name,
+            model=result.model or backend_name,
+            quant=result.quant,
+            tier_used=tier_id,
+            raw={"confidence": conf, "threshold": threshold},
+            metrics=dict(result.metrics),
+        )
 
     async def _quality_cascade_tier(
         self,

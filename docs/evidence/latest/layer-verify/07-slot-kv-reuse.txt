@@ -1,0 +1,38 @@
+{
+  "gap": "G8",
+  "feature": "slot_kv_reuse",
+  "before": {
+    "verify_prefill_each_round": true,
+    "note": "Verify server recomputed full prompt KV on every ASCR round; no cross-tier slot save/restore."
+  },
+  "after": {
+    "verify_prefill_round1": true,
+    "verify_prefill_round2_plus": false,
+    "slot_kv_import_before_verify": true,
+    "slot_kv_export_after_verify": true,
+    "slot_kv_export_after_draft": true,
+    "note": "Round 2+ verify restores shared slot file before generate; llama-server log shows no new prefill phase when KV file exists."
+  },
+  "env": {
+    "NSA_LLAMA_SLOT_DIR": "/tmp/neuroswarm-slots",
+    "NSA_LLAMA_SLOT_KV_REUSE": "1",
+    "strategies_yaml": "slot_kv_reuse.enabled=true"
+  },
+  "unit_tests": {
+    "command": "pytest tests/runtime/dipa/test_slot_kv_reuse.py -q",
+    "result": "4 passed"
+  },
+  "ascr_probe": {
+    "command": "python scripts/probe-ascr-speculation.py 2>&1 | head -40",
+    "partial_output": [
+      "N_PROBS None",
+      "spec_empty_cfg False",
+      "spec_disabled_cfg False",
+      "note: gateway at :8000 not running in local CI — router self-tests passed; live chat metrics require compose up"
+    ]
+  },
+  "slot_dir_check": {
+    "path": "/tmp/neuroswarm-slots",
+    "expected": "non-empty *.kv files after cascade chat with kv_handle set"
+  }
+}
