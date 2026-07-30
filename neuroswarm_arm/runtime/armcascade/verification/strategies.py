@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import os
 import time
 from typing import Any
 
@@ -17,6 +19,16 @@ from neuroswarm_arm.runtime.armcascade.interfaces.types import (
     build_messages,
 )
 from neuroswarm_arm.runtime.armcascade.proposal.registry import register_verifier
+
+
+def _env_slot_kv_reuse() -> bool:
+    return os.getenv("NSA_LLAMA_SLOT_KV_REUSE", "1").strip() not in {
+        "0",
+        "false",
+        "False",
+        "no",
+        "NO",
+    }
 
 
 def _token_agreement(draft: str, verified: str) -> tuple[int, float]:
@@ -39,11 +51,13 @@ class _BackendVerifierBase(VerifierStrategy):
         self._registry: Any = None
         self._ctx_exec: Any = None
         self._quality_cfg: dict[str, Any] = {}
+        self._ascr_config: dict[str, Any] = {}
 
     async def initialize(self, ctx: ASCRInitContext) -> None:
         self._registry = ctx.registry
-        self._quality_cfg = dict((ctx.config or {}).get("confidence") or {})
-        for t in (ctx.config or {}).get("tiers") or []:
+        self._ascr_config = dict(ctx.config or {})
+        self._quality_cfg = dict(self._ascr_config.get("confidence") or {})
+        for t in (self._ascr_config.get("tiers") or []):
             if isinstance(t, dict) and t.get("role") == "verify":
                 self.backend_name = str(t.get("backend", self.backend_name))
 
@@ -53,11 +67,19 @@ class _BackendVerifierBase(VerifierStrategy):
     def set_backend(self, name: str) -> None:
         self.backend_name = name
 
+    def _slot_kv_enabled(self) -> bool:
+        strategies = dict(self._ascr_config.get("strategies") or {})
+        flag = strategies.get("slot_kv_reuse") or {}
+        if isinstance(flag, dict) and not flag.get("enabled", True):
+            return False
+        return _env_slot_kv_reuse()
+
     async def _generate(
         self,
         req: VerifyRequest,
         max_tokens: int,
         *,
+        id_slot: int | None = None,
         top_logprobs: int = 0,
     ) -> Any:
         from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
@@ -66,8 +88,15 @@ class _BackendVerifierBase(VerifierStrategy):
             raise RuntimeError(f"{self.name} not initialized")
         backend = self._registry.require(self.backend_name)
         messages = build_messages(req.messages)
+        effective_slot = id_slot if id_slot is not None else req.id_slot
         if top_logprobs > 0 and hasattr(backend, "generate_with_logits"):
-            return await backend.generate_with_logits(
+            slots = getattr(backend, "_slots", None)
+            slot_file: str | None = None
+            if self._slot_kv_enabled() and req.kv_handle and slots is not None:
+                slot_file = slots.resolve_filename(req.kv_handle)
+                sid = int(effective_slot) if effective_slot is not None else 0
+                await asyncio.to_thread(slots.kv_import, sid, slot_file)
+            result = await backend.generate_with_logits(
                 messages=messages,
                 max_tokens=max(1, int(max_tokens)),
                 temperature=float(req.temperature),
@@ -75,8 +104,17 @@ class _BackendVerifierBase(VerifierStrategy):
                 session_id=req.session_id,
                 quant=req.quant,
                 kv_handle=req.kv_handle,
+                id_slot=effective_slot,
                 ctx=self._ctx_exec,
             )
+            if self._slot_kv_enabled() and req.kv_handle and slots is not None and slot_file:
+                sid = int(
+                    result.metrics.get(
+                        "slot_id", effective_slot if effective_slot is not None else 0
+                    )
+                )
+                await asyncio.to_thread(slots.kv_export, sid, slot_file)
+            return result
         gen = GenerateRequest(
             messages=messages,
             max_tokens=max(1, int(max_tokens)),
@@ -85,9 +123,68 @@ class _BackendVerifierBase(VerifierStrategy):
             quant=req.quant,
             stream=False,
             kv_handle=req.kv_handle,
+            id_slot=effective_slot,
             speculative=True,
         )
-        return await backend.generate(gen, self._ctx_exec)
+        slots = getattr(backend, "_slots", None)
+        slot_file: str | None = None
+        if self._slot_kv_enabled() and req.kv_handle and slots is not None:
+            slot_file = slots.resolve_filename(req.kv_handle)
+            sid = int(effective_slot) if effective_slot is not None else 0
+            await asyncio.to_thread(slots.kv_import, sid, slot_file)
+        result = await backend.generate(gen, self._ctx_exec)
+        if self._slot_kv_enabled() and req.kv_handle and slots is not None and slot_file:
+            sid = int(
+                result.metrics.get("slot_id", effective_slot if effective_slot is not None else 0)
+            )
+            await asyncio.to_thread(slots.kv_export, sid, slot_file)
+        return result
+
+
+def _accept_prefix_from_logprobs(
+    draft: str,
+    verified: str,
+    raw: dict[str, Any],
+) -> tuple[int, float] | None:
+    """When llama returns completion_probabilities, accept matching draft prefix."""
+    choices = raw.get("choices") or []
+    if not choices or not isinstance(choices[0], dict):
+        return None
+    c0 = choices[0]
+    probs = c0.get("completion_probabilities") or c0.get("probs")
+    if not isinstance(probs, list) or not probs:
+        return None
+    draft_words = draft.split()
+    if not draft_words:
+        return None
+    verified_words = verified.split()
+    accepted = 0
+    for i, entry in enumerate(probs):
+        if i >= len(draft_words):
+            break
+        token_text = ""
+        if isinstance(entry, dict):
+            token_text = str(
+                entry.get("token")
+                or entry.get("text")
+                or entry.get("content")
+                or ""
+            ).strip()
+        elif isinstance(entry, str):
+            token_text = entry.strip()
+        if not token_text:
+            if i < len(verified_words) and verified_words[i] == draft_words[i]:
+                accepted += 1
+                continue
+            break
+        if token_text == draft_words[i]:
+            accepted += 1
+        else:
+            break
+    if accepted == 0:
+        return None
+    agreement = accepted / max(1, len(draft_words))
+    return accepted, agreement
 
 
 @register_verifier("block")
@@ -99,10 +196,11 @@ class BlockVerifier(_BackendVerifierBase):
     async def verify(self, draft: Proposal, req: VerifyRequest) -> VerifyResult:
         t0 = time.monotonic()
         draft_len = max(1, draft.draft_len or approx_tokens(draft.text))
-        result = await self._generate(req, max_tokens=draft_len)
+        result = await self._generate(req, max_tokens=draft_len, id_slot=req.id_slot)
         text = result.text or ""
         prefix_len, agreement = _token_agreement(draft.text, text)
         quality = text_quality_score(text, self._quality_cfg)
+        # Block verifier is text-agreement only; ignore logprobs (honest proxy).
         entropy = float(result.metrics.get("entropy", 1.0 - agreement))
         elapsed = (time.monotonic() - t0) * 1000.0
         return VerifyResult(

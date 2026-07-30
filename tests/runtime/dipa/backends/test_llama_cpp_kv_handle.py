@@ -41,7 +41,10 @@ def test_llama_chat_extra_without_session() -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_forwards_slot_fields_to_http_client() -> None:
+async def test_generate_forwards_slot_fields_to_http_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "0")
     backend = LlamaCppBackend(name="tier1", base_url="http://127.0.0.1:8080", tier=1)
     backend._slot_router = SlotRouter(registry=SlotRegistry(total_slots=4))
     backend._client = MagicMock()

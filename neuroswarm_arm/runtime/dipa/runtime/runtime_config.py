@@ -97,6 +97,14 @@ class DIPARuntimeConfig:
     pd_min_prompt_tokens: int = field(
         default_factory=lambda: int(os.getenv("NSA_DIPA_PD_MIN_PROMPT_TOKENS", "64"))
     )
+    llama_slot_dir: str = field(
+        default_factory=lambda: os.getenv(
+            "NSA_LLAMA_SLOT_DIR", "/tmp/neuroswarm-slots"
+        )
+    )
+    llama_slot_kv_reuse: bool = field(
+        default_factory=lambda: _env_bool("NSA_LLAMA_SLOT_KV_REUSE", "1")
+    )
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)

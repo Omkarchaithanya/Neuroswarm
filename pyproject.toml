@@ -280,3 +280,7 @@ telemetry = [
     "opentelemetry-sdk>=1.36",
 ]
 
+[tool.neuroswarm.env_defaults]
+NSA_LLAMA_SLOT_DIR = "/tmp/neuroswarm-slots"
+NSA_LLAMA_SLOT_KV_REUSE = "1"
+

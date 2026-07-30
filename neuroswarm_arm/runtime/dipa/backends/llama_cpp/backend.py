@@ -5,10 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import queue
+import threading
 import time
 from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
 from urllib import error, request
 
@@ -39,6 +42,22 @@ from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kleidiai_verifier import (
 )
 from .process_supervisor import ProcessSupervisor
 from .slot_client import SlotClient
+
+
+def _slot_kv_reuse_enabled() -> bool:
+    return os.getenv("NSA_LLAMA_SLOT_KV_REUSE", "1").strip() not in {
+        "0",
+        "false",
+        "False",
+        "no",
+        "NO",
+    }
+
+
+def _resolve_slot_dir() -> Path:
+    if LlamaCppBackend.slot_dir is not None:
+        return LlamaCppBackend.slot_dir
+    return Path(os.getenv("NSA_LLAMA_SLOT_DIR", "/tmp/neuroswarm-slots"))
 
 
 @dataclass(slots=True)
@@ -179,6 +198,8 @@ class LlamaHttpClient:
 class LlamaCppBackend(InferenceBackend):
     """Async DIPA backend for llama.cpp server (HTTP + optional process ownership)."""
 
+    slot_dir: Path | None = None
+
     def __init__(
         self,
         name: str = "llama_cpp",
@@ -212,7 +233,8 @@ class LlamaCppBackend(InferenceBackend):
             device_classes=(DeviceClass.CPU,),
         )
         self._client = LlamaHttpClient(base_url=base_url)
-        self._slots = SlotClient(base_url)
+        slot_path = self.slot_dir or _resolve_slot_dir()
+        self._slots = SlotClient(base_url, slot_dir=slot_path)
         total_slots = int(os.getenv("NSA_LLAMA_SLOTS", "4"))
         registry = SlotRegistry(total_slots)
         if os.getenv("NSA_RADIX_ENABLED", "1").strip() not in {"0", "false", "False"}:
@@ -340,41 +362,65 @@ class LlamaCppBackend(InferenceBackend):
             slot_router=self._slot_router,
             tokenize_fn=self.tokenize,
             okf_block_hashes=_okf_hashes_from_request(req),
+            cache_prompt_tokens=list(getattr(req, "cache_prompt_tokens", None) or []),
+            response_format=_json_response_format(req, tier=self.tier),
         )
+        sync_q: queue.Queue[Any] = queue.Queue()
 
-        def _iter() -> Iterator[TokenChunk]:
-            nonlocal index
-            finished = False
-            for line in self._client.chat_stream_raw(
-                req.messages,
-                max_tokens=req.max_tokens,
-                temperature=req.temperature,
-                extra=extra,
-            ):
-                for piece in _parse_sse_line(line):
-                    if piece is None:
-                        finished = True
-                        yield TokenChunk(text="", index=index, finished=True)
-                        return
-                    if piece:
-                        yield TokenChunk(text=piece, index=index, finished=False)
-                        index += 1
-            if not finished:
-                yield TokenChunk(text="", index=index, finished=True)
+        def _producer() -> None:
+            try:
+                finished = False
+                for line in self._client.chat_stream_raw(
+                    req.messages,
+                    max_tokens=req.max_tokens,
+                    temperature=req.temperature,
+                    extra=extra,
+                ):
+                    for text, channel in _parse_sse_line(line):
+                        if text is None:
+                            sync_q.put((None, "answer", True))
+                            return
+                        if text:
+                            sync_q.put((text, channel, False))
+                if not finished:
+                    sync_q.put((None, "answer", True))
+            except Exception as exc:
+                sync_q.put(exc)
 
-        for chunk in await asyncio.to_thread(lambda: list(_iter())):
-            yield chunk
+        thread = threading.Thread(target=_producer, daemon=True)
+        thread.start()
+        loop = asyncio.get_running_loop()
+        while True:
+            item = await loop.run_in_executor(None, sync_q.get)
+            if isinstance(item, Exception):
+                raise item
+            text, channel, finished = item
+            if finished:
+                yield TokenChunk(text="", index=index, finished=True, channel=channel)
+                return
+            yield TokenChunk(
+                text=str(text),
+                index=index,
+                finished=False,
+                channel=channel,
+            )
+            index += 1
 
     async def generate(
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
+        response_format = _json_response_format(req, tier=self.tier)
         extra, slot_meta = _llama_chat_extra(
             session_id=req.session_id,
             messages=req.messages,
             slot_router=self._slot_router,
             tokenize_fn=self.tokenize,
             okf_block_hashes=_okf_hashes_from_request(req),
+            cache_prompt_tokens=list(req.cache_prompt_tokens or []),
+            response_format=response_format,
+            request_logprobs=bool(req.speculative),
+            explicit_id_slot=req.id_slot,
         )
         slot_id = slot_meta.get("slot_id")
         slot_reused = bool(slot_meta.get("slot_reused"))
@@ -432,6 +478,14 @@ class LlamaCppBackend(InferenceBackend):
         if isinstance(slot_id, int):
             metrics["slot_id"] = float(slot_id)
             metrics["id_slot"] = float(slot_id)
+        if (
+            _slot_kv_reuse_enabled()
+            and req.kv_handle
+            and isinstance(slot_id, int)
+        ):
+            slot_file = self._slots.resolve_filename(req.kv_handle)
+            await asyncio.to_thread(self._slots.kv_export, slot_id, slot_file)
+            metrics["slot_kv_saved"] = 1.0
         if isinstance(self._slot_router, RadixSlotRouter):
             prompt_text = " ".join(str(m.get("content", "")) for m in req.messages)
             token_ids = await asyncio.to_thread(self.tokenize, prompt_text)
@@ -482,6 +536,7 @@ class LlamaCppBackend(InferenceBackend):
         session_id: str = "",
         quant: str = "",
         kv_handle: str | None = None,
+        id_slot: int | None = None,
         ctx: ExecutionContext | None = None,
     ) -> GenerateResult:
         """Target forward with OpenAI logprobs / top_logprobs."""
@@ -495,11 +550,25 @@ class LlamaCppBackend(InferenceBackend):
             slot_router=self._slot_router,
             tokenize_fn=self.tokenize,
             okf_block_hashes=None,
+            cache_prompt_tokens=[],
+            response_format=None,
+            request_logprobs=True,
         )
+        if isinstance(id_slot, int):
+            extra["id_slot"] = id_slot
         slot_id = slot_meta.get("slot_id")
         slot_reused = bool(slot_meta.get("slot_reused"))
+        span_attrs = {
+            "session_id": session_id,
+            "backend": self.name,
+            "tier": self.tier,
+            "slot.reused": slot_reused,
+            "gen_ai.arm.kleidiai_active": self.kleidiai_active,
+        }
+        if isinstance(slot_id, int):
+            span_attrs["slot.id"] = slot_id
         tel = self._telemetry
-        with tel.span("chat_logits", session_id=session_id) if tel else _null_span():
+        with tel.span("chat_logits", **span_attrs) if tel else _null_span():
             raw = await asyncio.to_thread(
                 self._client.generate_with_logits,
                 messages,
@@ -528,7 +597,11 @@ class LlamaCppBackend(InferenceBackend):
         if isinstance(self._slot_router, RadixSlotRouter):
             prompt_text = " ".join(str(m.get("content", "")) for m in messages)
             token_ids = await asyncio.to_thread(self.tokenize, prompt_text)
-            self._slot_router.record_after_inference(token_ids, slot_id, okf_block_hashes=None)
+            self._slot_router.record_after_inference(
+                token_ids,
+                slot_id,
+                okf_block_hashes=None,
+            )
         return GenerateResult(
             text=text,
             prompt_tokens=prompt_tokens,
@@ -555,6 +628,44 @@ def _okf_hashes_from_request(req: GenerateRequest | DecodeRequest) -> list[str] 
     return hashes or None
 
 
+def _json_response_format(
+    req: GenerateRequest | DecodeRequest,
+    *,
+    tier: int = 0,
+) -> dict[str, Any] | None:
+    if tier < 3:
+        return None
+    if os.getenv("NSA_TIER3_JSON_TOOLS", "1").strip() in {"0", "false", "False"}:
+        return None
+    baggage = getattr(req, "baggage", None) or {}
+    if not isinstance(baggage, dict):
+        return None
+    fmt = baggage.get("response_format")
+    if isinstance(fmt, dict) and fmt:
+        return fmt
+    if baggage.get("tool_call") or baggage.get("json_tools"):
+        return {"type": "json_object"}
+    return None
+
+
+def _llama_logprobs_payload(*, request_logprobs: bool = False) -> dict[str, Any]:
+    """Attach llama-server logprob fields when env or caller requests speculation."""
+    out: dict[str, Any] = {}
+    try:
+        n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
+    except ValueError:
+        n_probs = 0
+    if n_probs <= 0 and request_logprobs:
+        n_probs = int(os.getenv("NSA_LLAMA_N_PROBS_DEFAULT", "5") or "5")
+    if n_probs > 0:
+        out["n_probs"] = n_probs
+        out["logprobs"] = True
+        top = int(os.getenv("NSA_LLAMA_TOP_LOGPROBS", str(min(n_probs, 5))) or min(n_probs, 5))
+        if top > 0:
+            out["top_logprobs"] = top
+    return out
+
+
 def _llama_chat_extra(
     *,
     session_id: str = "",
@@ -562,23 +673,51 @@ def _llama_chat_extra(
     slot_router: SlotRouter | None = None,
     tokenize_fn: Any | None = None,
     okf_block_hashes: list[str] | None = None,
+    cache_prompt_tokens: list[int] | None = None,
+    response_format: dict[str, Any] | None = None,
+    request_logprobs: bool = False,
+    explicit_id_slot: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Build llama-server slot reuse payload (id_slot + cache_prompt)."""
     prompt = " ".join(str(m.get("content", "")) for m in (messages or []))
-    token_ids: list[int] | None = None
-    if tokenize_fn is not None and prompt:
+    token_ids: list[int] | None = list(cache_prompt_tokens) if cache_prompt_tokens else None
+    if tokenize_fn is not None and prompt and not token_ids:
         token_ids = tokenize_fn(prompt)
     if slot_router is not None:
         if isinstance(slot_router, RadixSlotRouter):
-            return slot_router.prepare_payload(
+            extra, meta = slot_router.prepare_payload(
                 session_id,
                 prompt,
                 {},
                 token_ids=token_ids,
                 okf_block_hashes=okf_block_hashes,
             )
-        return slot_router.prepare_payload(session_id, prompt, {})
-    return {"cache_prompt": True}, {"slot_reused": False, "slot_id": None}
+            if cache_prompt_tokens:
+                extra["cache_prompt_tokens"] = list(cache_prompt_tokens)
+            if response_format:
+                extra["response_format"] = response_format
+            extra.update(_llama_logprobs_payload(request_logprobs=request_logprobs))
+            if explicit_id_slot is not None:
+                extra["id_slot"] = int(explicit_id_slot)
+            return extra, meta
+        extra, meta = slot_router.prepare_payload(session_id, prompt, {})
+        if cache_prompt_tokens:
+            extra["cache_prompt_tokens"] = list(cache_prompt_tokens)
+        if response_format:
+            extra["response_format"] = response_format
+        extra.update(_llama_logprobs_payload(request_logprobs=request_logprobs))
+        if explicit_id_slot is not None:
+            extra["id_slot"] = int(explicit_id_slot)
+        return extra, meta
+    extra: dict[str, Any] = {"cache_prompt": True}
+    if cache_prompt_tokens:
+        extra["cache_prompt_tokens"] = list(cache_prompt_tokens)
+    if response_format:
+        extra["response_format"] = response_format
+    extra.update(_llama_logprobs_payload(request_logprobs=request_logprobs))
+    if explicit_id_slot is not None:
+        extra["id_slot"] = int(explicit_id_slot)
+    return extra, {"slot_reused": False, "slot_id": explicit_id_slot}
 
 
 def _cached_prompt_tokens(payload: dict[str, Any]) -> int:
@@ -598,8 +737,8 @@ def _null_span() -> Iterator[None]:
     yield None
 
 
-def _parse_sse_line(line: str) -> list[str | None]:
-    """Return text pieces; None sentinel means stream done."""
+def _parse_sse_line(line: str) -> list[tuple[str | None, str]]:
+    """Return ``(text, channel)`` pieces; ``(None, _)`` means stream done."""
     line = line.strip()
     if not line or line.startswith(":"):
         return []
@@ -607,7 +746,7 @@ def _parse_sse_line(line: str) -> list[str | None]:
         return []
     data = line[5:].strip()
     if data == "[DONE]":
-        return [None]
+        return [(None, "answer")]
     try:
         payload = json.loads(data)
     except json.JSONDecodeError:
@@ -616,16 +755,15 @@ def _parse_sse_line(line: str) -> list[str | None]:
     if not choices:
         return []
     delta = choices[0].get("delta") or {}
-    # Reasoning models (R1 / Qwen3-thinking) may stream only reasoning_content
-    # until the final answer lands in content.
     content = delta.get("content")
-    if content is None or content == "":
-        content = delta.get("reasoning_content")
-        if content is None:
-            content = delta.get("reasoning")
-    if content is None:
-        return []
-    return [str(content)]
+    reasoning = delta.get("reasoning_content")
+    if reasoning is None:
+        reasoning = delta.get("reasoning")
+    if content is not None and str(content) != "":
+        return [(str(content), "answer")]
+    if reasoning is not None and str(reasoning) != "":
+        return [(str(reasoning), "thinking")]
+    return []
 
 
 def _extract_chat_content(payload: dict[str, Any]) -> str:

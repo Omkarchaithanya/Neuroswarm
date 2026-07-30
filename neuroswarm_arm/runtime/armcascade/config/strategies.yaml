@@ -1,7 +1,9 @@
 strategies:
-  draft_model:
+  speculative_from_tier1:
     enabled: true
-    class: draft_model
+    class: speculative_from_tier1
+    draft_max: 32
+    accept_threshold: 0.78
   self_speculation:
     enabled: true
     class: self_speculation
@@ -56,3 +58,5 @@ strategies:
     enabled: true
     class: logits
     tau_floor: 0.0
+  slot_kv_reuse:
+    enabled: true

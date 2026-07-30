@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Any, Mapping
 
 from neuroswarm_arm.runtime.dipa.backends.llama_cpp import LlamaCppBackend
@@ -51,6 +52,8 @@ class BackendFactory:
                 if registry.get(name) is None:
                     registry.register(MockBackend(name=name))
         else:
+            slot_dir = Path(os.getenv("NSA_LLAMA_SLOT_DIR", "/tmp/neuroswarm-slots"))
+            LlamaCppBackend.slot_dir = slot_dir
             for tier_name, url in urls.items():
                 if registry.get(tier_name) is None:
                     tier_n = _tier_num(tier_name)

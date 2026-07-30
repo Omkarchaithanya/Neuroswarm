@@ -115,6 +115,13 @@ services:
       - "${TIER1_THREADS:-2}"
       - -c
       - "${TIER1_CTX:-4096}"
+      - --parallel
+      - "${TIER1_PARALLEL:-4}"
+      - --slots
+      - --cache-reuse
+      - "64"
+      - --slot-save-path
+      - /var/lib/ns/slots
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
@@ -160,6 +167,13 @@ services:
       - "${TIER2_THREADS:-3}"
       - -c
       - "${TIER2_CTX:-4096}"
+      - --parallel
+      - "${TIER2_PARALLEL:-4}"
+      - --slots
+      - --cache-reuse
+      - "64"
+      - --slot-save-path
+      - /var/lib/ns/slots
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
@@ -213,6 +227,9 @@ services:
       - --parallel
       - "${TIER3_PARALLEL:-4}"
       - --mlock
+      - --slots
+      - --cache-reuse
+      - "64"
       - --reasoning
       - "off"
       - --reasoning-budget
@@ -304,6 +321,58 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    cpus: 0.5
+    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    platform: linux/arm64
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - gateway
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    cpus: 0.5
+    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-neuroswarm}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
     cpus: 0.5
     mem_limit: 512m
     deploy:
@@ -492,5 +561,5 @@ services:
           memory: 128M
 
 volumes:
+  grafana-data:
   tier3-slots:
-

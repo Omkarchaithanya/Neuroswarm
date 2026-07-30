@@ -183,7 +183,17 @@ class TokenChunk:
     token_id: int | None = None
     index: int = 0
     finished: bool = False
+    channel: str = "answer"  # "thinking" | "answer"
     metrics: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ReasoningEvent:
+    """Ordered reasoning-trace envelope for SSE ``reason.*`` events."""
+
+    kind: str
+    data: dict[str, Any]
+    ts_ms: float
 
 
 @dataclass(slots=True)
@@ -241,7 +251,10 @@ class GenerateRequest:
     quant: str = "Q5_K_M"
     stream: bool = False
     kv_handle: str | None = None
+    id_slot: int | None = None
     speculative: bool = False
+    cache_prompt_tokens: list[int] = field(default_factory=list)
+    baggage: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

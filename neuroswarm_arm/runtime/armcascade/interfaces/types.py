@@ -115,6 +115,7 @@ class ProposalRequest:
     session_id: str = ""
     quant: str = ""
     kv_handle: str | None = None
+    id_slot: int | None = None
     classification: Classification | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -157,6 +158,7 @@ class VerifyRequest:
     session_id: str = ""
     quant: str = ""
     kv_handle: str | None = None
+    id_slot: int | None = None
     verifier_tier: int = 2
     batch_size: int = 1
     metadata: dict[str, Any] = field(default_factory=dict)
