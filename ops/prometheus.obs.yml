@@ -13,14 +13,16 @@ scrape_configs:
       - targets:
           - localhost:9090
 
-  # Canonical Compose gateway via nginx on axion (:80 /metrics).
+  # Canonical Compose gateway on axion (:8000 /metrics).
+  # Prefer nginx :80 when the compose `proxy` service is running; this stack
+  # currently publishes gateway directly on :8000 (no proxy).
   # Do NOT also scrape :8889 or k3s NodePort — that duplicates series ×2–3.
   - job_name: neuroswarm-gateway
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
       - targets:
-          - 10.128.0.2:80
+          - 10.128.0.2:8000
         labels:
           service: neuroswarm-gateway
           host: axion

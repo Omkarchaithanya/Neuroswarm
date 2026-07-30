@@ -46,7 +46,16 @@ def test_performix_snapshot() -> None:
     base = _fresh_dir()
     path = base / "perf.json"
     path.write_text(
-        json.dumps({"cycles": 1000, "instructions": 2000, "ipc": 2.0, "cache_misses": 3}),
+        json.dumps(
+            {
+                "source": "apx",
+                "available": 1,
+                "cycles": 1000,
+                "instructions": 2000,
+                "ipc": 2.0,
+                "cache_misses": 3,
+            }
+        ),
         encoding="utf-8",
     )
     col = PerformixCollector(reg, path=path, enabled=True)
@@ -57,3 +66,109 @@ def test_performix_snapshot() -> None:
     assert by_name["nexus_performix_ipc"] == 2.0
     assert by_name["nexus_performix_snapshot_age_seconds"] >= 0.0
     assert by_name["nexus_performix_snapshot_age_seconds"] < 60.0
+
+
+def _by_name(reg: MetricRegistry) -> dict[str, float]:
+    return {s.name: s.value for s in reg.snapshot().series}
+
+
+def test_performix_demo_source_zeros() -> None:
+    reg = MetricRegistry()
+    register_all_domains(reg)
+    path = _fresh_dir() / "demo.json"
+    path.write_text(
+        json.dumps(
+            {
+                "source": "demo",
+                "available": 1,
+                "cycles": 9_999_999,
+                "instructions": 9_999_999,
+                "ipc": 9.9,
+                "cache_misses": 1200,
+                "hotspots": [{"function": "fake", "pct": 99.0}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    PerformixCollector(reg, path=path, enabled=True).collect()
+    by = _by_name(reg)
+    assert by["nexus_performix_available"] == 0.0
+    assert by["nexus_performix_ipc"] == 0.0
+    assert by["nexus_performix_cycles"] == 0.0
+    assert by["nexus_performix_hotspot_count"] == 0.0
+    assert by["nexus_performix_snapshot_age_seconds"] >= 0.0
+
+
+def test_performix_synthetic_source_zeros() -> None:
+    reg = MetricRegistry()
+    register_all_domains(reg)
+    path = _fresh_dir() / "syn.json"
+    path.write_text(
+        json.dumps({"source": "synthetic", "available": 1, "ipc": 3.0, "cycles": 100}),
+        encoding="utf-8",
+    )
+    PerformixCollector(reg, path=path, enabled=True).collect()
+    by = _by_name(reg)
+    assert by["nexus_performix_available"] == 0.0
+    assert by["nexus_performix_ipc"] == 0.0
+
+
+def test_performix_unavailable_source_zeros() -> None:
+    reg = MetricRegistry()
+    register_all_domains(reg)
+    path = _fresh_dir() / "unavail.json"
+    path.write_text(
+        json.dumps(
+            {
+                "source": "unavailable",
+                "available": 0,
+                "error": "apx_missing",
+                "ipc": 0.0,
+                "cycles": 0.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    PerformixCollector(reg, path=path, enabled=True).collect()
+    by = _by_name(reg)
+    assert by["nexus_performix_available"] == 0.0
+    assert by["nexus_performix_ipc"] == 0.0
+    assert by["nexus_performix_snapshot_age_seconds"] >= 0.0
+
+
+def test_performix_available_flag_false_zeros() -> None:
+    """Even with source=apx, available=0 must not look live."""
+    reg = MetricRegistry()
+    register_all_domains(reg)
+    path = _fresh_dir() / "flag.json"
+    path.write_text(
+        json.dumps(
+            {
+                "source": "apx",
+                "available": 0,
+                "cycles": 5000,
+                "instructions": 10000,
+                "ipc": 2.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    PerformixCollector(reg, path=path, enabled=True).collect()
+    by = _by_name(reg)
+    assert by["nexus_performix_available"] == 0.0
+    assert by["nexus_performix_ipc"] == 0.0
+    assert by["nexus_performix_cycles"] == 0.0
+
+
+def test_performix_does_not_invent_ipc_from_zeros() -> None:
+    reg = MetricRegistry()
+    register_all_domains(reg)
+    path = _fresh_dir() / "zeros.json"
+    path.write_text(
+        json.dumps({"source": "apx", "available": 1, "cycles": 0, "instructions": 0}),
+        encoding="utf-8",
+    )
+    PerformixCollector(reg, path=path, enabled=True).collect()
+    by = _by_name(reg)
+    assert by["nexus_performix_available"] == 1.0
+    assert by["nexus_performix_ipc"] == 0.0

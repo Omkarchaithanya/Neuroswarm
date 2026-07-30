@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Refresh work/performix/snapshot.json for RMF/Grafana (live apx when available).
 # Usage: bash scripts/refresh-performix-snapshot.sh
-# Cron (host, every 2 min): */2 * * * * cd /path/to/neuroswarm-arm && bash scripts/refresh-performix-snapshot.sh
+# Cron (host, every 2 min): */2 * * * * cd /path/to/neuroswarm-arm && \
+#   NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 bash scripts/refresh-performix-snapshot.sh
+# systemd timer example: see docs/telemetry/performix-gui-windows.md
 #
 # Demo hotspots are written ONLY when NSA_PERFORMIX_ALLOW_DEMO=1.
-# When Performix is required (NSA_AROP_PERFORMIX=1 or MCP URL set) and demo is
-# disallowed, apx failure exits non-zero without rewriting a fake snapshot.
+# When demo is disallowed, any apx miss/fail ALWAYS writes source=unavailable
+# (never leave a stale demo/apx snapshot looking "live").
 #
 # Evidence path: NEVER use --system-wide by default (publishes idle/k3s noise).
 # Set PERFORMIX_PID=<llama-server> or PERFORMIX_ALLOW_SYSTEM_WIDE=1 explicitly.
@@ -52,7 +54,12 @@ marker = {
     "error": err,
     "hotspots": [],
     "ipc": 0.0,
+    "cycles": 0.0,
+    "instructions": 0.0,
+    "cache_misses": 0.0,
+    "branch_misses": 0.0,
     "pmu_available": 0.0,
+    "topdown": {"frontend_bound": 0.0, "backend_bound": 0.0},
 }
 snap.parent.mkdir(parents=True, exist_ok=True)
 snap.write_text(json.dumps(marker, indent=2), encoding="utf-8")
@@ -76,25 +83,22 @@ if [[ -z "$PERFORMIX_PID" && "$ALLOW_SW" != "1" ]]; then
 fi
 if [[ -z "$PERFORMIX_PID" && "$ALLOW_SW" != "1" ]]; then
   echo "No llama-server PID and PERFORMIX_ALLOW_SYSTEM_WIDE!=1 — refusing idle system-wide capture" >&2
-  if [[ "$REQUIRE_LIVE" == "1" && "$ALLOW_DEMO" != "1" ]]; then
+  if [[ "$ALLOW_DEMO" == "1" ]]; then
+    echo "NSA_PERFORMIX_ALLOW_DEMO=1 — will write demo hotspots"
+  else
     write_unavailable "no_llama_pid_refused_system_wide"
     exit 1
   fi
-  echo "Leaving existing snapshot unchanged"
-  exit 0
 fi
 
 if ! command -v apx >/dev/null 2>&1; then
   echo "apx not on PATH" >&2
   if [[ "$ALLOW_DEMO" == "1" ]]; then
     APX_OK=0
-  elif [[ "$REQUIRE_LIVE" == "1" ]]; then
+  else
     echo "Performix required but apx missing (set NSA_PERFORMIX_ALLOW_DEMO=1 for synthetic)" >&2
     write_unavailable "apx_missing"
     exit 1
-  else
-    echo "apx missing; leaving snapshot unchanged"
-    exit 0
   fi
 else
   APX_SCOPE=(--pid "$PERFORMIX_PID")
@@ -221,13 +225,9 @@ PY
 
   if [[ "$APX_OK" -ne 1 ]]; then
     echo "apx recipe failed or export empty (see work/performix/apx.err)" >&2
-    if [[ "$REQUIRE_LIVE" == "1" && "$ALLOW_DEMO" != "1" ]]; then
+    if [[ "$ALLOW_DEMO" != "1" ]]; then
       write_unavailable "$UNAVAIL_ERR"
       exit 1
-    fi
-    if [[ "$ALLOW_DEMO" != "1" ]]; then
-      echo "Leaving existing snapshot unchanged (set NSA_PERFORMIX_ALLOW_DEMO=1 for synthetic)"
-      exit 0
     fi
     echo "NSA_PERFORMIX_ALLOW_DEMO=1 — writing demo hotspots"
   fi
@@ -258,7 +258,24 @@ if not hotspots:
     if apx_ok:
         raise SystemExit("apx export had no hotspots — refusing demo fill")
     if not allow_demo:
-        raise SystemExit(0)
+        # Caller should have write_unavailable already; belt-and-suspenders.
+        marker = {
+            "available": 0,
+            "source": "unavailable",
+            "error": "no_hotspots",
+            "hotspots": [],
+            "ipc": 0.0,
+            "cycles": 0.0,
+            "instructions": 0.0,
+            "cache_misses": 0.0,
+            "branch_misses": 0.0,
+            "pmu_available": 0.0,
+            "topdown": {"frontend_bound": 0.0, "backend_bound": 0.0},
+        }
+        snap_path.parent.mkdir(parents=True, exist_ok=True)
+        snap_path.write_text(json.dumps(marker, indent=2), encoding="utf-8")
+        print(f"Wrote {snap_path} source=unavailable error=no_hotspots")
+        raise SystemExit(1)
     base = [
         ("llama_decode", 42.5),
         ("ggml_compute", 18.2),
@@ -276,15 +293,61 @@ topdown = data.get("topdown") or data.get("microarch") or {}
 if not isinstance(topdown, dict):
     topdown = {}
 
-cycles = float(summary.get("cycles") or metrics.get("cycles") or data.get("cycles") or (1_000_000 + tick * 10_000))
-instr = float(summary.get("instructions") or metrics.get("instructions") or data.get("instructions") or (2_500_000 + tick * 20_000))
-ipc = float(summary.get("ipc") or metrics.get("ipc") or data.get("ipc") or (instr / cycles if cycles else 0.0))
+
+def _first_num(*keys_vals):
+    """Return first present numeric value; do not invent fillers for live apx."""
+    for v in keys_vals:
+        if v is None or v == "":
+            continue
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+# Live path: only export fields that are actually present (else honest 0).
+# Demo path may still use synthetic IPC/counters when ALLOW_DEMO=1.
+cycles = _first_num(
+    summary.get("cycles"), metrics.get("cycles"), data.get("cycles")
+)
+instr = _first_num(
+    summary.get("instructions"), metrics.get("instructions"), data.get("instructions")
+)
+ipc = _first_num(summary.get("ipc"), metrics.get("ipc"), data.get("ipc"))
+
+cm = _first_num(summary.get("cache_misses"), data.get("cache_misses"))
+bm = _first_num(summary.get("branch_misses"), data.get("branch_misses"))
+fe = _first_num(topdown.get("frontend_bound"), topdown.get("frontend"))
+be = _first_num(topdown.get("backend_bound"), topdown.get("backend"))
+
 if not apx_ok and data.get("source") == "demo":
-    ipc = round(2.35 + tick * 0.05, 3)
+    # Explicit demo path may invent fillers; live apx never does.
+    if cycles is None:
+        cycles = float(1_000_000 + tick * 10_000)
+    if instr is None:
+        instr = float(2_500_000 + tick * 20_000)
+    if ipc is None:
+        ipc = round(2.35 + tick * 0.05, 3)
+    cache_misses = float(cm if cm is not None else (1200 + tick * 10))
+    branch_misses = float(bm if bm is not None else (80 + tick))
+    frontend = float(fe if fe is not None else 0.22)
+    backend = float(be if be is not None else 0.41)
+else:
+    cycles = float(cycles or 0.0)
+    instr = float(instr or 0.0)
+    if ipc is None:
+        ipc = (instr / cycles) if cycles > 0 and instr > 0 else 0.0
+    else:
+        ipc = float(ipc)
+    cache_misses = float(cm or 0.0)
+    branch_misses = float(bm or 0.0)
+    frontend = float(fe or 0.0)
+    backend = float(be or 0.0)
 
 pmu = data.get("pmu_available")
 if pmu is None:
-    pmu = 1.0 if apx_ok else 0.0
+    pmu = 1.0 if (apx_ok and cycles > 0) else (0.0 if apx_ok else 1.0 if data.get("source") == "demo" else 0.0)
 
 # Live success must stay source=apx even if upstream omitted the field.
 src = data.get("source") or ("apx" if apx_ok else "demo")
@@ -293,21 +356,31 @@ if apx_ok:
 
 snap = {
     "available": 1.0,
-    "cycles": cycles,
-    "instructions": instr,
-    "ipc": ipc,
-    "cache_misses": float(summary.get("cache_misses") or data.get("cache_misses") or 1200 + tick * 10),
-    "branch_misses": float(summary.get("branch_misses") or data.get("branch_misses") or 80 + tick),
+    "cycles": float(cycles),
+    "instructions": float(instr),
+    "ipc": float(ipc),
+    "cache_misses": float(cache_misses),
+    "branch_misses": float(branch_misses),
     "pmu_available": float(pmu),
     "hotspots": hotspots,
     "topdown": {
-        "frontend_bound": float(topdown.get("frontend_bound") or topdown.get("frontend") or 0.22),
-        "backend_bound": float(topdown.get("backend_bound") or topdown.get("backend") or 0.41),
+        "frontend_bound": frontend,
+        "backend_bound": backend,
     },
-    "metrics": {"hotspot_top_pct": float(hotspots[0].get("pct") or hotspots[0].get("percent") or 0)},
+    "metrics": {
+        "hotspot_top_pct": float(
+            hotspots[0].get("pct") or hotspots[0].get("percent") or 0
+        )
+        if hotspots
+        else 0.0
+    },
     "source": src,
     "recommendations": data.get("recommendations")
-    or ["Focus hottest function with Arm Performix code_hotspots / cpu_microarchitecture recipes"],
+    or (
+        ["Focus hottest function with Arm Performix code_hotspots / cpu_microarchitecture recipes"]
+        if src == "demo"
+        else []
+    ),
 }
 snap_path.parent.mkdir(parents=True, exist_ok=True)
 snap_path.write_text(json.dumps(snap, indent=2), encoding="utf-8")

@@ -71,10 +71,49 @@ NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 \
   bash scripts/refresh-performix-snapshot.sh
 ```
 
-Expect `work/performix/snapshot.json` with `"source": "apx"` (never silent demo). Grafana **Performix** panels read that snapshot via the gateway volume.
+Expect `work/performix/snapshot.json` with `"source": "apx"` (never silent demo). On failure with `ALLOW_DEMO=0`, the script writes `source=unavailable` (does **not** leave a stale snapshot). Grafana **Performix** panels read Prometheus gauges from the gateway collector — demo/unavailable snapshots export `nexus_performix_available=0` (zeros), never fake IPC.
+
+### Long-lived refresh (cron / systemd)
+
+Keep gauges honest under load by refreshing every few minutes (not one-shot only):
+
+```bash
+# crontab -e on Axion (example: every 2 minutes)
+*/2 * * * * cd /home/tejaswini2482_gmail_com/neuroswarm-arm && \
+  NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 \
+  bash scripts/refresh-performix-snapshot.sh >>work/performix/cron.log 2>&1
+```
+
+Confirm Axion `.env` has `NSA_PERFORMIX_ALLOW_DEMO=0`.
+
+## Grafana on Windows (obs host — not Axion `:3000`)
+
+Prometheus + Grafana run on **`neuroswarm-obs`**, not on Axion. Tunnel Grafana to your laptop:
+
+```powershell
+# Grafana on obs (not Axion)
+ssh -L 13000:127.0.0.1:3000 tejaswini2482_gmail_com@<obs-ip-or-iap>
+# → http://127.0.0.1:13000/grafana/  (Performix dashboard)
+```
+
+IAP example if public SSH is blocked:
+
+```powershell
+gcloud compute start-iap-tunnel neuroswarm-obs 22 `
+  --local-host-port=localhost:2223 `
+  --zone=us-central1-a `
+  --project=project-5bcdea88-8805-4908-991
+
+ssh -i $env:USERPROFILE\.ssh\google_compute_engine `
+  -L 13000:127.0.0.1:3000 `
+  -p 2223 tejaswini2482_gmail_com@127.0.0.1
+```
+
+Open `http://127.0.0.1:13000/grafana/` → Performix / RMF dashboards. Panels are Prometheus-backed (`nexus_performix_*` from job `neuroswarm-gateway`). When the VM snapshot is dead you should see **0 / unavailable**, never silent dummy values.
 
 ## Honesty
 
 - Attach to a **live** `llama-server` PID under chat load
 - Do **not** use system-wide idle capture unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`
 - Prefer a single stack (Compose **or** k3s), not both
+- Never treat `source=demo|synthetic|unavailable` as live in Grafana
