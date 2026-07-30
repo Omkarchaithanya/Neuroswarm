@@ -88,8 +88,29 @@ class DecisionEngine:
         if plan.pd_enabled:
             plan.use_cascade = False
 
+        cost_meta: dict[str, Any] = {}
         if plan.use_cascade:
-            plan.cascade_start_tier = 1
+            # Heuristic CostRouter: semantic tool confidence → cascade start tier.
+            # Never hardcode tier=1 when tool_confidence is low (escalate honesty).
+            try:
+                from neuroswarm_arm.runtime.router.cost_router import CostRouter
+
+                query = req.prompt_text
+                decision = CostRouter().route(
+                    query,
+                    tool_confidence=float(req.tool_confidence or 0.0),
+                    plan_state={
+                        "tool_high_confidence": bool(req.tool_high_confidence),
+                        "agent_role": req.agent_role,
+                    },
+                )
+                plan.cascade_start_tier = int(decision.tier)
+                if decision.quant and not plan.quant:
+                    plan.quant = decision.quant
+                cost_meta = decision.as_dict()
+            except Exception:
+                plan.cascade_start_tier = 1
+                cost_meta = {"tier": 1, "reason": "cost_router_fallback"}
         else:
             plan.cascade_start_tier = _tier_from_name(plan.model)
 
@@ -128,8 +149,13 @@ class DecisionEngine:
                 "transfer_mode": plan.transfer_mode.value,
                 "speculation": plan.speculation,
                 "self_speculation": plan.self_speculation,
+                "cascade_start_tier": int(plan.cascade_start_tier or 1),
+                "tool_confidence": float(req.tool_confidence or 0.0),
+                "cost_router": cost_meta,
             }
         )
+        if cost_meta:
+            plan.metadata["cost_router"] = cost_meta
         return plan
 
 

@@ -28,10 +28,15 @@ classDiagram
   TurboVecIndex ..|> VectorIndex
 ```
 
-## What this is (and is not)
+## Cascade tier wiring (CostRouter)
 
-- **In-process tool registry + semantic top-K selector.** The router ranks registered MCP tool *schemas* and injects only top-K into the LLM prompt.
-- **Not** a transparent MCP proxy. Tool execution still goes through the agent/gateway; the router only selects which schemas enter context.
+Semantic top-K schemas are injected via **system prompt** (Axion llama-server has no `--jinja` / OpenAI `tools=` in main compose).
+
+`CostRouter` (heuristic) maps `tool_confidence` + query signals → `cascade_start_tier` inside `DecisionEngine` (not a parallel `pipeline.py`). Low confidence (`NSA_ROUTER_ESCALATE_CONF`, default 0.42) starts at tier3; ASCR still escalates on text confidence.
+
+Optional `NSA_MCP_LIVE_INDEX=1` indexes only tools whose MCP server answers `tools/list`.
+
+Schema-token reduction: report measured ratios from `RoutingResult` / MCPGA — do not claim 92% without a fresh artifact.
 
 ## Embedding + index (honest defaults)
 

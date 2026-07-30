@@ -182,6 +182,26 @@ def build_chat_handlers(
                 prompt_block = semantic_router.prompt_block(result)
             except Exception:
                 prompt_block = ""
+        # Explicit cost-router hints (tier start) for DecisionEngine + metrics.
+        try:
+            from neuroswarm_arm.runtime.router.orchestration import build_routed_inference_hints
+
+            hints = build_routed_inference_hints(
+                query,
+                result,
+                prompt_block=prompt_block,
+                schemas=schemas,
+            )
+            names = list(hints.tool_names) or names
+            schemas = list(hints.tool_schemas) or schemas
+            prompt_block = hints.tool_prompt_block or prompt_block
+            state["cost_router"] = hints.cost_decision.as_dict() if hints.cost_decision else {}
+            state["schema_token_reduction"] = float(hints.schema_token_reduction)
+            ctx.baggage["cost_router"] = state["cost_router"]
+            ctx.baggage["schema_token_reduction"] = state["schema_token_reduction"]
+            ctx.baggage["routed_hints"] = hints.as_dict()
+        except Exception:
+            state["cost_router"] = {}
         high_conf = bool(getattr(result, "high_confidence", False))
         thinking_budget = None
         cfg = getattr(semantic_router, "config", None)
@@ -292,6 +312,21 @@ def build_chat_handlers(
             handle_kwargs.pop("tool_high_confidence", None)
             handle_kwargs.pop("high_conf_thinking_budget", None)
             response = engine.handle(req, tool_names, **handle_kwargs)
+        # Surface cost-router decision on response metrics (real values only).
+        cost_meta = state.get("cost_router") or {}
+        if cost_meta and hasattr(response, "model_copy"):
+            metrics = dict(getattr(response, "metrics", None) or {})
+            metrics["cost_router_tier"] = cost_meta.get("tier")
+            metrics["cost_router_reason"] = cost_meta.get("reason")
+            if state.get("schema_token_reduction") is not None:
+                metrics["schema_token_reduction"] = state.get("schema_token_reduction")
+            try:
+                response = response.model_copy(update={"metrics": metrics})
+            except Exception:
+                pass
+        elif cost_meta and isinstance(getattr(response, "metrics", None), dict):
+            response.metrics["cost_router_tier"] = cost_meta.get("tier")
+            response.metrics["cost_router_reason"] = cost_meta.get("reason")
         state["response"] = response
         ctx.baggage["response"] = response
         _memory_writeback(ctx, response)

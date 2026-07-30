@@ -169,11 +169,26 @@ class ASCREngine(ICascadeEngine):
         if graph is None:
             raise RuntimeError("no escalation graph configured")
 
+        from neuroswarm_arm.runtime.armcascade.escalation.engine import resolve_cascade_start_node
+
+        planned = int(getattr(plan, "cascade_start_tier", 1) or 1)
+        # Prefer default_linear when CostRouter asks for a tier missing from the
+        # policy-selected graph (keeps tier3 reachable).
+        if planned >= 2:
+            linear = self.graphs.get("default_linear")
+            want = f"tier{planned}"
+            if linear is not None and want in linear.nodes and (
+                graph is None or want not in graph.nodes
+            ):
+                graph = linear
+
+        start_node = resolve_cascade_start_node(graph, planned)
         esc_state = EscalationState(
-            current=graph.start,
+            current=start_node,
             tool_needed=bool(req.tool_names or req.tool_schemas),
             memory_needed=classification.task_kind.value in {"rag", "multi_agent"},
         )
+        ascr_start_node = start_node
 
         proposer = self._get_proposer(policy)
         verifier = self._get_verifier(policy)
@@ -203,7 +218,7 @@ class ASCREngine(ICascadeEngine):
         last_verify_text = ""
         last_backend = policy.draft_backend
         last_model = policy.draft_backend
-        tier_used = 1
+        tier_used = max(1, min(3, int(getattr(plan, "cascade_start_tier", 1) or 1)))
         last_logits = True
         last_agreement: float | None = None
         saw_logits = False
@@ -588,6 +603,12 @@ class ASCREngine(ICascadeEngine):
                 ),
                 "logits_available": 1.0 if saw_logits else 0.0,
                 "ascr_mode": state.mode,
+                "ascr_planned_start_tier": float(
+                    getattr(plan, "cascade_start_tier", 1) or 1
+                ),
+                "ascr_start_tier": float(
+                    int("".join(ch for ch in ascr_start_node if ch.isdigit()) or "1")
+                ),
             },
         )
 

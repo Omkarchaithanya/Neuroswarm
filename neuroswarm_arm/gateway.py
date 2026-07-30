@@ -180,6 +180,8 @@ class AgentGateway:
         """Pre-routed high-conf chat → cascade/DIPA directly (skip HAOE DAG)."""
         import anyio
 
+        from neuroswarm_arm.runtime.router.orchestration import build_routed_inference_hints
+
         tool_names = list(getattr(routed, "tool_names", None) or [])
         tool_schemas = list(getattr(routed, "schemas", None) or [])
         tool_confidence = float(getattr(routed, "confidence_top1", 0.0) or 0.0)
@@ -190,6 +192,23 @@ class AgentGateway:
                 tool_prompt_block = self.semantic_router.prompt_block(routed) or ""
             except Exception:
                 tool_prompt_block = ""
+        cost_meta: dict[str, Any] = {}
+        try:
+            query = req.messages[-1].content if req.messages else ""
+            hints = build_routed_inference_hints(
+                query,
+                routed,
+                prompt_block=tool_prompt_block,
+                schemas=tool_schemas,
+            )
+            tool_names = list(hints.tool_names) or tool_names
+            tool_schemas = list(hints.tool_schemas) or tool_schemas
+            tool_prompt_block = hints.tool_prompt_block or tool_prompt_block
+            tool_confidence = float(hints.tool_confidence)
+            tool_high_confidence = bool(hints.high_confidence)
+            cost_meta = hints.cost_decision.as_dict() if hints.cost_decision else {}
+        except Exception:
+            cost_meta = {}
         high_conf_budget = int(
             getattr(
                 getattr(self.semantic_router, "config", None),
@@ -249,6 +268,9 @@ class AgentGateway:
         metrics = dict(getattr(response, "metrics", None) or {})
         metrics["haoe_bypassed"] = 1
         metrics["haoe_fast_path"] = 1
+        if cost_meta:
+            metrics["cost_router_tier"] = cost_meta.get("tier")
+            metrics["cost_router_reason"] = cost_meta.get("reason")
         response = response.model_copy(update={"metrics": metrics})
         return self._attach_runtime_cost_report(req, response)
 

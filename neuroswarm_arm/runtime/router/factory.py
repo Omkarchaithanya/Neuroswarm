@@ -80,9 +80,23 @@ def build_router(
         )
     registry = ToolRegistry(events=events)
     loader = RegistryLoader()
+    loaded: list = []
     for path in [config.tool_metadata_root, config.okf_root]:
         if path.exists():
-            registry.bulk_register(loader.load_path(path))
+            loaded.extend(loader.load_path(path))
+
+    # Optional: index only tools whose MCP server answers tools/list.
+    from .live_mcp_index import filter_tools_by_live_mcp, live_index_enabled
+
+    if live_index_enabled() and loaded:
+        kept = filter_tools_by_live_mcp(loaded)
+        registry.bulk_register(kept)
+        metrics.set("router_live_index", 1.0)
+        metrics.set("router_live_index_kept", float(len(kept)))
+        metrics.set("router_live_index_skipped", float(max(0, len(loaded) - len(kept))))
+    else:
+        registry.bulk_register(loaded)
+        metrics.set("router_live_index", 0.0)
 
     indexer = IncrementalIndexer(index, embedder, events=events)
     indexer.rebuild(registry.as_list())

@@ -11,12 +11,18 @@ from neuroswarm_arm.runtime.armcascade.interfaces.types import (
 
 
 def resolve_cascade_start_node(graph: EscalationGraph, cascade_start_tier: int) -> str:
-    """Pick escalation graph entry from planned cascade start tier."""
+    """Pick escalation graph entry from planned cascade start tier.
+
+    If the requested tier node is missing from the active graph (e.g. a
+    tool_then_verify graph without tier3), walk downward to the highest
+    available ``tierN`` rather than silently resetting to ``graph.start``.
+    """
     start_tier = max(1, min(3, int(cascade_start_tier or 1)))
-    start_node = f"tier{start_tier}"
-    if start_node not in graph.nodes:
-        return graph.start
-    return start_node
+    for tier in range(start_tier, 0, -1):
+        node = f"tier{tier}"
+        if node in graph.nodes:
+            return node
+    return graph.start
 
 
 class GraphEscalationEngine(EscalationEngine):
