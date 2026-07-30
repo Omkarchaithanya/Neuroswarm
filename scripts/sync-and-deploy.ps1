@@ -16,26 +16,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Resolve-GcpProjectId {
-  param([string]$Value)
-  if (-not [string]::IsNullOrWhiteSpace($Value)) {
-    return $Value.Trim()
-  }
-  if (-not [string]::IsNullOrWhiteSpace($env:GCP_PROJECT)) {
-    return $env:GCP_PROJECT.Trim()
-  }
-  if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
-    throw "ProjectId required. Install gcloud or pass -ProjectId YOUR_GCP_PROJECT_ID"
-  }
-  $resolved = (& gcloud config get-value project 2>$null | Out-String).Trim()
-  if ([string]::IsNullOrWhiteSpace($resolved) -or $resolved -eq "(unset)") {
-    throw "ProjectId required. Run: gcloud config set project YOUR_GCP_PROJECT_ID  OR  pass -ProjectId"
-  }
-  return $resolved
-}
-
 # Ensure gcloud SDK is on PATH (common Windows install location).
-$gcloudBin = Join-Path $env:LOCALAPPDATA "Google\Cloud SDK\google-cloud-sdk\bin"
+$gcloudBin = "C:\Users\omkar\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin"
 if (Test-Path $gcloudBin) {
   $env:Path = "$gcloudBin;" + $env:Path
 }
@@ -43,8 +25,6 @@ if (Test-Path $gcloudBin) {
 if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
   throw "gcloud not found on PATH. Install Google Cloud CLI."
 }
-
-$ProjectId = Resolve-GcpProjectId $ProjectId
 
 if ([string]::IsNullOrWhiteSpace($LocalPath)) {
   $LocalPath = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path

@@ -58,6 +58,9 @@ Composition root: `neuroswarm_arm/main.py` calls `build_rof()` **before** budget
 - [semantic-conventions.md](semantic-conventions.md)
 - [dashboard-guide.md](dashboard-guide.md)
 - [instrumentation-guide.md](instrumentation-guide.md)
+- [host-monitoring.md](host-monitoring.md) — htop/btop + Glances/cAdvisor (live host/container metrics)
+- [linux-perf-ebpf.md](../profiling/linux-perf-ebpf.md) — host `perf` / bpftrace vs Kleidi PID (open-source; not ProfInfer)
+- [llama-native.md](../profiling/llama-native.md) — llama-server timings, llama-bench, tier Prometheus `/metrics`
 
 - [developer.md](developer.md)
 - [plugin-guide.md](plugin-guide.md)
@@ -74,12 +77,21 @@ Dual-host layout: **axion** serves the API; **neuroswarm-obs** serves Prometheus
 | Prometheus UI | `http://<obs>/prometheus/` (nginx basic auth + Grafana admin password) |
 | Grafana | `http://<obs>/grafana/` (same; set `GRAFANA_ADMIN_PASSWORD`, run `bash scripts/gen-obs-htpasswd.sh`) |
 
-**Canonical scrape:** Prometheus on obs scrapes **only** `{job="neuroswarm-gateway"}` → `10.128.0.2:80`. Do not run Compose and k3s/Helm gateways at the same time (series ×2–3). Do not scrape OTEL `:8889`.
+**Canonical scrape:** Prometheus on obs scrapes **`neuroswarm-gateway`** → `10.128.0.2:80`, plus **`cadvisor`** → `:8088` and **`glances`** → `:61209` when the Axion `hostmon` profile is up. Do not run Compose and k3s/Helm gateways at the same time (series ×2–3). Do not scrape OTEL `:8889`. See [host-monitoring.md](host-monitoring.md).
 
-**API vs Prometheus vs Grafana:** Swagger `/docs` is the HTTP API surface. Prometheus scrapes `GET /metrics` (`nexus_*`, `admit_*`, …). Grafana dashboards visualize those series — APIs do not appear as graphs automatically.
+**API vs Prometheus vs Grafana:** Swagger `/docs` is the HTTP API surface. Prometheus scrapes `GET /metrics` (`nexus_*`, `admit_*`, …) from Axion gateway **`:8000`** (obs job `neuroswarm-gateway` → `10.128.0.2:8000`). Grafana on **obs** visualizes those series — APIs do not appear as graphs automatically.
 
 **Why Prometheus shows “No data queried yet”:** the Graph page starts blank. Type a PromQL expression and click **Execute**. Starters: `up`, `nexus_performix_ipc{job="neuroswarm-gateway"}`, `nexus_performix_hotspot_pct`, `{__name__=~"nexus_.*"}`. Check **Status → Targets** for scrape health.
 
 **Why `/` on axion is `{"detail":"Not Found"}`:** FastAPI has no root handler — use `/health` or `/docs`.
 
-**Performix dashboard:** on Axion run `NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 bash scripts/refresh-performix-snapshot.sh` (PID-scoped; refuses idle `--system-wide` unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`). Expect `work/performix/snapshot.json` with `source=apx` or honest `unavailable` (never silent demo). Gateway reads that file via the compose volume. `PMU available = 0` is honest when hardware counters are unavailable. Top-down panels are **last snapshot** gauges — see `nexus_performix_snapshot_age_seconds`. **Windows Performix GUI is optional** (SSH to Axion for interactive UI); automation uses host `apx` on the VM. Product MCP = `performix-bridge`, not `armlimited/arm-mcp` (IDE-only — see `.cursor/mcp.json.example`).
+**Performix dashboard:** on Axion run `NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 bash scripts/refresh-performix-snapshot.sh` (PID-scoped; refuses idle `--system-wide` unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`). Expect `work/performix/snapshot.json` with `source=apx` or honest `unavailable` (never silent demo / never leave stale). Gateway collector exports zeros when `source` is `demo|synthetic|unavailable` or `available=0`. `PMU available = 0` is honest when hardware counters are unavailable. Top-down panels are **last snapshot** gauges — see `nexus_performix_snapshot_age_seconds`.
+
+**Windows access to Grafana:** tunnel **obs** (not Axion `:3000`):
+
+```powershell
+ssh -L 13000:127.0.0.1:3000 ... neuroswarm-obs
+# → http://127.0.0.1:13000/grafana/
+```
+
+Full GUI + tunnel steps: [performix-gui-windows.md](../telemetry/performix-gui-windows.md). Automation uses host `apx` on the VM. Product MCP = `performix-bridge`, not `armlimited/arm-mcp` (IDE-only — see `.cursor/mcp.json.example`).

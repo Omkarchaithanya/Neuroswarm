@@ -13,15 +13,63 @@ scrape_configs:
       - targets:
           - localhost:9090
 
-  # Canonical Compose gateway via nginx on axion (:80 /metrics).
+  # Canonical Compose gateway on axion (:8000 /metrics).
+  # Prefer nginx :80 when the compose `proxy` service is running; this stack
+  # currently publishes gateway directly on :8000 (no proxy).
   # Do NOT also scrape :8889 or k3s NodePort — that duplicates series ×2–3.
   - job_name: neuroswarm-gateway
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
       - targets:
-          - 10.128.0.2:80
+          - 10.128.0.2:8000
         labels:
           service: neuroswarm-gateway
           host: axion
           runtime: compose
+
+  # Per-container CPU/mem/blkio from Axion hostmon profile (cAdvisor).
+  - job_name: cadvisor
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 10.128.0.2:8088
+        labels:
+          service: cadvisor
+          host: axion
+
+  # Host CPU/mem/load from Axion Glances Prometheus exporter (host port 61209 → container 9091).
+  - job_name: glances
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 10.128.0.2:61209
+        labels:
+          service: glances
+          host: axion
+
+  # Native llama-server Prometheus metrics (--metrics) on Kleidi tiers.
+  - job_name: llama-server-tiers
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 10.128.0.2:8081
+        labels:
+          tier: "1"
+          service: llama-server
+          host: axion
+      - targets:
+          - 10.128.0.2:8082
+        labels:
+          tier: "2"
+          service: llama-server
+          host: axion
+      - targets:
+          - 10.128.0.2:8083
+        labels:
+          tier: "3"
+          service: llama-server
+          host: axion

@@ -6,7 +6,7 @@
   "version": 3,
   "refresh": "10s",
   "tags": ["nexus", "performix", "arm"],
-  "description": "Canonical job=neuroswarm-gateway (Compose :80). PMU=0 means no hardware counters. Top-down panels are last Performix snapshot gauges, not live PMU.",
+  "description": "Canonical job=neuroswarm-gateway (Compose gateway :8000, or nginx :80 when proxy is up). PMU=0 means no hardware counters. Top-down panels are last Performix snapshot gauges, not live PMU.",
   "panels": [
     {
       "id": 100,
@@ -15,7 +15,7 @@
       "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
       "options": {
         "mode": "markdown",
-        "content": "**Canonical scrape:** `{job=\"neuroswarm-gateway\"}` (Compose nginx :80). Do not run k3s alongside Compose.\n\n**PMU available = 0** is expected without real hardware counters. **Code hotspots** need `nexus_performix_hotspot_pct{function=...}` from a PID-scoped `apx` capture under chat load.\n\n**Top-down** panels are last snapshot gauges — check **Snapshot age**."
+        "content": "**Canonical scrape:** `{job=\"neuroswarm-gateway\"}` (Compose gateway `:8000`, or nginx `:80` when proxy is up). Do not run k3s alongside Compose.\n\n**PMU available = 0** is expected without real hardware counters. **Code hotspots** need `nexus_performix_hotspot_pct{function=...}` from a PID-scoped `apx` capture under chat load.\n\n**Honesty:** `source=demo|synthetic|unavailable` (or `available=0`) exports zeros — never silent dummy IPC. **Top-down** panels are last snapshot gauges — check **Snapshot age**."
       }
     },
     {

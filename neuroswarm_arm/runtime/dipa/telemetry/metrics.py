@@ -29,6 +29,9 @@ METRIC_HELP: dict[str, tuple[str, str]] = {
     "dipa_batch_size": ("gauge", "Last PD / batch size."),
     "dipa_chunk_count": ("gauge", "Prefill chunk count."),
     "dipa_prefill_ms": ("gauge", "Prefill latency (ms)."),
+    "dipa_decode_ms": ("gauge", "Decode / predicted latency (ms) from llama-server timings."),
+    "dipa_llama_prompt_per_second": ("gauge", "llama-server prompt_per_second (prefill)."),
+    "dipa_llama_predicted_per_second": ("gauge", "llama-server predicted_per_second (decode)."),
     "dipa_kv_transfer_mode": ("gauge", "KV transfer mode code (1=native,2=recompute,3=unavailable)."),
     "dipa_recompute_tokens": ("gauge", "Tokens recomputed on decode after heterogeneous handoff."),
 }
@@ -78,6 +81,10 @@ class DIPAMetrics:
         workload: str,
         prompt_tokens: int,
         completion_tokens: int,
+        llama_prompt_ms: float | None = None,
+        llama_predicted_ms: float | None = None,
+        llama_prompt_per_second: float | None = None,
+        llama_predicted_per_second: float | None = None,
     ) -> None:
         self.inc("dipa_requests_total")
         self.set("dipa_latency_ms", latency_ms)
@@ -92,16 +99,30 @@ class DIPAMetrics:
         if total:
             self.set("dipa_cascade_hit_rate", self._tier1 / total)
         elapsed_s = max(latency_ms / 1000.0, 1e-6)
-        self.set("dipa_tokens_per_sec", completion_tokens / elapsed_s)
-        if prompt_tokens:
+        # Prefer llama-server timings when present (honest server tok/s).
+        if llama_predicted_per_second is not None and llama_predicted_per_second > 0:
+            self.set("dipa_tokens_per_sec", float(llama_predicted_per_second))
+            self.set("dipa_decode_tps", float(llama_predicted_per_second))
+            self.set("dipa_llama_predicted_per_second", float(llama_predicted_per_second))
+        else:
+            self.set("dipa_tokens_per_sec", completion_tokens / elapsed_s)
+            if completion_tokens:
+                self.set("dipa_decode_tps", completion_tokens / elapsed_s)
+        if llama_prompt_per_second is not None and llama_prompt_per_second > 0:
+            self.set("dipa_prefill_tps", float(llama_prompt_per_second))
+            self.set("dipa_llama_prompt_per_second", float(llama_prompt_per_second))
+        elif prompt_tokens:
             self.set("dipa_prefill_tps", prompt_tokens / elapsed_s)
-        if completion_tokens:
-            self.set("dipa_decode_tps", completion_tokens / elapsed_s)
+        if llama_prompt_ms is not None and llama_prompt_ms > 0:
+            self.set("dipa_prefill_ms", float(llama_prompt_ms))
+        if llama_predicted_ms is not None and llama_predicted_ms > 0:
+            self.set("dipa_decode_ms", float(llama_predicted_ms))
         self.set("dipa_backend_utilization", 0.0)
         self.set(f"dipa_last_tier", float(tier))
         # 1.0 on single-UMA Axion is trivial locality, not NUMA-split proof.
         # See neuroswarm_cross_numa_applicable / nexus_hw_numa_nodes gauges.
         self.set("dipa_numa_locality", 1.0)
+        _ = (quant, backend, workload)
 
     def record_prefill(
         self,

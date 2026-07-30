@@ -6,7 +6,7 @@ default_graph: default_linear
 
 defaults:
   proposal_strategy: draft_model
-  verify_strategy: block
+  verify_strategy: logits
   draft_len: 8
   # Speculative / logits path
   accept_threshold: 0.7

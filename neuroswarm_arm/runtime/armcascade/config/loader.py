@@ -97,6 +97,27 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
             "yes",
             "on",
         }
+    if v := os.environ.get("NSA_ASCR_LOGITS_ENABLED"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        logits = dict(strategies.get("logits") or {})
+        logits["enabled"] = v.strip().lower() in {"1", "true", "yes", "on"}
+        strategies["logits"] = logits
+        out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_TAU_FLOOR"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        logits = dict(strategies.get("logits") or {})
+        logits["tau_floor"] = float(v)
+        strategies["logits"] = logits
+        out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_LOGITS_TOP_N"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        logits = dict(strategies.get("logits") or {})
+        logits["top_n"] = int(v)
+        strategies["logits"] = logits
+        out["strategies"] = strategies
     if v := os.environ.get("NSA_ASCR_MAX_ROUNDS"):
         out.setdefault("defaults", {})
         out["defaults"] = dict(out.get("defaults") or {})

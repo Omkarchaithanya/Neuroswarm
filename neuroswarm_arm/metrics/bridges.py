@@ -121,6 +121,12 @@ class PlaneMetricBridge:
                                 self.rmf.observe("nexus_dipa_prefill_latency_seconds", float(value) / 1000.0)
                             elif "decode" in name and "ms" in name:
                                 self.rmf.observe("nexus_dipa_decode_latency_seconds", float(value) / 1000.0)
+                            elif name in {
+                                "dipa_tokens_per_sec",
+                                "dipa_llama_predicted_per_second",
+                                "dipa_decode_tps",
+                            }:
+                                self.rmf.set("nexus_tokens_per_second", float(value))
                         except Exception:
                             continue
                 if hasattr(metrics, "export_prometheus"):
