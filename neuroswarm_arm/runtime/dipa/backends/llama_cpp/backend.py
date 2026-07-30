@@ -68,6 +68,27 @@ class LlamaHttpClient:
             payload.update(extra)
         return self._post("/v1/chat/completions", payload)
 
+    def generate_with_logits(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 512,
+        temperature: float = 0.2,
+        top_logprobs: int = 5,
+        extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": False,
+            "logprobs": True,
+            "top_logprobs": int(top_logprobs),
+        }
+        if extra:
+            payload.update(extra)
+        return self._post("/v1/chat/completions", payload)
+
     def chat_stream_raw(
         self,
         messages: list[dict[str, str]],
@@ -446,6 +467,76 @@ class LlamaCppBackend(InferenceBackend):
             ttft_ms=latency_ms,
             backend=self.name,
             quant=req.quant,
+            tier_used=self.tier,
+            raw=raw if isinstance(raw, dict) else {},
+            metrics=metrics,
+        )
+
+    async def generate_with_logits(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 512,
+        temperature: float = 0.2,
+        top_logprobs: int = 5,
+        session_id: str = "",
+        quant: str = "",
+        kv_handle: str | None = None,
+        ctx: ExecutionContext | None = None,
+    ) -> GenerateResult:
+        """Target forward with OpenAI logprobs / top_logprobs."""
+        t0 = time.perf_counter()
+        n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
+        if n_probs <= 0:
+            os.environ["NSA_LLAMA_N_PROBS"] = str(int(top_logprobs))
+        extra, slot_meta = _llama_chat_extra(
+            session_id=session_id,
+            messages=messages,
+            slot_router=self._slot_router,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=None,
+        )
+        slot_id = slot_meta.get("slot_id")
+        slot_reused = bool(slot_meta.get("slot_reused"))
+        tel = self._telemetry
+        with tel.span("chat_logits", session_id=session_id) if tel else _null_span():
+            raw = await asyncio.to_thread(
+                self._client.generate_with_logits,
+                messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_logprobs=top_logprobs,
+                extra=extra,
+            )
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        text = _extract_chat_content(raw)
+        prompt_tokens = _usage_or_approx(raw, "prompt_tokens", messages)
+        completion_tokens = _usage_or_approx_text(raw, "completion_tokens", text)
+        cached_tokens = _cached_prompt_tokens(raw)
+        response_slot = raw.get("id_slot") if isinstance(raw, dict) else None
+        if isinstance(response_slot, int):
+            slot_id = response_slot
+        metrics: dict[str, float] = {
+            "cached_prompt_tokens": float(cached_tokens),
+            "slot_reused": 1.0 if slot_reused else 0.0,
+            "ttft_seconds": latency_ms / 1000.0,
+            "logits_available": 1.0,
+        }
+        if isinstance(slot_id, int):
+            metrics["slot_id"] = float(slot_id)
+            metrics["id_slot"] = float(slot_id)
+        if isinstance(self._slot_router, RadixSlotRouter):
+            prompt_text = " ".join(str(m.get("content", "")) for m in messages)
+            token_ids = await asyncio.to_thread(self.tokenize, prompt_text)
+            self._slot_router.record_after_inference(token_ids, slot_id, okf_block_hashes=None)
+        return GenerateResult(
+            text=text,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=latency_ms,
+            ttft_ms=latency_ms,
+            backend=self.name,
+            quant=quant,
             tier_used=self.tier,
             raw=raw if isinstance(raw, dict) else {},
             metrics=metrics,

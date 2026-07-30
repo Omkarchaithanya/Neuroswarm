@@ -1,0 +1,28 @@
+{
+  "gap": "G1",
+  "before_source": "docs/evidence/latest/layer-verify/05-ascr-smoke.txt",
+  "before": {
+    "accept_mode": "speculative_logits",
+    "chat_logits_available": true,
+    "ascr_speculation_gain": 0.3333333333333333,
+    "ascr_text_agreement": 0.0,
+    "ascr_acceptance_rate": 0.9577216676453317,
+    "mean_prefix_len": "text-proxy (not Leviathan)"
+  },
+  "after": {
+    "accept_mode": "logits_leviathan",
+    "verify_strategy_default": "logits",
+    "accept_mode_metric": 2.0,
+    "unit_greedy_prefix_len": 3,
+    "unit_greedy_reject_at": 2,
+    "unit_stochastic_trials": 10000,
+    "unit_top_tau_used": true,
+    "unit_bonus_token": "bonus",
+    "round_trip_accepted_prefix_len": 4,
+    "round_trip_logits_available": true,
+    "mean_prefix_len": 4.0,
+    "ascr_speculation_gain_delta": "requires live gateway (probe connection refused locally)"
+  },
+  "tests": "8 passed in 2.61s (test_logits_verifier.py + test_logits_round_trip.py)",
+  "probe_note": "scripts/probe-ascr-speculation.py requires gateway on :8000; local run failed ConnectionRefusedError"
+}

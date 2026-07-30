@@ -37,6 +37,7 @@ class VerifyMode(str, Enum):
     HIERARCHICAL = "hierarchical"
     TREE = "tree"
     QUALITY = "quality"
+    LOGITS = "logits"
 
 
 @dataclass(slots=True)
@@ -58,6 +59,8 @@ class Classification:
     recommended_strategy: str = "draft_model"
     recommended_verify: str = "block"
     recommended_graph: str = "default_linear"
+    recommended_start_tier: int = 1
+    hardness_band: str = "basic"
     signals: dict[str, float] = field(default_factory=dict)
 
 
@@ -117,6 +120,33 @@ class ProposalRequest:
 
 
 @dataclass(slots=True)
+class LogitsTopEntry:
+    token: str
+    logprob: float
+    token_id: int | None = None
+
+
+@dataclass(slots=True)
+class LogitsStep:
+    token: str
+    logprob: float
+    token_id: int | None = None
+    top: list[LogitsTopEntry] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class LogitsBundle:
+    steps: list[LogitsStep] = field(default_factory=list)
+    draft_tokens: list[str] = field(default_factory=list)
+    draft_token_ids: list[int] = field(default_factory=list)
+    draft_logprobs: list[float] = field(default_factory=list)
+    draft_ranks: list[int] = field(default_factory=list)
+    top_n: int = 0
+    completion_text: str = ""
+    raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class VerifyRequest:
     messages: list[dict[str, str]]
     prompt_text: str
@@ -148,6 +178,7 @@ class VerifyResult:
     tier_used: int = 2
     metrics: dict[str, float] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict)
+    bonus_token: str = ""
 
 
 @dataclass(slots=True)

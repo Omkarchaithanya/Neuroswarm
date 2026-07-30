@@ -52,3 +52,7 @@ strategies:
   quality:
     enabled: true
     class: quality
+  logits:
+    enabled: true
+    class: logits
+    tau_floor: 0.0
