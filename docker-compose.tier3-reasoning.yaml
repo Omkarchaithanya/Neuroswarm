@@ -1,35 +1,3 @@
-# Tier3 override: disable DeepSeek-R1 chain-of-thought (reasoning -> content).
-# Usage:
-#   docker compose -f docker-compose.yaml -f docker-compose.tier3-reasoning.yaml up -d --force-recreate tier3
-services:
-  tier3:
-    command:
-      - -m
-      - /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8080"
-      - -ngl
-      - "0"
-      - -t
-      - "${TIER3_THREADS:-3}"
-      - -c
-      - "${TIER3_CTX:-4096}"
-      - --parallel
-      - "${TIER3_PARALLEL:-2}"
-      - --reasoning
-      - "off"
-      - --reasoning-budget
-      - "0"
-      - --slot-save-path
-      - /var/lib/ns/slots
-      - --metrics
-    volumes:
-      - ${MODEL_DIR:-./models}:/models:ro
-      - tier3-slots:/var/lib/ns/slots
-    healthcheck:
-      start_period: 600s
-      interval: 30s
-      timeout: 15s
-      retries: 40
+# Deprecated: tier3 reasoning-off + batching live in docker-compose.yaml.
+# Kept for backwards compatibility; do not add a command override here.
+services: {}

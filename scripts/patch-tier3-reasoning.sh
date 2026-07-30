@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Apply tier3 reasoning-off override and verify.
+# Recreate tier3 with --reasoning off (DeepSeek-R1 -> content field).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-COMPOSE=(docker compose -f docker-compose.yaml -f docker-compose.tier3-reasoning.yaml)
+COMPOSE=(docker compose -f docker-compose.yaml)
 
 rm -f docker-compose.tier3-fix.yaml
 
@@ -22,8 +22,9 @@ for i in $(seq 1 60); do
   sleep 5
 done
 
+cid="$("${COMPOSE[@]}" ps -q tier3 | head -1)"
 echo "== Container argv =="
-docker inspect neuroswarm-arm-tier3-1 --format '{{range .Config.Cmd}}{{.}} {{end}}' | tr ' ' '\n' | grep -A1 reasoning || {
+docker inspect "$cid" --format '{{range .Config.Cmd}}{{.}} {{end}}' | tr ' ' '\n' | grep -A1 reasoning || {
   echo "FAIL: --reasoning off missing from container"
   exit 1
 }
@@ -40,6 +41,6 @@ print('content:', repr(m.get('content')))
 print('reasoning:', repr(m.get('reasoning_content')))
 c = (m.get('content') or '').strip()
 if not c:
-    raise SystemExit('FAIL: content still empty')
+    raise SystemExit('FAIL: content still empty (reasoning may still be on)')
 print('PASS')
 "

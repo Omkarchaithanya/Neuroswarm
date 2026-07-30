@@ -194,7 +194,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
+      - /models/${TIER3_MODEL:-DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf}
       - --host
       - 0.0.0.0
       - --port
@@ -205,9 +205,26 @@ services:
       - "${TIER3_THREADS:-3}"
       - -c
       - "${TIER3_CTX:-4096}"
+      - -b
+      - "512"
+      - --threads-batch
+      - "${TIER3_THREADS:-3}"
+      - --cont-batching
+      - --parallel
+      - "${TIER3_PARALLEL:-4}"
+      - --mlock
+      - --reasoning
+      - "off"
+      - --reasoning-budget
+      - "0"
+      - --slots
+      - --cache-prompt
+      - --slot-save-path
+      - /var/lib/ns/slots
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
+      - tier3-slots:/var/lib/ns/slots
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
       interval: 20s
@@ -270,8 +287,8 @@ services:
     restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
     environment:
-      # Dual-host: neuroswarm-obs Prometheus (not container loopback). Set in .env.
-      OBS_PROMETHEUS_REMOTE_WRITE: ${OBS_PROMETHEUS_REMOTE_WRITE:?set OBS_PROMETHEUS_REMOTE_WRITE to neuroswarm-obs IP:9090/prometheus/api/v1/write}
+      # Dual-host: neuroswarm-obs Prometheus (not container loopback). Override in .env when obs VM exists.
+      OBS_PROMETHEUS_REMOTE_WRITE: ${OBS_PROMETHEUS_REMOTE_WRITE:-http://127.0.0.1:9090/prometheus/api/v1/write}
     ports:
       - "127.0.0.1:4317:4317"
       - "127.0.0.1:4318:4318"
@@ -474,5 +491,6 @@ services:
           cpus: "0.25"
           memory: 128M
 
-volumes: {}
+volumes:
+  tier3-slots:
 
