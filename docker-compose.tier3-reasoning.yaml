@@ -1,0 +1,3 @@
+# Deprecated: tier3 reasoning-off + batching live in docker-compose.yaml.
+# Kept for backwards compatibility; do not add a command override here.
+services: {}

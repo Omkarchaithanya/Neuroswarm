@@ -88,6 +88,18 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
                 spec.get("speculation_depth", self.base.speculation_depth)
             ),
             max_rounds=int(spec.get("max_rounds", self.base.max_rounds)),
+            quality_accept_threshold=float(
+                spec.get(
+                    "quality_accept_threshold",
+                    getattr(self.base, "quality_accept_threshold", 0.55),
+                )
+            ),
+            quality_early_accept_floor=float(
+                spec.get(
+                    "quality_early_accept_floor",
+                    getattr(self.base, "quality_early_accept_floor", 0.52),
+                )
+            ),
         )
 
         # Peer-layer soft hints (connectors never owned here).

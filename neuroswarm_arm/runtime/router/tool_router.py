@@ -132,15 +132,31 @@ class SemanticToolRouter:
         if not tools:
             return RoutingResult(query=query, top_k=k)
 
-        with self.telemetry.span("router.route", {"query_len": len(query), "top_k": k}):
+        with self.telemetry.span(
+            "router.route",
+            {
+                "query_len": len(query),
+                "top_k": k,
+                "gen_ai.system": "neuroswarm",
+                "gen_ai.provider.name": "neuroswarm",
+                "gen_ai.operation.name": "route",
+            },
+        ):
             tools = self.tool_filter.apply(tools, ctx)
             tools = self.workflow_filter.apply(tools, ctx)
             tools = self.agent_filter.apply(tools, ctx)
             tools = self.context_filter.apply(tools, ctx)
 
             emb_timer = self.metrics.timer()
-            with self.telemetry.span("router.embed"):
-                qvec = self.embedder.encode(query)
+            with self.telemetry.span(
+                "router.embed",
+                {
+                    "gen_ai.system": "neuroswarm",
+                    "gen_ai.provider.name": "neuroswarm",
+                    "gen_ai.operation.name": "embed",
+                },
+            ):
+                qvec = self.embedder.encode_query(query)
             self.metrics.set("router_embedding_latency_ms", emb_timer.ms())
 
             candidate_k = min(len(tools), max(k * self.config.candidate_multiplier, k))
@@ -149,7 +165,11 @@ class SemanticToolRouter:
                 hits = self.index.search(qvec, candidate_k)
             ann_ms = ann_timer.ms()
             self.metrics.set("router_ann_latency_ms", ann_ms)
-            self.metrics.set("router_turbovec_search_ms", ann_ms)
+            self.metrics.set("router_search_latency_ms", ann_ms)
+            # Only claim TurboVec latency when TurboVec actually handled the search.
+            kernel = str(getattr(self.index, "kernel_path", "") or "")
+            if kernel == "turbovec" or bool(getattr(self.index, "_using_turbovec", False)):
+                self.metrics.set("router_turbovec_search_ms", ann_ms)
 
             id_to_tool = {t.id: t for t in tools}
             semantic_hits: list[tuple[ToolRecord, float]] = []
@@ -170,8 +190,8 @@ class SemanticToolRouter:
 
             top_sem = semantic_hits[0][1] if semantic_hits else 0.0
             if below_threshold(top_sem, self.config.threshold):
-                # Expand with param-signature secondary ranking
-                expanded = []
+                # Expand with param-signature secondary ranking — always capped at candidate_k.
+                expanded: list[tuple[ToolRecord, float]] = []
                 for tool in tools:
                     param_score = keyword_overlap(
                         query, " ".join(tool.params.keys()) + " " + " ".join(tool.params.values())
@@ -201,12 +221,14 @@ class SemanticToolRouter:
             self.metrics.set("router_rerank_latency_ms", rerank_timer.ms())
 
             confidence = estimate_confidence(ranked)
+            high_confidence = bool(confidence > float(self.config.high_conf_gate))
             before, after = token_stats_for_registry(self.registry.as_list(), ranked)
             latency = timer.ms()
             result = RoutingResult(
                 tools=ranked,
                 top_k=k,
                 confidence_top1=confidence,
+                high_confidence=high_confidence,
                 prompt_tokens_before=before,
                 prompt_tokens_after=after,
                 latency_breakdown_ms={
@@ -217,6 +239,7 @@ class SemanticToolRouter:
                 },
                 features_debug={
                     "threshold": self.config.threshold,
+                    "high_conf_gate": self.config.high_conf_gate,
                     "candidate_k": candidate_k,
                     "ann_backend": getattr(self.index, "backend_name", "unknown"),
                 },
@@ -246,6 +269,16 @@ class SemanticToolRouter:
         top_k: int | None = None,
     ) -> list[RoutingResult]:
         return [self.route(q, context=context, top_k=top_k) for q in queries]
+
+    def route_result(
+        self,
+        query: str,
+        *,
+        context: RouteContext | None = None,
+        top_k: int | None = None,
+    ) -> RoutingResult:
+        """Alias used by gateway / HAOE chat adapters."""
+        return self.route(query, context=context, top_k=top_k)
 
     # Compat with HAOE SupportsRoute
     def route_tools(self, query: str) -> list[ToolRecord]:
@@ -280,10 +313,63 @@ class SemanticToolRouter:
         return self.metrics.snapshot()
 
     def prompt_block(self, result: RoutingResult) -> str:
-        return serialize_tools_for_prompt(result.tools)
+        tools = self._executable_scored(result.tools)
+        return serialize_tools_for_prompt(tools)
 
     def schemas(self, result: RoutingResult) -> list[dict[str, Any]]:
-        return schemas_from_result(result)
+        tools = self._executable_scored(result.tools)
+        if tools is result.tools:
+            return schemas_from_result(result)
+        filtered = RoutingResult(
+            tools=tools,
+            top_k=result.top_k,
+            confidence_top1=result.confidence_top1,
+            high_confidence=result.high_confidence,
+            prompt_tokens_before=result.prompt_tokens_before,
+            prompt_tokens_after=result.prompt_tokens_after,
+            latency_breakdown_ms=dict(result.latency_breakdown_ms),
+            features_debug=dict(result.features_debug),
+            query=result.query,
+            candidate_count=result.candidate_count,
+        )
+        return schemas_from_result(filtered)
+
+    def _executable_scored(self, scored: list) -> list:
+        """When MCP execute is on, inject only tools/list-reconciled executable tools."""
+        from .mcp_executor import mcp_execute_enabled
+
+        if not mcp_execute_enabled():
+            return scored
+        return [s for s in scored if getattr(s.tool, "executable", False)]
+
+    def apply_mcp_reconcile(self, executable_ids: set[str]) -> int:
+        """Mark ToolRecords executable after live tools/list reconcile."""
+        n = 0
+        for tool in self.registry.as_list():
+            flag = tool.id in executable_ids
+            self.registry.update(tool.id, executable=flag)
+            if flag:
+                n += 1
+        return n
+
+    async def reconcile_mcp_execute(self, *, timeout_s: float = 30.0) -> dict[str, object]:
+        """Discover live MCP tools/list and mark registry tools executable."""
+        from .mcp_executor import get_mcp_manager, mcp_execute_enabled
+
+        if not mcp_execute_enabled():
+            return {"skipped": True, "reason": "NSA_MCP_EXECUTE not enabled"}
+        mgr = get_mcp_manager()
+        await mgr.discover_all(root=self.config.tool_metadata_root, timeout_s=timeout_s)
+        ids = [t.id for t in self.registry.as_list()]
+        exe = mgr.reconcile_registry_ids(ids)
+        marked = self.apply_mcp_reconcile(exe)
+        return {
+            "skipped": False,
+            "tools_advertised": sum(len(v) for v in mgr.discovered_by_server.values()),
+            "tools_executable": marked,
+            "catalog_hash": mgr.catalog_hash,
+            **mgr.status(),
+        }
 
     def observe_outcome(self, agent_id: str, tool_id: str, *, success: bool, latency_ms: float = 0.0) -> None:
         tool = self.registry.get_optional(tool_id)

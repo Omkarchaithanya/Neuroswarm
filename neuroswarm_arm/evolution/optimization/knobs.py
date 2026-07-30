@@ -73,7 +73,7 @@ KNOB_CATALOG: dict[str, KnobSpec] = {
     # AQR
     "quant_preference": KnobSpec("quant_preference", KnobLayer.AQR, "str", "Q5_K_M"),
     # AROP meta
-    "canary_percent": KnobSpec("canary_percent", KnobLayer.AROP, "float", 10.0, 0.0, 100.0),
+    "canary_percent": KnobSpec("canary_percent", KnobLayer.AROP, "float", 5.0, 0.0, 100.0),
     "experiment_sample_size": KnobSpec("experiment_sample_size", KnobLayer.AROP, "int", 30, 5, 1000),
 }
 

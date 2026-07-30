@@ -1,0 +1,21 @@
+id: browser.snapshot
+name: Browser Snapshot
+description: Capture accessibility/text snapshot of the current page.
+namespace: browser
+category: browser
+tags:
+- browser
+- mcp
+params: {}
+example_prompts:
+- page snapshot
+- browser text
+capabilities:
+- browser
+- mcp
+endpoint: mcp://browser/snapshot
+input_schema:
+  type: object
+  properties: {}
+output_schema:
+  type: object

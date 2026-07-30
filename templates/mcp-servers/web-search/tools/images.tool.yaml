@@ -1,0 +1,28 @@
+id: web.images
+name: Web Image Search
+description: Search for images matching a query.
+namespace: web-search
+category: web-search
+tags:
+- web-search
+- mcp
+params:
+  query: image query
+  limit: max images
+example_prompts:
+- search images
+capabilities:
+- web-search
+- mcp
+endpoint: mcp://web-search/images
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: image query
+    limit:
+      type: string
+      description: max images
+output_schema:
+  type: object

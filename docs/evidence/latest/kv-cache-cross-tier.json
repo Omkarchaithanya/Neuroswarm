@@ -1,0 +1,64 @@
+{
+  "cross_tier_isolation": {
+    "tier1": {
+      "url": "http://127.0.0.1:8081",
+      "turns": [
+        {
+          "id_slot": null,
+          "prompt_tokens": 404,
+          "completion_tokens": 64,
+          "cached_tokens": 346,
+          "cache_n": 346,
+          "prompt_n": 58,
+          "latency_ms": 84876.198,
+          "turn": 0
+        },
+        {
+          "id_slot": null,
+          "prompt_tokens": 360,
+          "completion_tokens": 16,
+          "cached_tokens": 346,
+          "cache_n": 346,
+          "prompt_n": 14,
+          "latency_ms": 4357.814,
+          "turn": 1
+        }
+      ],
+      "turn1_cached": 346,
+      "turn2_cached": 346
+    },
+    "tier2": {
+      "url": "http://127.0.0.1:8082",
+      "turns": [
+        {
+          "turn": 0,
+          "error": "HTTP 0",
+          "body": {
+            "error": "timeout"
+          }
+        }
+      ],
+      "turn1_cached": null,
+      "turn2_cached": null
+    },
+    "tier3": {
+      "url": "http://127.0.0.1:8083",
+      "turns": [
+        {
+          "turn": 0,
+          "error": "HTTP 503",
+          "body": {
+            "error": {
+              "message": "Loading model",
+              "type": "unavailable_error",
+              "code": 503
+            }
+          }
+        }
+      ],
+      "turn1_cached": null,
+      "turn2_cached": null
+    }
+  },
+  "escalation_prompt": "Solve step by step: A train leaves Station A at 9am at 60 mph. Another leaves Station B 300 miles away at 10am at 80 mph toward A. When do they meet? Show all algebra."
+}

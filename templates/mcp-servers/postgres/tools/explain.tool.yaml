@@ -1,0 +1,24 @@
+id: postgres.explain
+name: Postgres Explain Plan
+description: Return EXPLAIN plan for a SQL query.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  sql: SQL
+example_prompts:
+- explain sql plan
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/explain
+input_schema:
+  type: object
+  properties:
+    sql:
+      type: string
+      description: SQL
+output_schema:
+  type: object

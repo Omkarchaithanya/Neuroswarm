@@ -19,7 +19,7 @@ Legacy shim: `neuroswarm_arm.memory.mem0_client.Mem0Fallback` → wraps `NeuroMe
 | Env | Default | Meaning |
 |-----|---------|---------|
 | `NSA_MEM_STORE` | `work/memory` | Root |
-| `NSA_MEM_PROVIDER` | `json` | `json` \| `mem0` \| `auto` |
+| `NSA_MEM_PROVIDER` | `mem0` | `mem0` (default) \| `json` / `fallback` / `emergency` (force json_emergency) \| `auto` |
 | `NSA_MEM_LLM` | `local` | `local` \| `openai` \| `none` |
 | `NSA_MEM_LLM_BASE_URL` | tier2 URL | OpenAI-compatible base for Mem0 LLM |
 | `NSA_MEM_EMBEDDER` | `hash` | `hash` (demo-safe) \| `openai`/`llama` (remote embeddings) |

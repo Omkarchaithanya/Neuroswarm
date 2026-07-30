@@ -82,7 +82,7 @@ docker compose --profile performix up -d arm-mcp
 curl -fsS -X POST http://127.0.0.1/arop/optimize -H 'Content-Type: application/json' -d '{"force":true}'
 ```
 
-**Windows Performix GUI (optional):** Not required for Grafana/`source=apx`. Install only for interactive exploration: Targets → SSH to `neuroswarm-axion` → run Code Hotspots. Automation does not ingest GUI results unless you manually export into `work/performix/`.
+**Windows Performix GUI (optional):** Not required for Grafana/`source=apx`. Install for interactive exploration — see [`docs/telemetry/performix-gui-windows.md`](../docs/telemetry/performix-gui-windows.md): Targets → SSH to `neuroswarm-axion` (`104.198.180.95`) → attach live `llama-server` → Code Hotspots. Automation does not ingest GUI results unless you manually export into `work/performix/`.
 
 **Official Arm MCP** ([arm/mcp](https://github.com/arm/mcp), image `armlimited/arm-mcp`): IDE assistant toolbox (`kb_search`, migrate, Performix-over-SSH). See [`.cursor/mcp.json.example`](../.cursor/mcp.json.example). Do not confuse with `performix-bridge`.
 

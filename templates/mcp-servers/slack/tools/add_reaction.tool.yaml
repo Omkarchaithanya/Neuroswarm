@@ -1,0 +1,32 @@
+id: slack.add_reaction
+name: Slack Add Reaction
+description: Add an emoji reaction to a Slack message.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  channel: channel
+  timestamp: message ts
+  emoji: emoji name
+example_prompts:
+- react on slack
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/add_reaction
+input_schema:
+  type: object
+  properties:
+    channel:
+      type: string
+      description: channel
+    timestamp:
+      type: string
+      description: message ts
+    emoji:
+      type: string
+      description: emoji name
+output_schema:
+  type: object

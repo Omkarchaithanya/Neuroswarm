@@ -47,3 +47,18 @@ ascr:
 fallback:
   on_all_tiers_fail: degraded
   degraded_message: "Inference temporarily degraded."
+
+hardness_routing:
+  enabled: true
+  bands:
+    basic:
+      max_complexity: 0.40
+      tier: 1
+    medium:
+      max_complexity: 0.65
+      tier: 2
+    advanced:
+      tier: 3
+  length_bump:
+    medium_min_tokens: 256
+    advanced_min_tokens: 512

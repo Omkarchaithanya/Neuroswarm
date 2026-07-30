@@ -1,0 +1,29 @@
+id: github.search_issues
+name: GitHub Search Issues
+description: Search issues and PRs with GitHub search syntax.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  query: search query
+  limit: max results
+example_prompts:
+- search github issues
+- find bugs
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/search_issues
+input_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: search query
+    limit:
+      type: string
+      description: max results
+output_schema:
+  type: object

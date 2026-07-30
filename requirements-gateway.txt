@@ -21,11 +21,22 @@ orjson>=3.11
 
 # Router + runtime numerics (neuroswarm_arm/runtime/router/*)
 numpy>=2.3
+# Pillar 2: BGE-small via FastEmbed (ONNX Runtime) + TurboVec ANN
+fastembed>=0.8.0
+onnxruntime>=1.17.0
+turbovec>=0.8.0
 
-# KV / MAKS default compression (zstd)
+# KV / MAKS default compression (zstd) + OKF slot affinity hashing
 zstandard>=0.23
 lz4>=4.3
 psutil>=6.1
+blake3>=1.0
+mcp>=1.12
+# MCP template stdio servers (web-search / github / slack / s3) spawned by NSA_MCP_EXECUTE
+fastmcp==3.4.4
+slack_sdk>=3.33
+aiohttp>=3.10
+boto3>=1.35
 
 # Observability (NSA_DIPA_OTEL defaults on)
 opentelemetry-api>=1.36

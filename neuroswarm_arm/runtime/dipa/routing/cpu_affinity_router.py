@@ -1,4 +1,4 @@
-"""CPU affinity recommendations for prefill/decode phases."""
+"""CPU affinity recommendations — prefers fixed UMA partitions on Axion."""
 
 from __future__ import annotations
 
@@ -18,6 +18,14 @@ class CpuAffinityRouter:
         self.hardware_cfg = dict(hardware_cfg or {})
         self.detector = detector
         partition = dict(self.hardware_cfg.get("core_partition") or {})
+        self.mode = str(partition.get("mode", "auto")).lower()
+        self.uma_draft = [int(c) for c in (partition.get("uma_draft") or [0, 1])]
+        self.uma_verify_mid = [
+            int(c) for c in (partition.get("uma_verify_mid") or [2, 3, 4])
+        ]
+        self.uma_verify_large = [
+            int(c) for c in (partition.get("uma_verify_large") or [5, 6, 7])
+        ]
         self.prefill_fraction = float(partition.get("prefill_fraction", 0.4))
         self.decode_fraction = float(partition.get("decode_fraction", 0.6))
         self.enabled = bool(self.hardware_cfg.get("affinity_enabled", True))
@@ -28,11 +36,43 @@ class CpuAffinityRouter:
         if not self.enabled:
             return []
 
+        kind = phase.value if isinstance(phase, PoolKind) else str(phase).lower()
+
+        # Prefer explicit UMA partitions when configured (Axion path).
+        if self.mode in {"auto", "uma_fixed", "uma_affinity"}:
+            try:
+                from neuroswarm_arm.runtime.haoe.topology.numa_status import (
+                    collect_numa_status,
+                )
+
+                st = collect_numa_status()
+                if st.locality_mode == "cache_aware" and st.core_partitions:
+                    if kind in {PoolKind.PREFILL.value, "prefill", "draft"}:
+                        selected = list(st.core_partitions.get("tier1") or self.uma_draft)
+                    else:
+                        selected = list(
+                            st.core_partitions.get("tier2")
+                            or self.uma_verify_mid
+                        )
+                    if plan is not None and kind in {
+                        PoolKind.PREFILL.value,
+                        "prefill",
+                        "draft",
+                    }:
+                        if not plan.affinity_cores:
+                            plan.affinity_cores = list(selected)
+                    return selected
+            except Exception:  # noqa: BLE001
+                pass
+            if kind in {PoolKind.PREFILL.value, "prefill", "draft"}:
+                return list(self.uma_draft)
+            if kind in {PoolKind.DECODE.value, "decode", PoolKind.STREAM.value, "verify"}:
+                return list(self.uma_verify_mid) + list(self.uma_verify_large)
+
         cores = self._core_ids()
         if not cores:
             return []
 
-        kind = phase.value if isinstance(phase, PoolKind) else str(phase).lower()
         n = len(cores)
         prefill_n = max(1, int(round(n * self.prefill_fraction)))
         prefill_n = min(prefill_n, n - 1) if n > 1 else n
@@ -46,7 +86,6 @@ class CpuAffinityRouter:
             selected = list(cores)
 
         if plan is not None and kind in {PoolKind.PREFILL.value, "prefill"}:
-            # Seed plan affinity when probing prefill first.
             if not plan.affinity_cores:
                 plan.affinity_cores = list(selected)
         return list(selected)
@@ -62,7 +101,6 @@ class CpuAffinityRouter:
                             return [int(c) for c in ids]
                     except Exception:  # noqa: BLE001
                         pass
-        # Explicit override list in hardware.yaml (optional).
         raw = self.hardware_cfg.get("cores") or self.hardware_cfg.get("affinity_cores")
         if isinstance(raw, (list, tuple)) and raw:
             return [int(c) for c in raw]

@@ -1,0 +1,4 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights:  76%|███████▌  | 151/199 [00:00<00:00, 1507.36it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 1642.05it/s]
+/home/tejaswini2482_gmail_com/neuroswarm-arm/neuroswarm_arm/runtime/router/embedding_service.py:82: FutureWarning: The `get_sentence_embedding_dimension` method has been renamed to `get_embedding_dimension`.
+  self._dims = int(self._model.get_sentence_embedding_dimension())

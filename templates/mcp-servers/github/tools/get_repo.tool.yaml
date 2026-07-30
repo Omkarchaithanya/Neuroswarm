@@ -1,0 +1,25 @@
+id: github.get_repo
+name: GitHub Get Repo
+description: Fetch repository metadata including stars, license, and default branch.
+namespace: github
+category: github
+tags:
+- github
+- mcp
+params:
+  repo: owner/name
+example_prompts:
+- get github repo info
+- repo stars
+capabilities:
+- github
+- mcp
+endpoint: mcp://github/get_repo
+input_schema:
+  type: object
+  properties:
+    repo:
+      type: string
+      description: owner/name
+output_schema:
+  type: object

@@ -51,7 +51,10 @@ class BudgetAllocator(IBudgetAllocator):
             tokens = min(tokens, 256)
         if frame.self_consistency_score > self.cfg.self_consistency_commit:
             tokens = min(tokens, 128)
-        if frame.slo_remaining_ms < self.cfg.slo_soft_ms:
+        if (
+            float(getattr(frame, "latency_spent_ms", 0.0) or 0.0) > 0
+            and frame.slo_remaining_ms < self.cfg.slo_soft_ms
+        ):
             tokens = min(tokens, int(256 + 4 * frame.tool_confidence_top1 * 1024))
         if frame.kv_hit_rate < 0.20 and frame.kv_pressure > 0.50:
             tokens = min(tokens, 384)

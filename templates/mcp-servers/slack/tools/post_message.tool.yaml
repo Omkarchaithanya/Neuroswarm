@@ -1,0 +1,29 @@
+id: slack.post_message
+name: Slack Post Message
+description: Post a message to a Slack channel.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  channel: channel id or name
+  text: message body
+example_prompts:
+- send slack message
+- post to channel
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/post_message
+input_schema:
+  type: object
+  properties:
+    channel:
+      type: string
+      description: channel id or name
+    text:
+      type: string
+      description: message body
+output_schema:
+  type: object

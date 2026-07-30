@@ -3,10 +3,10 @@
   "title": "Arm Performix Overview",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "10s",
   "tags": ["nexus", "performix", "arm"],
-  "description": "PMU=0 means no hardware counters (honest on many cloud Axion VMs). Multiple scrape jobs (gateway + otel) can show duplicate series — panels use max without (job, instance, ...) to collapse.",
+  "description": "Canonical job=neuroswarm-gateway (Compose gateway :8000, or nginx :80 when proxy is up). PMU=0 means no hardware counters. Top-down panels are last Performix snapshot gauges, not live PMU.",
   "panels": [
     {
       "id": 100,
@@ -15,7 +15,7 @@
       "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
       "options": {
         "mode": "markdown",
-        "content": "**Prometheus** does not auto-graph APIs — open Graph and Execute `nexus_performix_ipc` or Status→Targets.\n\n**PMU available = 0** is expected without real hardware counters. **Code hotspots** need `nexus_performix_hotspot_pct{function=...}` from Performix snapshot / `apx` recipe.\n\nAPI docs: `http://<axion-ip>/docs` · Metrics: `GET /metrics`"
+        "content": "**Canonical scrape:** `{job=\"neuroswarm-gateway\"}` (Compose gateway `:8000`, or nginx `:80` when proxy is up). Do not run k3s alongside Compose.\n\n**PMU available = 0** is expected without real hardware counters. **Code hotspots** need `nexus_performix_hotspot_pct{function=...}` from a PID-scoped `apx` capture under chat load.\n\n**Honesty:** `source=demo|synthetic|unavailable` (or `available=0`) exports zeros — never silent dummy IPC. **Top-down** panels are last snapshot gauges — check **Snapshot age**."
       }
     },
     {
@@ -24,7 +24,7 @@
       "title": "Performix available",
       "gridPos": {"h": 4, "w": 4, "x": 0, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "max(nexus_performix_available)", "legendFormat": "available"}],
+      "targets": [{"refId": "A", "expr": "nexus_performix_available{job=\"neuroswarm-gateway\"}", "legendFormat": "available"}],
       "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "No"}, "1": {"text": "Yes"}}}]}}
     },
     {
@@ -33,7 +33,7 @@
       "title": "PMU available",
       "gridPos": {"h": 4, "w": 4, "x": 4, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "max(nexus_performix_pmu_available)", "legendFormat": "pmu"}],
+      "targets": [{"refId": "A", "expr": "nexus_performix_pmu_available{job=\"neuroswarm-gateway\"}", "legendFormat": "pmu"}],
       "fieldConfig": {
         "defaults": {
           "mappings": [{"type": "value", "options": {"0": {"text": "No HW"}, "1": {"text": "Yes"}}}]
@@ -46,7 +46,7 @@
       "title": "IPC",
       "gridPos": {"h": 4, "w": 4, "x": 8, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "max(nexus_performix_ipc)", "legendFormat": "ipc"}]
+      "targets": [{"refId": "A", "expr": "nexus_performix_ipc{job=\"neuroswarm-gateway\"}", "legendFormat": "ipc"}]
     },
     {
       "id": 4,
@@ -54,7 +54,7 @@
       "title": "Top hotspot %",
       "gridPos": {"h": 4, "w": 4, "x": 12, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "max(nexus_performix_hotspot_top_pct)", "legendFormat": "top"}]
+      "targets": [{"refId": "A", "expr": "nexus_performix_hotspot_top_pct{job=\"neuroswarm-gateway\"}", "legendFormat": "top"}]
     },
     {
       "id": 5,
@@ -62,7 +62,16 @@
       "title": "Hotspot count",
       "gridPos": {"h": 4, "w": 4, "x": 16, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "max(nexus_performix_hotspot_count)", "legendFormat": "n"}]
+      "targets": [{"refId": "A", "expr": "nexus_performix_hotspot_count{job=\"neuroswarm-gateway\"}", "legendFormat": "n"}]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Snapshot age (s)",
+      "description": "Seconds since work/performix/snapshot.json mtime. Top-down panels below are last capture, not live PMU.",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 3},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "nexus_performix_snapshot_age_seconds{job=\"neuroswarm-gateway\"}", "legendFormat": "age"}]
     },
     {
       "id": 6,
@@ -71,9 +80,9 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 7},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_ipc)", "legendFormat": "ipc"},
-        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_cycles)", "legendFormat": "cycles"},
-        {"refId": "C", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_instructions)", "legendFormat": "instructions"}
+        {"refId": "A", "expr": "nexus_performix_ipc{job=\"neuroswarm-gateway\"}", "legendFormat": "ipc"},
+        {"refId": "B", "expr": "nexus_performix_cycles{job=\"neuroswarm-gateway\"}", "legendFormat": "cycles"},
+        {"refId": "C", "expr": "nexus_performix_instructions{job=\"neuroswarm-gateway\"}", "legendFormat": "instructions"}
       ]
     },
     {
@@ -83,32 +92,33 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 7},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_cache_misses)", "legendFormat": "cache_misses"},
-        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_branch_misses)", "legendFormat": "branch_misses"}
+        {"refId": "A", "expr": "nexus_performix_cache_misses{job=\"neuroswarm-gateway\"}", "legendFormat": "cache_misses"},
+        {"refId": "B", "expr": "nexus_performix_branch_misses{job=\"neuroswarm-gateway\"}", "legendFormat": "branch_misses"}
       ]
     },
     {
       "id": 8,
       "type": "timeseries",
-      "title": "CPU microarch top-down (frontend / backend bound)",
+      "title": "Last Performix capture (snapshot) — frontend / backend bound",
+      "description": "One-shot gauges from snapshot.json, not continuous PMU. See Snapshot age.",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"refId": "A", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_frontend_bound)", "legendFormat": "frontend_bound"},
-        {"refId": "B", "expr": "max without (job, instance, host, service, exported_job, exported_instance, exported_service) (nexus_performix_backend_bound)", "legendFormat": "backend_bound"}
+        {"refId": "A", "expr": "nexus_performix_frontend_bound{job=\"neuroswarm-gateway\"}", "legendFormat": "frontend_bound"},
+        {"refId": "B", "expr": "nexus_performix_backend_bound{job=\"neuroswarm-gateway\"}", "legendFormat": "backend_bound"}
       ]
     },
     {
       "id": 9,
       "type": "table",
       "title": "Code hotspots (top functions)",
-      "description": "Requires labeled series nexus_performix_hotspot_pct{function=...}. If empty: run apx / POST /arop/optimize or check GET /metrics.",
+      "description": "Requires labeled series nexus_performix_hotspot_pct{function=...}. If empty: run PID-scoped apx under chat load.",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 15},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
           "refId": "A",
-          "expr": "topk(10, max by (function) (nexus_performix_hotspot_pct))",
+          "expr": "topk(10, nexus_performix_hotspot_pct{job=\"neuroswarm-gateway\"})",
           "legendFormat": "{{function}}",
           "format": "table",
           "instant": true
@@ -152,8 +162,8 @@
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 23},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"refId": "A", "expr": "max without (job, instance, host, service) (nexus_hw_cpu_usage)", "legendFormat": "cpu"},
-        {"refId": "B", "expr": "max without (job, instance, host, service) (nexus_memory_rss_bytes)", "legendFormat": "rss"}
+        {"refId": "A", "expr": "nexus_hw_cpu_usage{job=\"neuroswarm-gateway\"}", "legendFormat": "cpu"},
+        {"refId": "B", "expr": "nexus_memory_rss_bytes{job=\"neuroswarm-gateway\"}", "legendFormat": "rss"}
       ]
     }
   ]

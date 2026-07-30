@@ -1,0 +1,7 @@
+OK browser (server.py + okf-metadata.yaml)
+OK github (server.py + okf-metadata.yaml)
+OK postgres (server.py + okf-metadata.yaml)
+OK s3 (server.py + okf-metadata.yaml)
+OK slack (server.py + okf-metadata.yaml)
+OK web-search (server.py + okf-metadata.yaml)
+PASS: 6 MCP templates present and compile

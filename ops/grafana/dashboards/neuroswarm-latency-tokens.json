@@ -1,0 +1,337 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"nexus_request_latency_seconds_last\",host=\"axion\"} or nexus_request_latency_seconds_last{host=\"axion\"}",
+          "legendFormat": "last",
+          "refId": "A"
+        }
+      ],
+      "title": "Last HTTP Request Latency",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2000 },
+              { "color": "red", "value": 10000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "dipa_latency_ms{host=\"axion\"}",
+          "legendFormat": "dipa",
+          "refId": "A"
+        }
+      ],
+      "title": "Last Chat/DIPA Latency",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "router_routing_latency_ms{host=\"axion\"}",
+          "legendFormat": "route",
+          "refId": "A"
+        }
+      ],
+      "title": "Last MCP Router Latency",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 6,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"runtime_cost_total\",host=\"axion\"} or runtime_cost_total{host=\"axion\"}",
+          "legendFormat": "cost",
+          "refId": "A"
+        }
+      ],
+      "title": "Cumulative Runtime Cost (live)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 15 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 5 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"runtime_prompt_tokens_total\",host=\"axion\"} or runtime_prompt_tokens_total{host=\"axion\"}",
+          "legendFormat": "prompt total",
+          "refId": "A"
+        },
+        {
+          "expr": "arop_metric{name=\"nexus_prompt_tokens\",host=\"axion\"} or nexus_prompt_tokens{host=\"axion\"}",
+          "legendFormat": "prompt (ROF)",
+          "refId": "B"
+        }
+      ],
+      "title": "Prompt Tokens (cumulative, live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 15 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 5 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"runtime_completion_tokens_total\",host=\"axion\"} or runtime_completion_tokens_total{host=\"axion\"}",
+          "legendFormat": "completion total",
+          "refId": "A"
+        },
+        {
+          "expr": "arop_metric{name=\"nexus_completion_tokens\",host=\"axion\"} or nexus_completion_tokens{host=\"axion\"}",
+          "legendFormat": "completion (ROF)",
+          "refId": "B"
+        }
+      ],
+      "title": "Completion Tokens (cumulative, live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 15 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 5 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "rtg_thinking_tokens{host=\"axion\"}",
+          "legendFormat": "last thinking",
+          "refId": "A"
+        },
+        {
+          "expr": "rtg_last_session_tokens{host=\"axion\"}",
+          "legendFormat": "last session",
+          "refId": "B"
+        }
+      ],
+      "title": "Thinking / Session Tokens (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "fillOpacity": 12 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "dipa_latency_ms{host=\"axion\"}",
+          "legendFormat": "chat/dipa",
+          "refId": "A"
+        },
+        {
+          "expr": "haoe_workflow_latency_ms{host=\"axion\"}",
+          "legendFormat": "haoe workflow",
+          "refId": "B"
+        },
+        {
+          "expr": "(arop_metric{name=\"nexus_request_latency_seconds_last\",host=\"axion\"} or nexus_request_latency_seconds_last{host=\"axion\"}) * 1000",
+          "legendFormat": "http last (ms)",
+          "refId": "C"
+        }
+      ],
+      "title": "Chat End-to-End Latency (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "fillOpacity": 12 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "router_routing_latency_ms{host=\"axion\"}",
+          "legendFormat": "routing",
+          "refId": "A"
+        },
+        {
+          "expr": "router_embedding_latency_ms{host=\"axion\"}",
+          "legendFormat": "embedding",
+          "refId": "B"
+        },
+        {
+          "expr": "router_ann_latency_ms{host=\"axion\"}",
+          "legendFormat": "ann",
+          "refId": "C"
+        }
+      ],
+      "title": "MCP Router Latency Breakdown (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "decimals": 8, "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 21 },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"runtime_cost_per_token\",host=\"axion\"} or runtime_cost_per_token{host=\"axion\"}",
+          "legendFormat": "$/token",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Per Token (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 21 },
+      "id": 11,
+      "targets": [
+        {
+          "expr": "arop_metric{name=\"runtime_tokens_per_dollar\",host=\"axion\"} or runtime_tokens_per_dollar{host=\"axion\"}",
+          "legendFormat": "tokens/$",
+          "refId": "A"
+        }
+      ],
+      "title": "Tokens Per Dollar (live)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 21 },
+      "id": 12,
+      "targets": [
+        {
+          "expr": "increase(arop_metric{name=\"runtime_prompt_tokens_total\",host=\"axion\"}[1h]) or increase(runtime_prompt_tokens_total{host=\"axion\"}[1h])",
+          "legendFormat": "prompt/1h",
+          "refId": "A"
+        },
+        {
+          "expr": "increase(arop_metric{name=\"runtime_completion_tokens_total\",host=\"axion\"}[1h]) or increase(runtime_completion_tokens_total{host=\"axion\"}[1h])",
+          "legendFormat": "completion/1h",
+          "refId": "B"
+        }
+      ],
+      "title": "Token Burn (last 1h increase)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 40,
+  "tags": ["neuroswarm", "axion", "latency", "tokens", "live"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "NeuroSwarm Latency & Tokens",
+  "uid": "neuroswarm-latency-tokens",
+  "version": 2,
+  "weekStart": ""
+}

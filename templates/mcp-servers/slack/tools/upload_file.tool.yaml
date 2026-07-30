@@ -1,0 +1,32 @@
+id: slack.upload_file
+name: Slack Upload File
+description: Upload a file to a Slack channel.
+namespace: slack
+category: slack
+tags:
+- slack
+- mcp
+params:
+  channel: channel
+  path: local path
+  title: file title
+example_prompts:
+- upload file to slack
+capabilities:
+- slack
+- mcp
+endpoint: mcp://slack/upload_file
+input_schema:
+  type: object
+  properties:
+    channel:
+      type: string
+      description: channel
+    path:
+      type: string
+      description: local path
+    title:
+      type: string
+      description: file title
+output_schema:
+  type: object

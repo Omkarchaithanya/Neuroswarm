@@ -1,0 +1,23 @@
+{
+  "source": "apx",
+  "recipe": "memory_access",
+  "run_id": "e48372d2d97b",
+  "mode": "system-wide",
+  "available": 1.0,
+  "export_files": [
+    "e48372d2d97b/log.json",
+    "e48372d2d97b/categorization.json",
+    "e48372d2d97b/metadata.json",
+    "e48372d2d97b/manifest.json",
+    "e48372d2d97b/source-code.json",
+    "e48372d2d97b/user_messages/user_messages.json",
+    "e48372d2d97b/recipe/version.json",
+    "e48372d2d97b/collector/sl-collect-target-info/sl-collect-target-info-cluster.json",
+    "e48372d2d97b/collector/sl-collect-target-info/sl-collect-target-info-cpus.json",
+    "e48372d2d97b/collector/sl-collect-target-info/sl-collect-target-info-os.json",
+    "e48372d2d97b/collector/sl-collect-target-pids/sl-collect-target-pids-pids.json",
+    "e48372d2d97b/recipe/source/recipe.js",
+    "e48372d2d97b/tool/neoprof/0/capture_log_err.txt",
+    "e48372d2d97b/tool/neoprof/0/capture_log.txt"
+  ]
+}

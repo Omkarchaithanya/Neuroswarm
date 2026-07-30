@@ -1,0 +1,135 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "RPF last IPC from Linux perf / active profiler (file flamegraphs live under work/profiling/).",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 3 }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{ "expr": "profile_ipc", "legendFormat": "ipc", "refId": "A" }],
+      "title": "RPF IPC (Linux perf)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        { "expr": "profile_sve_events_available", "legendFormat": "sve_events", "refId": "A" }
+      ],
+      "title": "SVE PMU events available",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        { "expr": "profile_pmu_available", "legendFormat": "pmu", "refId": "A" }
+      ],
+      "title": "PMU available (RPF)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        { "expr": "profile_perf_target_pid", "legendFormat": "pid", "refId": "A" }
+      ],
+      "title": "perf target PID",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 5,
+      "targets": [
+        { "expr": "profile_cycles", "legendFormat": "cycles", "refId": "A" },
+        { "expr": "profile_instructions", "legendFormat": "instructions", "refId": "B" }
+      ],
+      "title": "Cycles / instructions (last RPF sample)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 6,
+      "targets": [
+        { "expr": "profile_cache_misses", "legendFormat": "cache_misses", "refId": "A" },
+        { "expr": "profile_branch_misses", "legendFormat": "branch_misses", "refId": "B" },
+        { "expr": "profile_sve_inst_retired", "legendFormat": "sve_inst_retired", "refId": "C" }
+      ],
+      "title": "Misses + SVE retired (honest 0 if unavailable)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Performix snapshot gauges for comparison (closed-source path).",
+      "fieldConfig": { "defaults": { "decimals": 3 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "id": 7,
+      "targets": [
+        { "expr": "nexus_performix_ipc", "legendFormat": "performix_ipc", "refId": "A" },
+        { "expr": "nexus_performix_pmu_available", "legendFormat": "performix_pmu", "refId": "B" }
+      ],
+      "title": "Performix IPC / PMU (parallel path)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "id": 8,
+      "targets": [
+        { "expr": "profile_provider_active", "legendFormat": "{{provider}}", "refId": "A" },
+        { "expr": "profile_sessions_total", "legendFormat": "sessions", "refId": "B" }
+      ],
+      "title": "Active RPF provider / sessions",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["neuroswarm", "profiling", "perf", "ebpf"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "NeuroSwarm Linux Profiling",
+  "uid": "neuroswarm-linux-profiling",
+  "version": 1
+}

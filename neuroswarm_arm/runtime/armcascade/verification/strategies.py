@@ -53,13 +53,30 @@ class _BackendVerifierBase(VerifierStrategy):
     def set_backend(self, name: str) -> None:
         self.backend_name = name
 
-    async def _generate(self, req: VerifyRequest, max_tokens: int) -> Any:
+    async def _generate(
+        self,
+        req: VerifyRequest,
+        max_tokens: int,
+        *,
+        top_logprobs: int = 0,
+    ) -> Any:
         from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
 
         if self._registry is None:
             raise RuntimeError(f"{self.name} not initialized")
         backend = self._registry.require(self.backend_name)
         messages = build_messages(req.messages)
+        if top_logprobs > 0 and hasattr(backend, "generate_with_logits"):
+            return await backend.generate_with_logits(
+                messages=messages,
+                max_tokens=max(1, int(max_tokens)),
+                temperature=float(req.temperature),
+                top_logprobs=int(top_logprobs),
+                session_id=req.session_id,
+                quant=req.quant,
+                kv_handle=req.kv_handle,
+                ctx=self._ctx_exec,
+            )
         gen = GenerateRequest(
             messages=messages,
             max_tokens=max(1, int(max_tokens)),
@@ -68,7 +85,7 @@ class _BackendVerifierBase(VerifierStrategy):
             quant=req.quant,
             stream=False,
             kv_handle=req.kv_handle,
-            speculative=False,
+            speculative=True,
         )
         return await backend.generate(gen, self._ctx_exec)
 
@@ -86,12 +103,6 @@ class BlockVerifier(_BackendVerifierBase):
         text = result.text or ""
         prefix_len, agreement = _token_agreement(draft.text, text)
         quality = text_quality_score(text, self._quality_cfg)
-        # Prefer explicit backend flags; also accept OpenAI/llama logprobs shapes.
-        logits = bool(
-            result.raw.get("logits")
-            or result.metrics.get("logits_available")
-            or _raw_has_logprobs(result.raw)
-        )
         entropy = float(result.metrics.get("entropy", 1.0 - agreement))
         elapsed = (time.monotonic() - t0) * 1000.0
         return VerifyResult(
@@ -101,7 +112,7 @@ class BlockVerifier(_BackendVerifierBase):
             entropy=entropy,
             text=text,
             mode=VerifyMode.BLOCK,
-            logits_available=logits,
+            logits_available=False,
             quality_score=quality,
             latency_ms=result.latency_ms or elapsed,
             backend=result.backend or self.backend_name,
@@ -111,7 +122,7 @@ class BlockVerifier(_BackendVerifierBase):
                 "draft_len": float(draft_len),
                 "prefix_len": float(prefix_len),
                 "agreement": agreement,
-                "accept_mode": 1.0 if logits else 0.0,
+                "accept_mode": 0.0,
             },
             raw=dict(result.raw),
         )

@@ -58,6 +58,8 @@ def test_classifier_code_and_tools() -> None:
     c = clf.classify(req)
     assert c.task_kind in {TaskKind.CODE, TaskKind.TOOL_USE}
     assert c.recommended_strategy
+    assert c.recommended_start_tier in {1, 2, 3}
+    assert c.hardness_band in {"basic", "medium", "advanced"}
 
 
 def test_threshold_adapts_to_history() -> None:

@@ -1,0 +1,28 @@
+id: postgres.describe_table
+name: Postgres Describe Table
+description: Describe columns and types for a table.
+namespace: postgres
+category: postgres
+tags:
+- postgres
+- mcp
+params:
+  table: table name
+  schema: schema
+example_prompts:
+- describe table schema
+capabilities:
+- postgres
+- mcp
+endpoint: mcp://postgres/describe_table
+input_schema:
+  type: object
+  properties:
+    table:
+      type: string
+      description: table name
+    schema:
+      type: string
+      description: schema
+output_schema:
+  type: object
