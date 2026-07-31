@@ -217,6 +217,66 @@ class PlaneMetricBridge:
 
         self.source_from_callable(_pull)
 
+    def wire_arop(self, arop: Any) -> None:
+        """Lean AROP gauges — zeros when disabled / no active policy."""
+        _STATUS = {
+            "disabled": 0.0,
+            "noop": 1.0,
+            "rejected": 2.0,
+            "canary": 3.0,
+            "promoted": 4.0,
+            "rolled_back": 5.0,
+        }
+
+        def _pull() -> str:
+            try:
+                cfg = getattr(arop, "config", None)
+                enabled = bool(getattr(cfg, "enabled", False)) if cfg is not None else False
+                self.rmf.set("arop_active", 1.0 if enabled else 0.0)
+                registry = getattr(arop, "registry", None)
+                policy = registry.active() if registry is not None and hasattr(registry, "active") else None
+                params = dict(getattr(policy, "parameters", {}) or {}) if policy is not None else {}
+                self.rmf.set("arop_draft_len", float(params.get("draft_len", 0.0) or 0.0))
+                self.rmf.set(
+                    "arop_accept_threshold",
+                    float(params.get("accept_threshold", 0.0) or 0.0),
+                )
+                self.rmf.set(
+                    "arop_escalate_threshold",
+                    float(params.get("escalate_threshold", 0.0) or 0.0),
+                )
+                canary_pct = 0.0
+                if registry is not None and hasattr(registry, "canary_percent"):
+                    try:
+                        canary_pct = float(registry.canary_percent())
+                    except Exception:
+                        canary_pct = 0.0
+                self.rmf.set("arop_canary_percent", canary_pct)
+                dep = getattr(getattr(arop, "optimizer", None), "deployment", None)
+                rb = float(getattr(dep, "rollback_count", 0) or 0)
+                self.rmf.set("arop_rollback_total", rb)
+                last = getattr(getattr(arop, "optimizer", None), "_last_result", None)
+                status_name = str(getattr(last, "status", "") or "")
+                self.rmf.set("arop_last_status", float(_STATUS.get(status_name, 0.0)))
+            except Exception as exc:
+                logger.debug("arop bridge failed: %s", exc)
+                for name in (
+                    "arop_active",
+                    "arop_draft_len",
+                    "arop_accept_threshold",
+                    "arop_escalate_threshold",
+                    "arop_canary_percent",
+                    "arop_rollback_total",
+                    "arop_last_status",
+                ):
+                    try:
+                        self.rmf.set(name, 0.0)
+                    except Exception:
+                        pass
+            return ""
+
+        self.source_from_callable(_pull)
+
 
 class RMFObservationProvider:
     """AROP ObservationProvider reading aggregated RMF snapshots."""

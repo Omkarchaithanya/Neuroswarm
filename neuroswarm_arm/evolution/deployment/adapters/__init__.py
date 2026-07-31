@@ -133,7 +133,7 @@ class RouterDeploymentAdapter(DeploymentAdapter):
 
 class AQRDeploymentAdapter(DeploymentAdapter):
     layer = "aqr"
-    KEYS = {"quant_preference"}
+    KEYS = {"quant_preference", "cascade_tier_bias"}
 
     def supported_keys(self) -> set[str]:
         return set(self.KEYS)
@@ -142,6 +142,18 @@ class AQRDeploymentAdapter(DeploymentAdapter):
         applied = {k: parameters[k] for k in self.KEYS if k in parameters}
         self.state.applied.update(applied)
         if self.target is not None and not self.state.dry_run:
+            if "quant_preference" in applied and hasattr(self.target, "set_arop_quant_preference"):
+                try:
+                    self.target.set_arop_quant_preference(str(applied["quant_preference"]))
+                except Exception:
+                    pass
+            if "cascade_tier_bias" in applied:
+                try:
+                    from neuroswarm_arm.runtime.router.cost_router import CostRouter
+
+                    CostRouter.set_arop_tier_floor(int(applied["cascade_tier_bias"]))
+                except Exception:
+                    pass
             setattr(self.target, "_arop_params", {**getattr(self.target, "_arop_params", {}), **applied})
         return applied
 

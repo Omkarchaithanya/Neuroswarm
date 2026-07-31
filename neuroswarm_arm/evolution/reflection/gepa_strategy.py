@@ -18,6 +18,9 @@ from neuroswarm_arm.evolution.interfaces.reflection import (
     Reflection,
     ReflectionStrategy,
 )
+from neuroswarm_arm.evolution.reflection.performix_rule_strategy import (
+    PerformixAwareRuleStrategy,
+)
 from neuroswarm_arm.evolution.reflection.rule_strategy import RuleBasedReflectionStrategy
 
 
@@ -137,10 +140,11 @@ class OfflineLLMReflectionStrategy(ReflectionStrategy):
 
 class HybridReflectionStrategy(ReflectionStrategy):
     """
-    Hybrid = RuleBased (knobs) + GEPA (text).
+    Hybrid = PerformixAwareRule (knobs) + GEPA (text).
 
-    Knob deltas come only from RuleBased. GEPA runs text evolution side-effect
-    via GEPAReflectionStrategy.propose (empty deltas).
+    Knob deltas come only from PerformixAwareRuleStrategy (falls back to
+    RuleBased when Performix gate fails). GEPA runs text evolution side-effect
+    via GEPAReflectionStrategy.propose (empty deltas). Knobs never labeled gepa.
     """
 
     name = "hybrid"
@@ -151,7 +155,7 @@ class HybridReflectionStrategy(ReflectionStrategy):
         *,
         gepa_facade: Any | None = None,
     ) -> None:
-        self.rule = RuleBasedReflectionStrategy()
+        self.rule = PerformixAwareRuleStrategy()
         self.gepa = GEPAReflectionStrategy(facade=gepa_facade)
         self.strategies = strategies or [self.rule, self.gepa]
 

@@ -65,6 +65,18 @@ class AQRQuantConnector(IQuantConnector):
                 "MXFP",
             ]
         )
+        self._arop_quant_preference: str | None = None
+
+    def set_arop_quant_preference(self, quant: str) -> bool:
+        """Policy bias only — rejects unsupported / future formats (FP8/MXFP)."""
+        q = str(quant)
+        if not self.is_supported(q):
+            return False
+        self._arop_quant_preference = q
+        return True
+
+    def clear_arop_quant_preference(self) -> None:
+        self._arop_quant_preference = None
 
     def choose(
         self,
@@ -73,7 +85,9 @@ class AQRQuantConnector(IQuantConnector):
         *,
         constraints: Mapping[str, Any] | None = None,
     ) -> str:
-        constraints = constraints or {}
+        constraints = dict(constraints or {})
+        if self._arop_quant_preference and "quant" not in constraints:
+            constraints["quant"] = self._arop_quant_preference
         if self._pick_fn is not None:
             quant = str(
                 self._pick_fn(req.agent_role, workload.value)

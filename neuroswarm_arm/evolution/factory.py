@@ -43,6 +43,7 @@ from neuroswarm_arm.evolution.reflection import (
     GEPAReflectionStrategy,
     HybridReflectionStrategy,
     OfflineLLMReflectionStrategy,
+    PerformixAwareRuleStrategy,
     RuleBasedReflectionStrategy,
 )
 from neuroswarm_arm.evolution.replay.buffer import EpisodeReplayEngine, InMemoryReplayBuffer
@@ -120,6 +121,8 @@ def _build_reflection(name: str, *, gepa_facade: Any | None = None):
         return GEPAReflectionStrategy(facade=gepa_facade)
     if key == "hybrid":
         return HybridReflectionStrategy(gepa_facade=gepa_facade)
+    if key == "performix":
+        return PerformixAwareRuleStrategy()
     if key in {"offline_llm", "llm"}:
         return OfflineLLMReflectionStrategy()
     return RuleBasedReflectionStrategy()

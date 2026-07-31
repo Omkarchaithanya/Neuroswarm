@@ -87,6 +87,18 @@ Dual-host layout: **axion** serves the API; **neuroswarm-obs** serves Prometheus
 
 **Performix dashboard:** on Axion run `NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 bash scripts/refresh-performix-snapshot.sh` (PID-scoped; refuses idle `--system-wide` unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`). Expect `work/performix/snapshot.json` with `source=apx` or honest `unavailable` (never silent demo / never leave stale). Gateway collector exports zeros when `source` is `demo|synthetic|unavailable` or `available=0`. `PMU available = 0` is honest when hardware counters are unavailable. Top-down panels are **last snapshot** gauges — see `nexus_performix_snapshot_age_seconds`.
 
+**AROP gauges** (RMF bridge `wire_arop`; zeros when AROP disabled / no policy):
+
+| Metric | Meaning |
+|--------|---------|
+| `arop_active` | 1 when `NSA_AROP_ENABLED` |
+| `arop_draft_len` / `arop_accept_threshold` / `arop_escalate_threshold` | Active policy knobs |
+| `arop_canary_percent` | Current canary share |
+| `arop_rollback_total` | Successful deployment rollbacks |
+| `arop_last_status` | Last `run_once` status code (`0` disabled … `5` rolled_back) |
+
+PromQL starters: `arop_active`, `arop_draft_len`, `rate(arop_rollback_total[1h])` (gauge; use `increase` only if scraped as counter later).
+
 **Windows access to Grafana:** tunnel **obs** (not Axion `:3000`):
 
 ```powershell

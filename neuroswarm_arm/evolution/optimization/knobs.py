@@ -72,6 +72,8 @@ KNOB_CATALOG: dict[str, KnobSpec] = {
     "maks_tier_threshold": KnobSpec("maks_tier_threshold", KnobLayer.MAKS, "float", 0.7, 0.0, 1.0),
     # AQR
     "quant_preference": KnobSpec("quant_preference", KnobLayer.AQR, "str", "Q5_K_M"),
+    # Minimum CostRouter start tier (policy bias only — no GGUF swap)
+    "cascade_tier_bias": KnobSpec("cascade_tier_bias", KnobLayer.AQR, "int", 1, 1, 3),
     # AROP meta
     "canary_percent": KnobSpec("canary_percent", KnobLayer.AROP, "float", 5.0, 0.0, 100.0),
     "experiment_sample_size": KnobSpec("experiment_sample_size", KnobLayer.AROP, "int", 30, 5, 1000),

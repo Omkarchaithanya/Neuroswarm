@@ -246,6 +246,18 @@ gateway = AgentGateway(
 performix = PerformixClient()
 
 arop_cfg = load_arop_config(work_dir=Path("work/arop"), okf_root=cfg.okf_root)
+_aqr = None
+try:
+    _reg = getattr(dipa, "registry", None)
+    if _reg is not None and hasattr(_reg, "get"):
+        _aqr = _reg.get("aqr")
+except Exception:
+    _aqr = None
+if _aqr is None:
+    _qr = getattr(dipa, "quant_router", None)
+    if _qr is not None:
+        _aqr = getattr(_qr, "connector", None)
+_aqr = _aqr or getattr(dipa, "aqr", None) or getattr(dipa, "quant_connector", None)
 arop = build_arop(
     arop_cfg,
     memory=memory,
@@ -256,6 +268,7 @@ arop = build_arop(
     router=tool_router,
     haoe=haoe,
     maks=maks_runtime,
+    aqr=_aqr,
     rcis=rcis,
 )
 # Per-request thresholds resolve from AROP PolicyRegistry (rule/bandit policies).
@@ -310,6 +323,10 @@ try:
         _rmf_bridges.wire_awpp(_awpp)
 except Exception:
     pass
+try:
+    _rmf_bridges.wire_arop(arop)
+except Exception:
+    pass
 # ROF meter series only (not full ROF scrape — avoids RMF↔MetricsStore recursion)
 rmf.register_source(rof.meter.export_prometheus)
 
@@ -358,8 +375,44 @@ async def _startup_mcp_reconcile() -> None:
         logging.getLogger(__name__).warning("mcp_reconcile_startup failed: %s", exc)
 
 
+_arop_loop_task = None
+
+
+@app.on_event("startup")
+async def _startup_arop_loop() -> None:
+    """Periodic RuntimeOptimizer.run_once when NSA_AROP_LOOP=1 (auto_promote stays off)."""
+    global _arop_loop_task
+    if not getattr(arop_cfg, "loop_enabled", False):
+        return
+    import asyncio
+    import logging
+
+    log = logging.getLogger(__name__)
+    interval = max(1, int(getattr(arop_cfg, "interval_seconds", 3600) or 3600))
+
+    async def _loop() -> None:
+        while True:
+            try:
+                await asyncio.to_thread(arop.optimizer.run_once)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                log.warning("arop_loop run_once failed: %s", exc)
+            await asyncio.sleep(interval)
+
+    _arop_loop_task = asyncio.create_task(_loop(), name="arop_loop")
+    log.info("arop_loop started interval_seconds=%s", interval)
+
+
 @app.on_event("shutdown")
 def _shutdown_runtime() -> None:
+    global _arop_loop_task
+    if _arop_loop_task is not None:
+        try:
+            _arop_loop_task.cancel()
+        except Exception:
+            pass
+        _arop_loop_task = None
     try:
         rmf.shutdown()
     except Exception:

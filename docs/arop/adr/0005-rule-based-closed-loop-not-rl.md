@@ -14,7 +14,7 @@ Fantasy docs and some Plane 5 scaffolding (`neuroswarm_arm/evolution/`) suggest 
 2. **PPO / online RL are not implemented.** [`OfflineRLTrainer`](../../neuroswarm_arm/evolution/rl/experience_store.py) is a stub that delegates to an offline contextual bandit; there is no PPO loss, policy network, or online update loop.
 3. **GRPO does not appear anywhere in this repository** and is out of scope. GRPO is an LLM finetuning method, not a cascade-threshold tuner; this stack does not finetune GGUFs at runtime.
 4. **GEPA is text-only** (ADR [0004](0004-gepa-text-only.md)). It may evolve prompts under ApprovalGate; it must **not** be claimed as the cascade / hardware / quant optimizer.
-5. **`neuroswarm_arm/evolution/` remains scaffolding** until actuation defects are fixed (wrong `ascr=` target in `main.py`, no `apply_rl_action` on `ASCREngine`, `HeuristicPolicyAgent` default, `run_forever` never started). Do not treat `/arop/*` + GEPA as a live RL closed loop on Axion today.
+5. **`neuroswarm_arm/evolution/` rule/Performix actuation is wired** (`cascade_engine`, `apply_rl_action`, `PerformixAwareRuleStrategy`, optional `NSA_AROP_LOOP`). It is **not** an RL closed loop — knobs come from rules/bandit; PPO remains unimplemented.
 6. **Axion c4a-standard-8 cascade sizes stay small Q4 GGUFs** (see below). “Optimization” means KleidiAI + routing + rule knobs — not larger weights.
 
 ## Why (defensible to judges)
@@ -49,9 +49,9 @@ Optional: `TIER3_MODEL=Llama-3.2-8B-Instruct-Q4_K_M.gguf` — still ~8B Q4-class
 ## Consequences
 
 - AROP v1 docs and commit messages must not claim PPO, GRPO, or GEPA-as-knob-tuner.
-- Deferred closed-loop wiring enables **rule/bandit actuation** via `ASCREngine.apply_rl_action` / `StaticPolicyAgent` and `main.py` → `cascade_engine` — **not** PPO training.
+- Actuation + Performix reflection + optional `NSA_AROP_LOOP` are **code**: `ASCREngine.apply_rl_action` / `StaticPolicyAgent`, `main.py` → `cascade_engine`, quant preference / tier-floor policy bias — **still no PPO**.
 - `OfflineRLTrainer.train_ppo` / `train_grpo` raise `NotImplementedError` (code-level guard).
-- Performix evidence and rule tuner remain the judge-facing closed-loop story.
+- Performix evidence and rule tuner remain the judge-facing closed-loop story; evolution path mirrors that honesty (gate on real `apx` keys).
 
 ## References
 

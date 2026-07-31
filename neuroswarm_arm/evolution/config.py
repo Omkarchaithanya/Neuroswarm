@@ -54,6 +54,7 @@ class AROPConfig:
     bandit_enabled: bool = True
     mcp_performix_url: str = ""
     gepa_lm: str = "mock"  # mock | http://tier2:8080/v1
+    loop_enabled: bool = False  # NSA_AROP_LOOP background cadence
 
 
 def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = None) -> AROPConfig:
@@ -86,6 +87,7 @@ def load_arop_config(*, work_dir: Path | None = None, okf_root: Path | None = No
         bandit_enabled=_bool("NSA_AROP_BANDIT", "1"),
         mcp_performix_url=os.getenv("NSA_AROP_PERFORMIX_MCP", ""),
         gepa_lm=os.getenv("NSA_AROP_GEPA_LM", "mock"),
+        loop_enabled=_bool("NSA_AROP_LOOP", "0"),
     )
     cfg.work_dir.mkdir(parents=True, exist_ok=True)
     return cfg

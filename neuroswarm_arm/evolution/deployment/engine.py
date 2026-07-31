@@ -24,6 +24,7 @@ class DeploymentEngine(DeploymentController):
     ) -> None:
         self.registry = registry
         self.adapters = list(adapters or [])
+        self.rollback_count = 0
 
     def add_adapter(self, adapter: DeploymentAdapter) -> None:
         self.adapters.append(adapter)
@@ -99,6 +100,7 @@ class DeploymentEngine(DeploymentController):
         self.registry.set_active(target.id)
         details = self._apply(target, dry_run=False)
         self.registry.clear_canary()
+        self.rollback_count += 1
         return DeploymentResult(
             success=True,
             mode=DeploymentMode.ROLLBACK,

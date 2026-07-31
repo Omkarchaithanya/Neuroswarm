@@ -47,7 +47,7 @@ Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **ind
 - Live apply restarts **gateway** only (`NSA_ASCR_DRAFT_LEN` / `NSA_ASCR_ACCEPT_THRESHOLD`); no runtime GGUF swap.
 - Preflight: `python -m neuroswarm_arm.arop.preflight` / `scripts/arop-preflight.sh` — requires `NSA_PERFORMIX_ALLOW_DEMO=0`, `source=apx`, rejects `posix_fallocate`/low-sample captures; logs CPU features honestly (does not invent KleidiAI/SME2/CSS V3/MTE).
 - **Not claimed on Axion MVP:** CSS V3, CXL, MTE, SME2 product acceleration, true P/D disaggregation, or dynamic multi-quant fleets.
-- The `neuroswarm_arm/evolution/` Plane 5 pipeline (GEPA, PolicyRegistry, canary) remains scaffolding for a later closed loop — do not treat it as the shipping AROP v1 path.
+- The `neuroswarm_arm/evolution/` Plane 5 pipeline closes the **rule/Performix** knob loop (ASCR thresholds, quant/tier policy bias, optional `NSA_AROP_LOOP`); GEPA remains text-only. Standalone [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) CLI tuner is still the judge-facing v1 path.
 - **Why no PPO / GEPA-as-knobs / GRPO:** [ADR 0005](adr/0005-rule-based-closed-loop-not-rl.md). Axion cascade stays **0.5B / 3B / 7B Q4** — optimize knobs and KleidiAI, not model scale.
 - See [`neuroswarm_arm/arop/README.md`](../../neuroswarm_arm/arop/README.md).
 
@@ -56,11 +56,23 @@ Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **ind
 | Env | Default | Meaning |
 |-----|---------|---------|
 | `NSA_AROP_ENABLED` | `1` | Enable plane |
+| `NSA_AROP_LOOP` | `0` | Background `RuntimeOptimizer.run_once` cadence (`NSA_AROP_INTERVAL`) |
 | `NSA_AROP_PERFORMIX` | `0` | Real `apx` recipes |
-| `NSA_AROP_REFLECTION` | `rule` | `rule\|gepa\|hybrid\|offline_llm` |
-| `NSA_AROP_CANARY_PCT` | `10` | Canary traffic % |
-| `NSA_AROP_AUTO_PROMOTE` | `0` | Promote after canary |
+| `NSA_AROP_REFLECTION` | `hybrid` | `rule\|performix\|gepa\|hybrid\|offline_llm` — hybrid knobs use PerformixAware rules; GEPA stays text-only |
+| `NSA_AROP_CANARY_PCT` | `5` | Canary traffic % |
+| `NSA_AROP_AUTO_PROMOTE` | `0` | Promote after canary (stays off for safety) |
 | `NSA_AROP_MIN_IMPROVEMENT` | `0.01` | Primary metric delta |
+
+## Closed loop (rule / Performix — not PPO)
+
+Evolution path is closed for **rule + Performix** knobs:
+
+1. `PerformixAwareRuleStrategy` proposes deltas only when `performix_available > 0` and honest keys (`ipc` / `hotspot_top_pct` / `cache_miss_rate`) are present — never invents zeros.
+2. `ASCRDeploymentAdapter` → `ASCREngine.apply_rl_action` updates live thresholds.
+3. `AQRDeploymentAdapter` biases `AQRQuantConnector` preference + `CostRouter` tier floor (`cascade_tier_bias`) — **policy bias only**, no GGUF path swap.
+4. Optional `NSA_AROP_LOOP=1` runs `run_once` on an asyncio background task; `auto_promote` remains off.
+
+Still out of scope: PPO / GRPO, GEPA numeric knobs, runtime weight swaps. See [ADR 0005](adr/0005-rule-based-closed-loop-not-rl.md).
 
 ## ADR
 

@@ -4,6 +4,7 @@ from .gepa_strategy import (
     HybridReflectionStrategy,
     OfflineLLMReflectionStrategy,
 )
+from .performix_rule_strategy import PerformixAwareRuleStrategy
 from .rule_strategy import RuleBasedReflectionStrategy
 
 # Official GEPA text subsystem
@@ -27,6 +28,7 @@ __all__ = [
     "HybridReflectionStrategy",
     "OfflineLLMReflectionStrategy",
     "ParetoFront",
+    "PerformixAwareRuleStrategy",
     "RuleBasedReflectionStrategy",
     "TextArtifactDeployer",
     "TextCandidate",

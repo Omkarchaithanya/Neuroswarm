@@ -96,6 +96,6 @@ class RuleBasedReflectionStrategy(ReflectionStrategy):
                 rationale=f"rule:{reflection.summary}",
                 expected_reward=0.05 + 0.1 * reflection.analysis.severity,
                 confidence=0.6,
-                source=self.name,
+                source="rule",  # always "rule" even when called via subclass.super()
             )
         ]

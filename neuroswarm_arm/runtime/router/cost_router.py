@@ -43,6 +43,8 @@ class CostDecision:
 class CostRouter:
     """Pick cascade start tier from semantic-router confidence + query hardness."""
 
+    _arop_tier_floor: int = 1
+
     def __init__(
         self,
         *,
@@ -56,6 +58,15 @@ class CostRouter:
             escalate_conf if escalate_conf is not None else _f("NSA_ROUTER_ESCALATE_CONF", 0.42)
         )
         self.mid_conf = float(mid_conf if mid_conf is not None else _f("NSA_COST_ROUTER_MID_CONF", 0.55))
+
+    @classmethod
+    def set_arop_tier_floor(cls, n: int) -> None:
+        """Minimum start tier from AROP (class-level so fresh CostRouter() sees it)."""
+        cls._arop_tier_floor = max(1, min(3, int(n)))
+
+    @classmethod
+    def clear_arop_tier_floor(cls) -> None:
+        cls._arop_tier_floor = 1
 
     def route(
         self,
@@ -73,44 +84,67 @@ class CostRouter:
         if forced is not None:
             try:
                 t = max(1, min(3, int(forced)))
-                return CostDecision(tier=t, quant=self._quant_for(t), reason=f"force_tier={t}")
+                return self._with_tier_floor(
+                    CostDecision(tier=t, quant=self._quant_for(t), reason=f"force_tier={t}")
+                )
             except (TypeError, ValueError):
                 pass
 
         if _REASONING_RE.search(text) or words >= 80:
-            return CostDecision(
-                tier=3,
-                quant=self._quant_for(3),
-                reason="reasoning_or_long_query",
+            return self._with_tier_floor(
+                CostDecision(
+                    tier=3,
+                    quant=self._quant_for(3),
+                    reason="reasoning_or_long_query",
+                )
             )
 
         # Never start at tier1 when tool confidence is below expand gate.
         if conf < self.escalate_conf:
-            return CostDecision(
-                tier=3,
-                quant=self._quant_for(3),
-                reason=f"tool_conf={conf:.3f}<escalate={self.escalate_conf}",
+            return self._with_tier_floor(
+                CostDecision(
+                    tier=3,
+                    quant=self._quant_for(3),
+                    reason=f"tool_conf={conf:.3f}<escalate={self.escalate_conf}",
+                )
             )
 
         if conf >= self.high_conf and words <= 24:
-            return CostDecision(
-                tier=1,
-                quant=self._quant_for(1),
-                reason=f"high_conf={conf:.3f}_short",
+            return self._with_tier_floor(
+                CostDecision(
+                    tier=1,
+                    quant=self._quant_for(1),
+                    reason=f"high_conf={conf:.3f}_short",
+                )
             )
 
         if conf >= self.mid_conf:
-            return CostDecision(
-                tier=2,
-                quant=self._quant_for(2),
-                reason=f"mid_conf={conf:.3f}",
+            return self._with_tier_floor(
+                CostDecision(
+                    tier=2,
+                    quant=self._quant_for(2),
+                    reason=f"mid_conf={conf:.3f}",
+                )
             )
 
         # Between escalate and mid → start at 2 (ASCR can still escalate to 3).
+        return self._with_tier_floor(
+            CostDecision(
+                tier=2,
+                quant=self._quant_for(2),
+                reason=f"default_mid_band conf={conf:.3f}",
+            )
+        )
+
+    @classmethod
+    def _with_tier_floor(cls, decision: CostDecision) -> CostDecision:
+        floor = int(cls._arop_tier_floor)
+        if decision.tier >= floor:
+            return decision
         return CostDecision(
-            tier=2,
-            quant=self._quant_for(2),
-            reason=f"default_mid_band conf={conf:.3f}",
+            tier=floor,
+            quant=cls._quant_for(floor),
+            reason=f"{decision.reason}|arop_tier_floor={floor}",
         )
 
     @staticmethod
