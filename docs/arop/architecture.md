@@ -45,6 +45,9 @@ Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **ind
 - Consumes honest `apx` JSON + benchmark outputs; fail-loud on missing/null fields (never invent `0`).
 - Dry-run by default: `python -m neuroswarm_arm.arop.evolve_cycle`.
 - Live apply restarts **gateway** only (`NSA_ASCR_DRAFT_LEN` / `NSA_ASCR_ACCEPT_THRESHOLD`); no runtime GGUF swap.
+- Preflight: `python -m neuroswarm_arm.arop.preflight` / `scripts/arop-preflight.sh` — requires `NSA_PERFORMIX_ALLOW_DEMO=0`, `source=apx`, rejects `posix_fallocate`/low-sample captures; logs CPU features honestly (does not invent KleidiAI/SME2/CSS V3/MTE).
+- **Not claimed on Axion MVP:** CSS V3, CXL, MTE, SME2 product acceleration, true P/D disaggregation, or dynamic multi-quant fleets.
+- The `neuroswarm_arm/evolution/` Plane 5 pipeline (GEPA, PolicyRegistry, canary) remains scaffolding for a later closed loop — do not treat it as the shipping AROP v1 path.
 - See [`neuroswarm_arm/arop/README.md`](../../neuroswarm_arm/arop/README.md).
 
 ## Config

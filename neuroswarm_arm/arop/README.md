@@ -1,6 +1,18 @@
 # AROP v1 — rule-based Performix-driven cascade tuner
 
-Standalone CLI tuner. **Not** GEPA / Mem0 / PPO / `RuntimeOptimizer`.
+Standalone CLI tuner that consumes Performix `apx` JSON and adjusts ASCR/RTG knobs.
+
+## What this is / is not
+
+| Is (v1) | Is not |
+|---------|--------|
+| Rule-based closed loop (R0–R3) | PPO / online RL / AWPP training |
+| Performix **observation** consumer | GEPA text evolution or Mem0 knowledge plane |
+| Gateway-side `NSA_ASCR_*` / RTG budget overrides | Runtime GGUF re-quant or weight swap |
+| Dry-run default + >5% rollback | CSS V3 / CXL / MTE / SME2 product claims |
+| Independent of `evolution/` for shipping | Full Plane 5 `RuntimeOptimizer` canary (scaffolding for later) |
+
+`neuroswarm_arm/evolution/` remains the broader Plane 5 scaffold; v1 does **not** wire into it.
 
 ## Honesty
 
@@ -9,6 +21,7 @@ Standalone CLI tuner. **Not** GEPA / Mem0 / PPO / `RuntimeOptimizer`.
 - No runtime GGUF weight swap. Axion tiers are already `Q4_0`.
 - `draft_len` / `accept_threshold` are **gateway-side** (`NSA_ASCR_*`); live apply restarts `gateway` only.
 - Never names instruction-mix shares as `simd_util`.
+- Preflight rejects contaminated (`posix_fallocate`) and low-sample profiles.
 
 ## Quick start
 
