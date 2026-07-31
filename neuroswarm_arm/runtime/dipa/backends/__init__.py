@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
+
 from .executorch import ExecuTorchBackend
 from .factory import BackendFactory
 from .litert import LiteRTBackend
@@ -12,7 +15,7 @@ from .rtp_llm import RtpLlmBackend
 from .sglang import SGLangBackend
 from .vllm import VLLMBackend, VllmHttpClient
 
-__all__ = [
+_ALL_BACKENDS: list[str] = [
     "BackendFactory",
     "BackendRegistry",
     "ExecuTorchBackend",
@@ -25,3 +28,11 @@ __all__ = [
     "VLLMBackend",
     "VllmHttpClient",
 ]
+
+# MLX backend: macOS-only, requires mlx-lm (uv sync --extra apple).
+if sys.platform == "darwin" and importlib.util.find_spec("mlx") is not None:
+    from .mlx import MlxBackend, MlxSpecController
+
+    _ALL_BACKENDS.extend(["MlxBackend", "MlxSpecController"])
+
+__all__ = _ALL_BACKENDS

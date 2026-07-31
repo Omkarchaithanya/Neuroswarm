@@ -1,0 +1,22 @@
+{
+  "backend": "mlx",
+  "platform": "darwin",
+  "gap": "G10",
+  "model_path": "/models/mlx/llama-3.2-3b-instruct-4bit",
+  "draft_model_path": "/models/mlx/llama-3.2-1b-instruct-4bit",
+  "num_draft_tokens": 5,
+  "chats_ok": 0,
+  "chats_n": 0,
+  "accept_mode": "server_side_spec",
+  "chat_ascr_modes": ["quality"],
+  "chat_logits_available": false,
+  "ascr_speculation_gain": 0.0,
+  "ascr_text_agreement": 0.0,
+  "ascr_quality_cascade_total": 0.0,
+  "ascr_acceptance_rate": 0.0,
+  "logits_path": false,
+  "health_probe": "mlx_lm.utils.load",
+  "non_spec_path": "mlx_lm.generate",
+  "spec_path": "mlx_lm.server --draft-model",
+  "note": "Placeholder metrics — host is not Apple Silicon. Re-run on M-series: pytest tests/runtime/dipa/backends/test_mlx.py -v; NSA_MLX_E2E=1 with models installed; uv sync --extra apple. Do not invent acceptance rates."
+}

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -85,6 +87,7 @@ class BackendFactory:
                     registry.register(MockBackend(name=name))
 
         self.register_sglang(registry, use_mock=use_mock)
+        self.register_mlx(registry, use_mock=use_mock)
         return registry
 
     def register_sglang(self, registry: BackendRegistry, *, use_mock: bool = False) -> None:
@@ -104,6 +107,31 @@ class BackendFactory:
                 base_url=url or "http://127.0.0.1:30000",
                 router_url=router,
                 native_pd=native,
+            )
+        )
+
+    def register_mlx(self, registry: BackendRegistry, *, use_mock: bool = False) -> None:
+        """Register the MLX backend on macOS when mlx-lm is available.
+
+        Gated by ``sys.platform == "darwin"`` and
+        ``importlib.util.find_spec("mlx")``.  No-op on Linux / when
+        ``mlx-lm`` is not installed (``uv sync --extra apple``).
+        """
+        if registry.get("mlx") is not None:
+            return
+        if use_mock or sys.platform != "darwin":
+            return
+        if importlib.util.find_spec("mlx") is None:
+            return
+        try:
+            from neuroswarm_arm.runtime.dipa.backends.mlx import MlxBackend
+        except ImportError:
+            return
+        port = int(os.getenv("NSA_MLX_PORT", "8080"))
+        registry.register(
+            MlxBackend(
+                name="mlx",
+                base_url=f"http://127.0.0.1:{port}",
             )
         )
 

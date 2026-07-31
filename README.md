@@ -71,6 +71,14 @@ pytest tests/runtime/haoe -q
 
 DIPA is the Inference Runtime Kernel. Agents never call llama.cpp / vLLM / ExecuTorch / LiteRT directly — everything flows through DIPA (execution planner → model/backend/quant routers → **ASCR** → prefill/decode → streaming → metrics). AQR / AWPP / MAKS are connectors only. See [`docs/dipa/architecture.md`](docs/dipa/architecture.md) and [`docs/armcascade/`](docs/armcascade/README.md).
 
+On Apple Silicon (M3/M4/M5), install the optional MLX backend:
+
+```bash
+uv sync --extra apple
+```
+
+See [`docs/dipa/mlx.md`](docs/dipa/mlx.md) for Metal setup, model conversion, and speculative decoding via `mlx_lm.server`.
+
 ```bash
 pytest tests/runtime/dipa -q
 ```
