@@ -18,7 +18,7 @@ Sources: `docs/evidence/latest/run_all.json` (2026-07-18) + live layer verify 20
 | Budget admit | **accept** | `budget_admit_total{result="accept"}` live; USD/tokens/latency dims present |
 | GEPA e2e | **OK** | approve+deploy; `teacher=http` (2026-07-21) |
 | AROP optimize | **often rejected** | statistical validation — honest non-promotion |
-| Performix code_hotspots | **OK prior / unavailable this window** | Prior PID capture ~79% `libggml-cpu`; live refresh `source=unavailable` at verify time |
+| Performix code_hotspots | **OK published** (`source=apx`, libggml-cpu ~79%) | Pack: [`docs/evidence/performix/`](../performix/) + [`OPTIMIZATIONS.md`](../performix/OPTIMIZATIONS.md). Live refresh from this agent host unavailable (SSH publickey); re-run on Axion when keys available. |
 | Instruction Mix SIMD (Kleidi vs stock) | **Kleidi NEON 3.41% + SVE 0.94%** vs **stock NEON 2.14% + SVE 1.19%** | see `docs/evidence/performix/COMPARISON.md` |
 | Obs scrape topology | **single gateway job** | Compose only |
 | NUMA nodes | **1** | `locality_mode=cache_aware`; cpusets 0-1/2-4/5-7 |

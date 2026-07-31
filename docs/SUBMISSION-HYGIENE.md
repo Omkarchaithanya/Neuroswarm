@@ -5,7 +5,7 @@
 ## Evidence pack (must be in repo / linked)
 
 - [x] `docs/evidence/latest/` — Kleidi PASS, `run_all` ok, non-empty metrics, chat
-- [x] `docs/evidence/performix/` — `01-code_hotspots.json` + `02-instruction_mix.json` + CSV
+- [x] `docs/evidence/performix/` — `01-code_hotspots.json` + `02-instruction_mix.json` + CSV + **`OPTIMIZATIONS.md`** + flame `screenshots/05-code-hotspots-flame.png`
 - [x] `05-BENCHMARK-PLAN.md` measured table filled (under-claim OK)
 - [x] Option A / Axion-true README + Devpost overview
 - [x] SGLang `:latest` arm64 verified
@@ -26,7 +26,7 @@
 |---|---|
 | Stock ggml image in evidence | Cleared (KleidiAI) |
 | Empty metrics / skipped run_all | Cleared |
-| Zero Performix | Cleared (hotspots + instruction_mix) |
+| Zero Performix | Cleared (hotspots + instruction_mix + OPTIMIZATIONS.md + flame PNG) |
 | Invented recipes | Cleared (GA IDs) |
 | 4th judge | Cleared |
 | `arm/mcp:latest` | Cleared (`armlimited/arm-mcp`) |

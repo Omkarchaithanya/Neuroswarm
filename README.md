@@ -38,6 +38,8 @@ NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization 
 
 ## Latency note (measured on Axion)
 
+**Arm Performix evidence (in-repo):** [`docs/evidence/performix/OPTIMIZATIONS.md`](docs/evidence/performix/OPTIMIZATIONS.md) — Code Hotspots (`source=apx`, `libggml-cpu` ~79%) + Kleidi vs stock Instruction Mix + flame PNG. Runtime `work/performix/` is gitignored; judges use the docs pack.
+
 Baseline checklist showed tier1 chat ~**1116ms** while `haoe_workflow_latency_ms` ~**1970ms** (~850ms orchestration overhead on a non-escalating turn). Mitigations in this tree:
 
 1. **MCP process pool** — warm stdio servers instead of spawn-per-call (`mcp_executor.py`)

@@ -7,7 +7,9 @@
 | Path | Contents |
 |---|---|
 | `latest/` | health, ready, metrics, run_all, compose ps, Kleidi gate, chat, tools-route, lscpu |
-| `performix/` | GA recipe JSON + `00-recipe-list.txt` + COMPARISON.md |
+| `performix/` | GA recipe JSON + **`OPTIMIZATIONS.md`** + flame PNG + COMPARISON.md |
+
+**Judges — Performix first:** [`performix/OPTIMIZATIONS.md`](performix/OPTIMIZATIONS.md) (hotspots → what we optimized) · [`performix/screenshots/05-code-hotspots-flame.png`](performix/screenshots/05-code-hotspots-flame.png).
 
 ## Regenerate on Axion
 

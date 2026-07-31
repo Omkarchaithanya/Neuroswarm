@@ -3,8 +3,12 @@
 status: captured  
 host: GCP Axion c4a-standard-8 (Neoverse-V2)
 
+**Start here for judges:** [`OPTIMIZATIONS.md`](OPTIMIZATIONS.md) — what Performix showed and what we changed.  
+Flame-style visual: [`screenshots/05-code-hotspots-flame.png`](screenshots/05-code-hotspots-flame.png) (from `01-code_hotspots.json`, `source=apx`).
+
 | Artifact | Status |
 |---|---|
+| `OPTIMIZATIONS.md` | Judge narrative (hotspots → Kleidi / cascade / AROP knobs) |
 | `01-code_hotspots.json` | OK (`source=apx`) |
 | `02-instruction_mix.json` | Legacy static mix (pre confirmed-Kleidi window) |
 | `static_instruction_mix.csv` | Legacy — NEON 1.61%, SVE 0.34% |
@@ -16,6 +20,7 @@ host: GCP Axion c4a-standard-8 (Neoverse-V2)
 | `06-memory_access.json` | OK recipe export (system-wide under load; SPE often empty on this host) |
 | `COMPARISON.md` | Kleidi vs stock side-by-side |
 | `snapshot.json` | OK Grafana/RMF (`source=apx`, hotspots present; post dual-stack fix) |
+| `screenshots/05-code-hotspots-flame.png` | Flame-style chart from published apx JSON |
 | `screenshots/` | PromQL evidence charts (single `job=neuroswarm-gateway`) |
 | `SYMBOLS.md` | DWARF present; apx Unknown honesty |
 | `00-recipe-list.txt` | OK live `apx recipe list` (7 recipes including `system_utilization`) |
@@ -28,6 +33,7 @@ host: GCP Axion c4a-standard-8 (Neoverse-V2)
 - `instruction_mix --param mode=dynamic` / PID attach returned **0 attributed samples** here (SPE empty / gator warnings). Captures use `mode=both` on the **deployed** `libggml-cpu` while decode load runs.
 - Reproduce: `bash scripts/capture-performix-dynamic.sh` (or `_remote_performix_capture.sh` on Axion).
 - Snapshot refresh: `PERFORMIX_PID=<llama>` or auto-detect; never cron `--system-wide` unless `PERFORMIX_ALLOW_SYSTEM_WIDE=1`.
+- `work/performix/` is **gitignored** — submission pack is this directory only.
 
 ## Reproduce
 
@@ -36,4 +42,8 @@ sudo apt-get install -y python3-venv
 bash scripts/deploy-kleidiai-tiers.sh
 NSA_PERFORMIX_ALLOW_DEMO=0 bash performix_capture.sh
 bash scripts/capture-performix-dynamic.sh
+NSA_PERFORMIX_ALLOW_DEMO=0 NSA_AROP_PERFORMIX=1 bash scripts/capture-performix-hotspots-fixed.sh
+python scripts/render_performix_flame.py \
+  --input docs/evidence/performix/01-code_hotspots.json \
+  --output docs/evidence/performix/screenshots/05-code-hotspots-flame.png
 ```
