@@ -143,11 +143,27 @@ def resolve_locality_plan(
 
     # Cache-aware / single-UMA path (Axion C4A and force uma_affinity).
     defaults = default_uma_partitions(len(cores))
-    parts = {
-        "tier1": _env_core_list("NSA_TIER1_CPUSET", _fmt_range(defaults["tier1"])),
-        "tier2": _env_core_list("NSA_TIER2_CPUSET", _fmt_range(defaults["tier2"])),
-        "tier3": _env_core_list("NSA_TIER3_CPUSET", _fmt_range(defaults["tier3"])),
-    }
+    draft_default = _fmt_range(defaults["tier1"])
+    draft_cpus = (os.getenv("NSA_DRAFT_CPUSET") or os.getenv("NSA_TIER1_CPUSET") or draft_default).strip()
+    verify_cpus = (os.getenv("NSA_VERIFY_CPUSET") or "").strip()
+    if verify_cpus:
+        verify_list = _parse_core_list(verify_cpus)
+        # Split verify pool: first half → tier2, rest → tier3 (or TIER3 override).
+        mid = max(1, (len(verify_list) + 1) // 2)
+        tier2_list = verify_list[:mid]
+        tier3_override = (os.getenv("NSA_TIER3_CPUSET") or "").strip()
+        tier3_list = _parse_core_list(tier3_override) if tier3_override else verify_list[mid:] or verify_list[-1:]
+        parts = {
+            "tier1": _parse_core_list(draft_cpus),
+            "tier2": tier2_list,
+            "tier3": tier3_list,
+        }
+    else:
+        parts = {
+            "tier1": _parse_core_list(draft_cpus),
+            "tier2": _env_core_list("NSA_TIER2_CPUSET", _fmt_range(defaults["tier2"])),
+            "tier3": _env_core_list("NSA_TIER3_CPUSET", _fmt_range(defaults["tier3"])),
+        }
     # Clamp to online cores.
     online = set(int(c) for c in cores)
     for k, v in list(parts.items()):

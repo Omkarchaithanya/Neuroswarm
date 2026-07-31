@@ -1,0 +1,28 @@
+{
+  "gap": "G11",
+  "before": {
+    "tier1_cpuset": "NSA_TIER1_CPUSET:-0-1",
+    "tier2_cpuset": "NSA_TIER2_CPUSET:-2-4",
+    "tier3_cpuset": "NSA_TIER3_CPUSET:-5-7",
+    "runtime_pin": "optional ArmRuntimeAdapter.pin_current_thread only"
+  },
+  "after": {
+    "tier1_cpuset": "NSA_DRAFT_CPUSET:-0-1",
+    "tier2_cpuset": "NSA_VERIFY_CPUSET:-2-5",
+    "tier3_cpuset": "NSA_TIER3_CPUSET:-6-7",
+    "unit_axion_draft_cores": [0, 1],
+    "unit_axion_verify_cores": [2, 3, 4, 5, 6, 7],
+    "unit_apple_draft_cores": [4, 5, 6, 7],
+    "unit_apple_verify_cores": [0, 1, 2, 3],
+    "cascade_pin_on_speculative": true,
+    "NSA_APPLE_ECORE_FOR_DRAFT": "1",
+    "docker_inspect_note": "cpuset assignments from compose interpolation; live docker inspect needs running stack"
+  },
+  "compose_cpuset": {
+    "tier1": "${NSA_DRAFT_CPUSET:-0-1}",
+    "tier2": "${NSA_VERIFY_CPUSET:-2-5}",
+    "tier3": "${NSA_TIER3_CPUSET:-6-7}"
+  },
+  "tests": "3 passed in 19.87s (test_draft_verify_affinity.py); ArmRuntimeAdapter.detect() ok on host",
+  "detect_sample": "draft_cores=[0,1] verify partitioned from online CPUs"
+}

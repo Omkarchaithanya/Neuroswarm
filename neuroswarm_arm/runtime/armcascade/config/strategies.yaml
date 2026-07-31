@@ -62,3 +62,6 @@ strategies:
     tau_floor: 0.0
   slot_kv_reuse:
     enabled: true
+  draft_verify_affinity:
+    enabled: true
+    class: draft_verify_affinity

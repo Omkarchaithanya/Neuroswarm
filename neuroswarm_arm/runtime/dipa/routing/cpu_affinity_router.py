@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Mapping
 
 from ..interfaces.types import ExecutionPlan, PoolKind
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or not str(raw).strip():
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
 
 class CpuAffinityRouter:
@@ -35,8 +43,34 @@ class CpuAffinityRouter:
     ) -> list[int]:
         if not self.enabled:
             return []
+        if not _env_bool("NSA_DRAFT_VERIFY_AFFINITY", True):
+            return []
 
         kind = phase.value if isinstance(phase, PoolKind) else str(phase).lower()
+        speculative = self._speculation_enabled(plan)
+
+        # Spec decoding path: draft → uma_draft, verify → uma_verify_large (+ mid).
+        if speculative and kind in {"draft", PoolKind.PREFILL.value, "prefill"}:
+            selected = list(self.uma_draft)
+            if plan is not None and not plan.affinity_cores:
+                plan.affinity_cores = list(selected)
+            self._stamp_plan(plan, draft=selected, verify=None)
+            return selected
+        if speculative and kind in {
+            "verify",
+            PoolKind.DECODE.value,
+            "decode",
+            PoolKind.STREAM.value,
+            "stream",
+        }:
+            selected = list(self.uma_verify_large) or (
+                list(self.uma_verify_mid) + list(self.uma_verify_large)
+            )
+            # Prefer large; fall back to mid+large when large empty.
+            if not selected:
+                selected = list(self.uma_verify_mid) + list(self.uma_verify_large)
+            self._stamp_plan(plan, draft=None, verify=selected)
+            return selected
 
         # Prefer explicit UMA partitions when configured (Axion path).
         if self.mode in {"auto", "uma_fixed", "uma_affinity"}:
@@ -78,17 +112,47 @@ class CpuAffinityRouter:
         prefill_n = min(prefill_n, n - 1) if n > 1 else n
         decode_start = prefill_n
 
-        if kind in {PoolKind.PREFILL.value, "prefill"}:
+        if kind in {PoolKind.PREFILL.value, "prefill", "draft"}:
             selected = cores[:prefill_n]
-        elif kind in {PoolKind.DECODE.value, "decode", PoolKind.STREAM.value}:
+        elif kind in {PoolKind.DECODE.value, "decode", PoolKind.STREAM.value, "verify"}:
             selected = cores[decode_start:] or cores[-max(1, n // 2) :]
         else:
             selected = list(cores)
 
-        if plan is not None and kind in {PoolKind.PREFILL.value, "prefill"}:
+        if plan is not None and kind in {PoolKind.PREFILL.value, "prefill", "draft"}:
             if not plan.affinity_cores:
                 plan.affinity_cores = list(selected)
         return list(selected)
+
+    @staticmethod
+    def _speculation_enabled(plan: ExecutionPlan | None) -> bool:
+        if plan is None:
+            return False
+        if not getattr(plan, "speculation", False):
+            return False
+        meta = dict(getattr(plan, "metadata", None) or {})
+        spec = meta.get("speculation") or {}
+        if isinstance(spec, dict) and "enabled" in spec:
+            return bool(spec.get("enabled"))
+        return True
+
+    @staticmethod
+    def _stamp_plan(
+        plan: ExecutionPlan | None,
+        *,
+        draft: list[int] | None,
+        verify: list[int] | None,
+    ) -> None:
+        if plan is None:
+            return
+        topo = plan.metadata.setdefault("topology", {})
+        if not isinstance(topo, dict):
+            return
+        if draft is not None:
+            topo["affinity_draft"] = list(draft)
+            topo.setdefault("affinity_cores", list(draft))
+        if verify is not None:
+            topo["affinity_verify"] = list(verify)
 
     def _core_ids(self) -> list[int]:
         if self.detector is not None:
