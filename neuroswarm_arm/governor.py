@@ -20,7 +20,24 @@ class ReasoningGovernor:
     def __init__(self, rtg: RTGRuntime | None = None) -> None:
         self.rtg = rtg
 
-    def cap(self, plan: PlanState) -> int:
+    def cap(self, plan: PlanState, router_result: Any | None = None) -> int:
+        if router_result is not None and hasattr(router_result, "confidence_top1"):
+            conf = float(router_result.confidence_top1)
+            # Upstream signals still win: take max with existing plan confidence.
+            if hasattr(plan, "model_copy"):
+                plan = plan.model_copy(
+                    update={
+                        "tool_confidence_top1": max(
+                            float(getattr(plan, "tool_confidence_top1", 0.0) or 0.0),
+                            conf,
+                        )
+                    }
+                )
+            else:
+                plan.tool_confidence_top1 = max(
+                    float(getattr(plan, "tool_confidence_top1", 0.0) or 0.0),
+                    conf,
+                )
         if self.rtg is not None and self.rtg.config.enabled:
             from .runtime.rtg.models import TelemetryFrame
 

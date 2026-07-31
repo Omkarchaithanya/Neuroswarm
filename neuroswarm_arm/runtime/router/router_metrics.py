@@ -27,6 +27,14 @@ ROUTER_METRIC_DEFS: list[tuple[str, str, str]] = [
     ("router_avg_token_reduction", "gauge", "Average token reduction ratio."),
     ("router_index_size", "gauge", "Vectors currently indexed."),
     ("router_tools_registered", "gauge", "Tools in registry."),
+    # New metrics for semantic MCP router wiring
+    ("neuroswarm_router_tools_selected_total", "counter", "Total tools selected by semantic router, labeled by tool_id."),
+    ("neuroswarm_router_top1_confidence", "histogram", "Top-1 routing confidence distribution."),
+    ("neuroswarm_router_catalog_size", "gauge", "Current tool catalog size."),
+    ("tool_search_mode_total", "counter", "tool_search activation decisions (bridge|pass_through)."),
+    ("tool_search_mode_total_bridge", "counter", "tool_search bridge mode activations."),
+    ("tool_search_mode_total_pass_through", "counter", "tool_search pass_through mode activations."),
+    ("tool_search_truncated_total", "counter", "tool_search listing truncations."),
 ]
 
 
@@ -42,6 +50,8 @@ class RouterMetrics:
     _tools_returned: deque[float] = field(default_factory=lambda: deque(maxlen=500))
     _prompt_reduction: deque[float] = field(default_factory=lambda: deque(maxlen=500))
     _token_reduction: deque[float] = field(default_factory=lambda: deque(maxlen=500))
+    # Per-tool selection counts for neuroswarm_router_tools_selected_total
+    _tool_selections: dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for name, mtype, help_text in ROUTER_METRIC_DEFS:
@@ -109,6 +119,30 @@ class RouterMetrics:
         self.set("router_avg_prompt_reduction", avg_prompt)
         self.set("router_avg_token_reduction", avg_token)
         self.set("router_topk_accuracy_rolling", avg_acc)
+
+    def inc_tool_selected(self, tool_id: str) -> None:
+        """Increment counter for a specific tool being selected."""
+        with self.lock:
+            self._tool_selections[tool_id] = self._tool_selections.get(tool_id, 0.0) + 1.0
+        # Emit labeled counter
+        self.inc("neuroswarm_router_tools_selected_total", 1.0)
+
+    def observe_top1_confidence(self, confidence: float) -> None:
+        """Record top-1 confidence for histogram."""
+        # Store in local for snapshot
+        with self.lock:
+            self._confidence.append(confidence)
+        self.set("neuroswarm_router_top1_confidence", confidence)
+        if self.bridge is not None and hasattr(self.bridge, "observe"):
+            try:
+                self.bridge.observe("neuroswarm_router_top1_confidence", confidence)
+            except Exception:
+                pass
+
+    def set_catalog_size(self, size: int) -> None:
+        """Set catalog size gauge."""
+        self.set("neuroswarm_router_catalog_size", float(size))
+        self.set("router_tools_registered", float(size))
 
     def snapshot(self) -> dict[str, float]:
         with self.lock:

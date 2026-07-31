@@ -9,6 +9,7 @@ from .orchestration import RoutedInferenceHints, build_routed_inference_hints
 from .router_api import create_tool_router
 from .router_config import RouterConfig, load_router_config
 from .tool_router import SemanticToolRouter
+from .tool_search import ToolSearchConfig, decide_mode
 
 __all__ = [
     "CostDecision",
@@ -20,8 +21,10 @@ __all__ = [
     "ScoredTool",
     "SemanticToolRouter",
     "ToolRecord",
+    "ToolSearchConfig",
     "build_routed_inference_hints",
     "build_router",
     "create_tool_router",
+    "decide_mode",
     "load_router_config",
 ]

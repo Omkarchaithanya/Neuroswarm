@@ -125,6 +125,52 @@ def test_decision_engine_sets_cascade_start_from_cost_router() -> None:
     assert plan.metadata.get("cost_router", {}).get("tier") == 3
 
 
+def test_decision_engine_feeds_router_result_metadata() -> None:
+    class _Passthrough:
+        def plan(self, req):  # noqa: ANN001
+            from neuroswarm_arm.runtime.dipa.interfaces.types import ExecutionPlan, WorkloadClass
+
+            return ExecutionPlan(workload=WorkloadClass.TOOL_CALLING, use_cascade=True)
+
+        def apply(self, req, workload):  # noqa: ANN001
+            return {
+                "latency_sla_ms": 4000.0,
+                "cost_budget_usd": 0.01,
+                "use_cascade": True,
+                "preferred_model": "cascade",
+            }
+
+        def select_model(self, req, plan):  # noqa: ANN001
+            return "cascade"
+
+        def select(self, req, plan):  # noqa: ANN001
+            return "llama_cpp"
+
+    class _Spec:
+        def apply(self, plan):  # noqa: ANN001
+            plan.speculation = False
+            plan.self_speculation = False
+
+    engine = DecisionEngine(
+        policy_engine=_Passthrough(),  # type: ignore[arg-type]
+        model_router=_Passthrough(),  # type: ignore[arg-type]
+        backend_selector=_Passthrough(),  # type: ignore[arg-type]
+        speculation_router=_Spec(),  # type: ignore[arg-type]
+        planner=_Passthrough(),  # type: ignore[arg-type]
+        config=None,
+    )
+    rr = _FakeRoutingResult()
+    req = InferenceRequest(
+        messages=[{"role": "user", "content": "presign"}],
+        tool_confidence=0.91,
+        router_result=rr,  # type: ignore[arg-type]
+    )
+    plan = engine.decide(req)
+    assert "router" in plan.metadata
+    assert plan.metadata["router"]["confidence_top1"] == 0.91
+    assert plan.router_result is rr
+
+
 def test_resolve_cascade_start_prefers_available_tier() -> None:
     from neuroswarm_arm.runtime.armcascade.escalation.engine import resolve_cascade_start_node
     from neuroswarm_arm.runtime.armcascade.interfaces.types import EscalationGraph, EscalationNode

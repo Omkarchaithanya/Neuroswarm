@@ -156,6 +156,23 @@ class DecisionEngine:
         )
         if cost_meta:
             plan.metadata["cost_router"] = cost_meta
+
+        # Feed router_result into plan.metadata["router"] (wiring matrix L2).
+        rr = getattr(req, "router_result", None)
+        if rr is None:
+            rr = (req.baggage or {}).get("router_result")
+        if rr is not None:
+            plan.router_result = rr  # type: ignore[assignment]
+            if hasattr(rr, "to_dict"):
+                plan.metadata["router"] = rr.to_dict()
+            elif isinstance(rr, dict):
+                plan.metadata["router"] = dict(rr)
+            else:
+                plan.metadata["router"] = {
+                    "confidence_top1": float(getattr(rr, "confidence_top1", 0.0) or 0.0),
+                    "tool_ids": list(getattr(rr, "tool_ids", []) or []),
+                    "tool_names": list(getattr(rr, "tool_names", []) or []),
+                }
         return plan
 
 

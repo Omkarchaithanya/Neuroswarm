@@ -95,3 +95,22 @@ def test_assign_slot_rejects_out_of_range() -> None:
     aff = BlockHashSlotAffinity(num_slots=2)
     with pytest.raises(ValueError, match="out of range"):
         aff.assign_slot(aff.hash_block("x"), 5)
+
+
+def test_hash_block_backward_compat() -> None:
+    a = BlockHashSlotAffinity(num_slots=4)
+    assert a.hash_block("hello") == a.hash_block("hello", tool_ids=())
+    assert a.hash_block("hello", tool_ids=()) == a.hash_block("hello", tool_ids=("",))
+    assert a.hash_block("hello", tool_ids=("a",)) != a.hash_block("hello", tool_ids=("b",))
+
+
+def test_tool_ids_slot_namespace_distinct() -> None:
+    aff = BlockHashSlotAffinity(num_slots=8)
+    h_a = aff.hash_block("shared", tool_ids=("tool.a",))
+    h_b = aff.hash_block("shared", tool_ids=("tool.b",))
+    assert h_a != h_b
+    aff.assign_slot(h_a, 1, tool_ids=("tool.a",))
+    aff.assign_slot(h_b, 2, tool_ids=("tool.b",))
+    assert aff.get_slot(h_a, tool_ids=("tool.a",)) == 1
+    assert aff.get_slot(h_b, tool_ids=("tool.b",)) == 2
+

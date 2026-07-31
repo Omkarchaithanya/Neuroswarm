@@ -1,0 +1,7 @@
+tool_search:
+  enabled: auto
+  threshold_pct: 10
+  search_default_limit: 5
+  max_search_limit: 20
+  listing: auto
+  listing_max_tokens: 20000

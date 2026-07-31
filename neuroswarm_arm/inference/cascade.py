@@ -36,7 +36,7 @@ class CascadeRouter:
         names = list(tool_names or [])
         if self.dipa is not None:
             return self._handle_via_dipa(req, names, **kwargs)
-        return self._handle_legacy(req, names)
+        return self._handle_legacy(req, names, **kwargs)
 
     def _handle_via_dipa(
         self, req: ChatRequest, tool_names: list[str], **kwargs: Any
@@ -46,6 +46,7 @@ class CascadeRouter:
         prompt_text = req.messages[-1].content if req.messages else ""
         kv_fields = self._kv_plan_fields(req)
         confidence = float(kwargs.get("tool_confidence") or (0.9 if tool_names else 0.4))
+        router_result = kwargs.get("router_result")
         plan = PlanState(
             tool_confidence_top1=confidence,
             slo_remaining_ms=4000.0,
@@ -53,7 +54,7 @@ class CascadeRouter:
             session_id=req.session_id or "",
             **kv_fields,
         )
-        cap = self.governor.cap(plan)
+        cap = self.governor.cap(plan, router_result=router_result)
         system = self.governor.prompt(plan)
         # Mutate a copy so DIPA sees governor system prompt + token cap.
         payload = req.model_copy(
@@ -73,7 +74,7 @@ class CascadeRouter:
             tool_prompt_block=kwargs.get("tool_prompt_block"),
         )
 
-    def _handle_legacy(self, req: ChatRequest, tool_names: list[str]) -> ChatResponse:
+    def _handle_legacy(self, req: ChatRequest, tool_names: list[str], **kwargs: Any) -> ChatResponse:
         # Preserved path for unit tests that construct CascadeRouter with clients only.
         from ..metrics import metrics
         from ..schemas import ChatChoice, ChatUsage, Message, PlanState
@@ -86,6 +87,7 @@ class CascadeRouter:
 
         prompt_text = req.messages[-1].content if req.messages else ""
         kv_fields = self._kv_plan_fields(req)
+        router_result = kwargs.get("router_result")
         plan = PlanState(
             tool_confidence_top1=0.9 if tool_names else 0.4,
             slo_remaining_ms=4000.0,
@@ -93,7 +95,7 @@ class CascadeRouter:
             session_id=req.session_id or "",
             **kv_fields,
         )
-        cap = self.governor.cap(plan)
+        cap = self.governor.cap(plan, router_result=router_result)
         quant = pick_quant(req.agent_role, prompt_text)
         messages = [m.model_dump() for m in req.messages]
         messages = [{"role": "system", "content": self.governor.prompt(plan)}] + messages

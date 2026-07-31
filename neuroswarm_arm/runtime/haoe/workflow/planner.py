@@ -33,10 +33,11 @@ class WorkflowPlanner:
         """
         Default chat workflow:
 
-        mem0_recall → okf_context → semantic_route → okf_tool_docs
-        → kv_session → cascade → kv_checkpoint → response
+        mem0_recall → okf_context → semantic_route → tool_search_activation
+        → okf_tool_docs → kv_session → cascade → kv_checkpoint → response
 
         Mem0 = facts only. OKF = institutional knowledge. Tool docs load after route.
+        tool_search_activation may replace schemas with Hermes bridge tool.
         """
         ids = ids or CorrelationIds()
         b = DAGBuilder(name="chat", ids=ids)
@@ -77,6 +78,14 @@ class WorkflowPlanner:
             priority=PriorityClass.HIGH,
             executor=ExecutorKind.THREAD,
             metadata={"stage": "route"},
+        )
+        tool_search = b.node(
+            "tool_search_activation",
+            _passthrough("tool_search_activation"),
+            pool=PoolKind.EMBEDDING,
+            priority=PriorityClass.HIGH,
+            executor=ExecutorKind.THREAD,
+            metadata={"stage": "tool_search"},
         )
         okf_tools = b.node(
             "okf_tool_docs",
@@ -121,9 +130,29 @@ class WorkflowPlanner:
             executor=ExecutorKind.INLINE,
             metadata={"stage": "aggregate"},
         )
-        b.sequence(mem0, okf_ctx, route, okf_tools, kv_session, cascade, kv_ckpt, response)
+        b.sequence(
+            mem0,
+            okf_ctx,
+            route,
+            tool_search,
+            okf_tools,
+            kv_session,
+            cascade,
+            kv_ckpt,
+            response,
+        )
         if numa_node is not None:
-            for node in (mem0, okf_ctx, route, okf_tools, kv_session, cascade, kv_ckpt, response):
+            for node in (
+                mem0,
+                okf_ctx,
+                route,
+                tool_search,
+                okf_tools,
+                kv_session,
+                cascade,
+                kv_ckpt,
+                response,
+            ):
                 node.affinity.numa_node = numa_node
         return b.build()
 

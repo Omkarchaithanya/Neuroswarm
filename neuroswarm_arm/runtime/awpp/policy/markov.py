@@ -133,6 +133,19 @@ class MarkovPolicy(IPolicy):
                 self._tool_trans[agent][prev_tool][observation.tool] += 1
             self._last_tool[agent] = observation.tool
 
+    def record_tools(self, tool_ids: list[str], *, agent_id: str = "default") -> None:
+        """One-line warmer hook: chain routed tool ids into Markov transitions."""
+        agent = str(agent_id or "default")
+        for tid in tool_ids or []:
+            tid_s = str(tid or "")
+            if not tid_s:
+                continue
+            prev = self._last_tool.get(agent, "")
+            if prev:
+                self._tool_trans[agent][prev][tid_s] += 1
+            self._last_tool[agent] = tid_s
+            self._totals[agent] += 1
+
     def train_step(self, batch: list[Mapping[str, Any]]) -> dict[str, float]:
         for row in batch:
             self.update(Observation.from_dict(row))

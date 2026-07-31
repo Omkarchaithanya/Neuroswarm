@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Mapping, Sequence
 
+from neuroswarm_arm.runtime.router.models import RoutingResult
+
 
 class FeatureStatus(str, Enum):
     AVAILABLE = "AVAILABLE"
@@ -165,6 +167,9 @@ class InferenceRequest:
     cost_budget_usd: float = 0.01
     baggage: dict[str, Any] = field(default_factory=dict)
     ids: CorrelationIds = field(default_factory=CorrelationIds)
+    # Typed Any at the field to avoid tightening router imports for all DIPA callers;
+    # DecisionEngine / cascade coerce to RoutingResult at the use site when present.
+    router_result: Any | None = None
 
     @property
     def prompt_text(self) -> str:
@@ -321,6 +326,7 @@ class ExecutionPlan:
     graph_nodes: list[str] = field(default_factory=list)
     scores: dict[str, float] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
+    router_result: RoutingResult | None = None
 
 
 @dataclass(slots=True)

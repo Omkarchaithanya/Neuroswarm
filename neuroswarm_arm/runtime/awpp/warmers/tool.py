@@ -19,18 +19,43 @@ class ToolWarmer(IWarmer):
         *,
         top_k: int = 3,
         ttl_s: float = 60.0,
+        markov: Any | None = None,
     ) -> None:
         self.router = router
         self.top_k = top_k
         self.ttl_s = ttl_s
+        self.markov = markov
         self._cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
     def bind(self, router: Any) -> None:
         self.router = router
 
-    async def warm(self, key: str, *, metadata: Mapping[str, Any] | None = None) -> WarmResult:
+    def record_router_result(self, router_result: Any | None) -> None:
+        """Bias Markov transitions from routed tool ids when present."""
+        if router_result is None or self.markov is None:
+            return
+        tools = list(getattr(router_result, "tools", None) or [])
+        ids: list[str] = []
+        for scored in tools:
+            tool = getattr(scored, "tool", scored)
+            tid = getattr(tool, "id", None) or getattr(scored, "id", None)
+            if tid:
+                ids.append(str(tid))
+        if ids and hasattr(self.markov, "record_tools"):
+            self.markov.record_tools(ids)
+
+    async def warm(
+        self,
+        key: str,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+        router_result: Any | None = None,
+    ) -> WarmResult:
         t0 = time.perf_counter()
         meta = dict(metadata or {})
+        # Allow router_result via metadata or explicit kwarg.
+        rr = router_result if router_result is not None else meta.get("router_result")
+        self.record_router_result(rr)
         query = str(meta.get("query") or key)
         if self.router is None:
             self._cache[key] = (time.time() + self.ttl_s, [])
@@ -45,6 +70,8 @@ class ToolWarmer(IWarmer):
             schemas: list[dict[str, Any]] = []
             if hasattr(self.router, "route_result"):
                 result = self.router.route_result(query)
+                if rr is None:
+                    self.record_router_result(result)
                 tools = getattr(result, "tools", None) or []
                 for scored in tools[: self.top_k]:
                     tool = getattr(scored, "tool", scored)

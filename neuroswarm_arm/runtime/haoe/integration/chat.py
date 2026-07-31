@@ -112,6 +112,20 @@ def build_chat_handlers(
             ctx.baggage["acr_prefetch"] = True
             return facts
         neuro = _neuro()
+        original_query = _query_text() or "context"
+        # Router-biased query when RoutingResult present (L4 Mem0 wiring).
+        router_result = ctx.baggage.get("router_result")
+        query = original_query
+        if router_result is not None:
+            tools = list(getattr(router_result, "tools", None) or [])
+            bias_names: list[str] = []
+            for scored in tools[:5]:
+                tool = getattr(scored, "tool", scored)
+                name = getattr(tool, "name", None) or getattr(scored, "name", None)
+                if name:
+                    bias_names.append(str(name))
+            if bias_names:
+                query = f"{original_query} {' '.join(bias_names)}".strip()
         try:
             if neuro is not None:
                 # Pull reflections before planning/cascade for planner learning
@@ -119,11 +133,11 @@ def build_chat_handlers(
                     neuro.recall(agent_id, _query_text() or "reflection", limit=3, namespace="reflection/")
                     or []
                 )
-                facts = list(neuro.recall(agent_id, _query_text() or "context", limit=5) or [])
+                facts = list(neuro.recall(agent_id, query, limit=5) or [])
                 if reflections:
                     facts = reflections + facts
             elif memory is not None:
-                facts = list(memory.search(agent_id, _query_text() or "context", limit=5) or [])
+                facts = list(memory.search(agent_id, query, limit=5) or [])
         except Exception:
             facts = []
         state["mem0_facts"] = facts
@@ -220,8 +234,103 @@ def build_chat_handlers(
         if thinking_budget is not None:
             ctx.baggage["high_conf_thinking_budget"] = thinking_budget
         ctx.baggage["tool_prompt_block"] = prompt_block
+        # Full RoutingResult object for downstream pillars (not just to_dict).
+        ctx.baggage["router_result"] = result
         ctx.baggage["routing_result"] = result.to_dict() if hasattr(result, "to_dict") else result
+        # Re-bias Mem0 after route (DAG runs mem0 before route; refresh when router hits).
+        if not _acr_enabled():
+            neuro = _neuro()
+            if neuro is not None:
+                try:
+                    agent_id = getattr(request, "agent_id", "") or ctx.ids.agent_id or "default"
+                    bias = " ".join(
+                        str(getattr(getattr(s, "tool", s), "name", "") or getattr(s, "name", "") or "")
+                        for s in list(getattr(result, "tools", None) or [])[:5]
+                    ).strip()
+                    q = f"{query} {bias}".strip() if bias else (query or "context")
+                    facts = list(neuro.recall(agent_id, q, limit=5) or [])
+                    if facts:
+                        state["mem0_facts"] = facts
+                        ctx.baggage["mem0_facts"] = facts
+                except Exception:
+                    pass
         return names
+
+    def tool_search_activation(ctx: ExecutionContext) -> str:
+        """Hermes tool_search: bridge vs pass_through after semantic_route."""
+        from neuroswarm_arm.runtime.router.tool_search import (
+            BRIDGE_TOOL_SCHEMA,
+            ToolSearchConfig,
+            build_listing_manifest,
+            decide_mode,
+        )
+        from neuroswarm_arm.runtime.router.tool_schema_builder import estimate_schema_tokens
+        from neuroswarm_arm.runtime.router.tool_search.metrics import record_mode, record_truncated
+
+        cfg = ToolSearchConfig.from_env()
+        result = ctx.baggage.get("router_result")
+        schemas = list(state.get("tool_schemas") or [])
+        registry = getattr(semantic_router, "registry", None)
+        catalog = list(registry.as_list()) if registry is not None and hasattr(registry, "as_list") else []
+
+        initial_ids: set[str] = set()
+        if result is not None:
+            for scored in list(getattr(result, "tools", None) or []):
+                tool = getattr(scored, "tool", scored)
+                tid = getattr(tool, "id", None) or getattr(tool, "name", None)
+                if tid:
+                    initial_ids.add(str(tid))
+        for schema in schemas:
+            fn = schema.get("function") if isinstance(schema, dict) else None
+            if isinstance(fn, dict) and fn.get("name"):
+                initial_ids.add(str(fn["name"]))
+            tid = schema.get("id") if isinstance(schema, dict) else None
+            if tid:
+                initial_ids.add(str(tid))
+
+        deferred = []
+        for tool in catalog:
+            tid = str(getattr(tool, "id", "") or getattr(tool, "name", "") or "")
+            if tid and tid not in initial_ids:
+                deferred.append(tool)
+
+        deferred_tokens = 0
+        for tool in deferred:
+            schema = {
+                "name": getattr(tool, "name", ""),
+                "description": getattr(tool, "description", ""),
+                "parameters": getattr(tool, "input_schema", {}) or {},
+            }
+            deferred_tokens += estimate_schema_tokens(schema)
+
+        before = int(getattr(result, "prompt_tokens_before", 0) or 0) if result is not None else 0
+        ctx_len = max(before, 8192)
+        mode = decide_mode(
+            enabled=cfg.enabled,
+            threshold_pct=cfg.threshold_pct,
+            context_length=ctx_len,
+            deferred_schema_tokens=deferred_tokens,
+            has_deferrable=bool(deferred),
+        )
+        record_mode(mode)
+        state["tool_search_mode"] = mode
+        ctx.baggage["tool_search_mode"] = mode
+        if mode == "pass_through":
+            return mode
+
+        # Bridge: exactly one synthetic schema + listing manifest (no deferrable schemas).
+        state["tool_schemas"] = [BRIDGE_TOOL_SCHEMA]
+        ctx.baggage["tool_schemas"] = state["tool_schemas"]
+        truncated = False
+        if cfg.listing in {"auto", "on"}:
+            manifest, truncated = build_listing_manifest(catalog or deferred, cfg.listing_max_tokens)
+            state["tool_prompt_block"] = manifest
+            ctx.baggage["tool_prompt_block"] = manifest
+        if truncated:
+            record_truncated()
+            state["tool_search_listing_truncated"] = True
+            ctx.baggage["tool_search_listing_truncated"] = True
+        return mode
 
     def kv_session(ctx: ExecutionContext) -> str:
         session_id = state["session_id"]
@@ -242,6 +351,7 @@ def build_chat_handlers(
 
     def okf_tool_docs(ctx: ExecutionContext) -> str:
         tool_names = list(state.get("tool_names") or ctx.baggage.get("tool_names") or [])
+        bridge = state.get("tool_search_mode") == "bridge"
         if _acr_enabled():
             from neuroswarm_arm.runtime.acr.connectors import build_context_for_haoe
 
@@ -266,9 +376,8 @@ def build_chat_handlers(
             ctx.baggage["okf_tokens"] = int(snap.stats.output_tokens or 0)
             ctx.baggage["okf_merged_context"] = merged
             ctx.baggage["okf_tool_docs"] = ""
-            if merged:
-                # ACR already folded tool schemas into assembly when provided;
-                # prefer ACR prompt as the context block (stable prefix + tools).
+            # Prefer ACR prompt; in bridge mode keep Hermes listing as tool_prompt_block.
+            if merged and not bridge:
                 state["tool_prompt_block"] = merged
                 ctx.baggage["tool_prompt_block"] = merged
             return merged
@@ -282,8 +391,9 @@ def build_chat_handlers(
         state["okf_merged_context"] = merged
         ctx.baggage["okf_tool_docs"] = getattr(docs, "text", "") or ""
         ctx.baggage["okf_merged_context"] = merged
-        # Append institutional context to tool prompt block (after routing)
-        if merged:
+        # Append institutional context to tool prompt block (after routing).
+        # Bridge mode keeps listing-only prompt — do not append full OKF dump over it.
+        if merged and not bridge:
             existing = state.get("tool_prompt_block") or ""
             state["tool_prompt_block"] = (existing + "\n\n" + merged).strip()
             ctx.baggage["tool_prompt_block"] = state["tool_prompt_block"]
@@ -300,6 +410,8 @@ def build_chat_handlers(
             "tool_confidence": state.get("tool_confidence"),
             "tool_prompt_block": state.get("tool_prompt_block") or None,
         }
+        if ctx.baggage.get("router_result") is not None:
+            handle_kwargs["router_result"] = ctx.baggage["router_result"]
         if state.get("tool_high_confidence"):
             handle_kwargs["tool_high_confidence"] = True
             budget = state.get("high_conf_thinking_budget")
@@ -480,6 +592,7 @@ def build_chat_handlers(
         "mem0_recall": mem0_recall,
         "okf_context": okf_context,
         "semantic_route": semantic_route,
+        "tool_search_activation": tool_search_activation,
         "okf_tool_docs": okf_tool_docs,
         "kv_session": kv_session,
         "cascade": cascade_node,

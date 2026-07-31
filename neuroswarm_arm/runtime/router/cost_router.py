@@ -35,9 +35,15 @@ class CostDecision:
     tier: int
     quant: str
     reason: str
+    tool_search_mode: str = "pass_through"
 
     def as_dict(self) -> dict[str, Any]:
-        return {"tier": self.tier, "quant": self.quant, "reason": self.reason}
+        return {
+            "tier": self.tier,
+            "quant": self.quant,
+            "reason": self.reason,
+            "tool_search_mode": self.tool_search_mode,
+        }
 
 
 class CostRouter:
