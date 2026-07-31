@@ -108,6 +108,28 @@ class LlamaHttpClient:
             payload.update(extra)
         return self._post("/v1/chat/completions", payload)
 
+    def generate_with_logits_stream(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 512,
+        temperature: float = 0.2,
+        top_logprobs: int = 5,
+        extra: dict[str, Any] | None = None,
+    ) -> Iterator[str]:
+        """Same payload as generate_with_logits but stream: True → SSE lines."""
+        merged: dict[str, Any] = {
+            **(extra or {}),
+            "logprobs": True,
+            "top_logprobs": int(top_logprobs),
+        }
+        return self.chat_stream_raw(
+            messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            extra=merged,
+        )
+
     def chat_stream_raw(
         self,
         messages: list[dict[str, str]],
@@ -615,6 +637,248 @@ class LlamaCppBackend(InferenceBackend):
             metrics=metrics,
         )
 
+    async def generate_with_logits_stream(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int = 512,
+        temperature: float = 0.2,
+        top_logprobs: int = 5,
+        session_id: str = "",
+        quant: str = "",
+        kv_handle: str | None = None,
+        id_slot: int | None = None,
+        ctx: ExecutionContext | None = None,
+        draft: Any = None,
+        tau_floor: float = 0.0,
+    ) -> AsyncIterator[TokenChunk]:
+        """Stream target logprobs; yield accepted draft tokens as steps arrive."""
+        from neuroswarm_arm.runtime.armcascade.interfaces.types import (
+            LogitsBundle,
+            Proposal,
+        )
+        from neuroswarm_arm.runtime.armcascade.verification.logits_verifier import (
+            _parse_step,
+            accept_one_draft_position,
+        )
+
+        n_probs = int(os.getenv("NSA_LLAMA_N_PROBS", "0") or "0")
+        if n_probs <= 0:
+            os.environ["NSA_LLAMA_N_PROBS"] = str(int(top_logprobs))
+        extra, slot_meta = _llama_chat_extra(
+            session_id=session_id,
+            messages=messages,
+            slot_router=self._slot_router,
+            tokenize_fn=self.tokenize,
+            okf_block_hashes=None,
+            cache_prompt_tokens=[],
+            response_format=None,
+            request_logprobs=True,
+        )
+        if isinstance(id_slot, int):
+            extra["id_slot"] = id_slot
+        elif isinstance(slot_meta.get("slot_id"), int):
+            extra.setdefault("id_slot", slot_meta["slot_id"])
+
+        prop = draft if isinstance(draft, Proposal) else None
+        if prop is None and draft is not None:
+            text = str(getattr(draft, "text", "") or "")
+            prop = Proposal.from_text(text, strategy="draft_model")
+        if prop is None:
+            prop = Proposal.from_text("", strategy="draft_model")
+
+        greedy = float(temperature) == 0.0
+        sync_q: queue.Queue[Any] = queue.Queue()
+
+        def _producer() -> None:
+            try:
+                words = (
+                    [t.text for t in prop.tokens]
+                    if prop.tokens
+                    else (prop.text.split() if prop.text.strip() else [])
+                )
+                bundle = LogitsBundle(
+                    draft_tokens=list(words),
+                    draft_token_ids=[
+                        t.token_id if t.token_id is not None else 0
+                        for t in prop.tokens
+                    ]
+                    if prop.tokens
+                    else [0 for _ in words],
+                    draft_logprobs=[float(t.logprob or 0.0) for t in prop.tokens]
+                    if prop.tokens
+                    else [0.0 for _ in words],
+                    draft_ranks=[int(t.rank) for t in prop.tokens]
+                    if prop.tokens
+                    else [0 for _ in words],
+                    top_n=int(top_logprobs),
+                )
+                position = 0
+                index = 0
+                finished = False
+                seen_steps = 0
+                for line in self._client.generate_with_logits_stream(
+                    messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_logprobs=top_logprobs,
+                    extra=extra,
+                ):
+                    if finished:
+                        break
+                    parsed = _parse_sse_logprobs_payload(line)
+                    if parsed is None:
+                        continue
+                    if parsed is False:
+                        break
+                    # Cumulative content grows; incremental is usually len==1.
+                    if len(parsed) > seen_steps:
+                        new_entries = parsed[seen_steps:]
+                        seen_steps = len(parsed)
+                    else:
+                        new_entries = parsed
+                        seen_steps += len(parsed)
+                    for entry in new_entries:
+                        step = _parse_step(entry)
+                        if step is None:
+                            continue
+                        bundle.steps.append(step)
+                        while True:
+                            pos = accept_one_draft_position(
+                                bundle,
+                                prop,
+                                position,
+                                greedy=greedy,
+                                tau_floor=tau_floor,
+                            )
+                            if pos.waiting:
+                                break
+                            if pos.accepted_token is not None:
+                                sync_q.put(
+                                    TokenChunk(
+                                        text=pos.accepted_token,
+                                        index=index,
+                                        finished=False,
+                                        metrics={
+                                            "accepted_prefix_len": float(position + 1),
+                                            "logits_available": 1.0,
+                                        },
+                                    )
+                                )
+                                index += 1
+                                position += 1
+                                if pos.top_tau_used and pos.residual_or_bonus:
+                                    sync_q.put(
+                                        TokenChunk(
+                                            text=pos.residual_or_bonus,
+                                            index=index,
+                                            finished=False,
+                                            metrics={
+                                                "accepted_prefix_len": float(position),
+                                                "bonus": 1.0,
+                                                "top_tau_used": 1.0,
+                                            },
+                                        )
+                                    )
+                                    index += 1
+                                    finished = True
+                                    break
+                                if pos.is_final:
+                                    if position == len(bundle.draft_tokens):
+                                        bonus = accept_one_draft_position(
+                                            bundle,
+                                            prop,
+                                            position,
+                                            greedy=greedy,
+                                            tau_floor=tau_floor,
+                                        )
+                                        if (
+                                            not bonus.waiting
+                                            and bonus.residual_or_bonus
+                                        ):
+                                            sync_q.put(
+                                                TokenChunk(
+                                                    text=bonus.residual_or_bonus,
+                                                    index=index,
+                                                    finished=False,
+                                                    metrics={
+                                                        "accepted_prefix_len": float(
+                                                            position
+                                                        ),
+                                                        "bonus": 1.0,
+                                                    },
+                                                )
+                                            )
+                                            index += 1
+                                            finished = True
+                                    break
+                                continue
+                            if pos.residual_or_bonus:
+                                sync_q.put(
+                                    TokenChunk(
+                                        text=pos.residual_or_bonus,
+                                        index=index,
+                                        finished=False,
+                                        metrics={
+                                            "accepted_prefix_len": float(position),
+                                            "rejected": 1.0,
+                                        },
+                                    )
+                                )
+                                index += 1
+                            finished = True
+                            break
+                        if finished:
+                            break
+                # Flush pending bonus if all draft accepted and bonus step arrived late.
+                if (
+                    not finished
+                    and position == len(bundle.draft_tokens)
+                    and len(bundle.steps) > position
+                ):
+                    bonus = accept_one_draft_position(
+                        bundle,
+                        prop,
+                        position,
+                        greedy=greedy,
+                        tau_floor=tau_floor,
+                    )
+                    if not bonus.waiting and bonus.residual_or_bonus:
+                        sync_q.put(
+                            TokenChunk(
+                                text=bonus.residual_or_bonus,
+                                index=index,
+                                finished=False,
+                                metrics={
+                                    "accepted_prefix_len": float(position),
+                                    "bonus": 1.0,
+                                },
+                            )
+                        )
+                        index += 1
+                sync_q.put(
+                    TokenChunk(
+                        text="",
+                        index=index,
+                        finished=True,
+                        metrics={"accepted_prefix_len": float(position)},
+                    )
+                )
+            except Exception as exc:
+                sync_q.put(exc)
+
+        thread = threading.Thread(target=_producer, daemon=True)
+        thread.start()
+        loop = asyncio.get_running_loop()
+        while True:
+            item = await loop.run_in_executor(None, sync_q.get)
+            if isinstance(item, Exception):
+                raise item
+            assert isinstance(item, TokenChunk)
+            yield item
+            if item.finished:
+                return
+
     async def cancel(self, session_id: str) -> None:
         # llama-server cancel is slot-specific; best-effort no-op when unmanaged.
         return None
@@ -755,6 +1019,8 @@ def _parse_sse_line(line: str) -> list[tuple[str | None, str]]:
     if not choices:
         return []
     delta = choices[0].get("delta") or {}
+    # Reasoning models (R1 / Qwen3-thinking) may stream only reasoning_content
+    # until the final answer lands in content.
     content = delta.get("content")
     reasoning = delta.get("reasoning_content")
     if reasoning is None:
@@ -764,6 +1030,54 @@ def _parse_sse_line(line: str) -> list[tuple[str | None, str]]:
     if reasoning is not None and str(reasoning) != "":
         return [(str(reasoning), "thinking")]
     return []
+
+
+def _parse_sse_logprobs_payload(line: str) -> list[dict[str, Any]] | None | bool:
+    """Parse SSE line for logprobs.content entries.
+
+    Returns:
+        list of logprob step dicts to append
+        None — ignore line
+        False — stream done ([DONE])
+    """
+    line = line.strip()
+    if not line or line.startswith(":"):
+        return None
+    if not line.startswith("data:"):
+        return None
+    data = line[5:].strip()
+    if data == "[DONE]":
+        return False
+    try:
+        payload = json.loads(data)
+    except json.JSONDecodeError:
+        return None
+    choices = payload.get("choices") or []
+    if not choices or not isinstance(choices[0], dict):
+        return None
+    c0 = choices[0]
+    logprobs = c0.get("logprobs")
+    content: list[Any] = []
+    if isinstance(logprobs, dict):
+        raw_content = logprobs.get("content") or []
+        if isinstance(raw_content, list):
+            content = list(raw_content)
+    if not content:
+        # Some servers put incremental logprobs on delta.
+        delta = c0.get("delta") or {}
+        if isinstance(delta, dict):
+            dlp = delta.get("logprobs")
+            if isinstance(dlp, dict):
+                raw_content = dlp.get("content") or []
+                if isinstance(raw_content, list):
+                    content = list(raw_content)
+    out: list[dict[str, Any]] = []
+    for entry in content:
+        if isinstance(entry, dict):
+            out.append(entry)
+        elif isinstance(entry, str) and entry.strip():
+            out.append({"token": entry, "logprob": 0.0, "top_logprobs": []})
+    return out or None
 
 
 def _extract_chat_content(payload: dict[str, Any]) -> str:

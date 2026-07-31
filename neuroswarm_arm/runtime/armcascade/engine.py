@@ -44,8 +44,6 @@ from neuroswarm_arm.runtime.armcascade.proposal.registry import (
     VerifierRegistry,
 )
 from neuroswarm_arm.runtime.armcascade.thresholds.engine import AdaptiveThresholdEngine
-from neuroswarm_arm.runtime.dipa.cascade.cascade_executor import CascadeExecutor
-from neuroswarm_arm.runtime.dipa.cascade.cascade_policy import TierPolicy
 from neuroswarm_arm.runtime.dipa.interfaces.cascade import ICascadeEngine
 from neuroswarm_arm.runtime.dipa.interfaces.types import (
     ExecutionPlan,
@@ -115,6 +113,9 @@ class ASCREngine(ICascadeEngine):
         self._history_accept = 0.7
         self.reasoning_emitter: Any | None = None
         self.dipa_runtime: Any | None = None
+        # Lazy: avoid circular import with dipa.cascade package.
+        from neuroswarm_arm.runtime.dipa.cascade.cascade_executor import CascadeExecutor
+
         self.executor = CascadeExecutor(registry)
 
     def _trace(
@@ -714,6 +715,8 @@ class ASCREngine(ICascadeEngine):
             backend_name = policy.escalate_backend
         else:
             backend_name = policy.verify_backend
+        from neuroswarm_arm.runtime.dipa.cascade.cascade_policy import TierPolicy
+
         tier = TierPolicy(
             id=verify_tier_id,
             backend=backend_name,

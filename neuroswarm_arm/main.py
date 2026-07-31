@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 
 from .aqr import pick_quant
 from .armora import ArmoraBudgetPolicy, build_armora, build_budget_service, build_rcis, build_rof, build_rpf
@@ -643,9 +643,113 @@ def export_metrics(request: Request) -> Response:
 
 
 @app.post("/v1/chat/completions")
-def chat(req: ChatRequest) -> dict:
+async def chat(req: ChatRequest):
+    if req.stream:
+        return await _chat_stream(req)
     response = gateway.handle_chat(req)
     return response.model_dump()
+
+
+async def _chat_stream(req: ChatRequest) -> StreamingResponse:
+    """OpenAI SSE stream via ASCREngine.run_stream (spec accept as logits arrive)."""
+    import json
+    from time import time
+    from uuid import uuid4
+
+    from neuroswarm_arm.runtime.dipa.execution.execution_context import ExecutionContext
+    from neuroswarm_arm.runtime.dipa.interfaces.types import InferenceRequest
+
+    session_id = req.session_id or f"chat-{uuid4().hex[:16]}"
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    infer_req = InferenceRequest(
+        messages=messages,
+        model=req.model,
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        session_id=session_id,
+        agent_role=req.agent_role,
+        agent_id=req.agent_id,
+        stream=True,
+    )
+    plan = dipa.decision_engine.decide(infer_req)
+    plan.stream = True
+    ctx = ExecutionContext(request=infer_req, ids=infer_req.ids)
+    ctx.plan = plan
+    ctx.quant = plan.quant
+
+    engine = getattr(dipa, "cascade_engine", None)
+    if engine is None or not hasattr(engine, "run_stream"):
+        raise HTTPException(status_code=501, detail="streaming cascade unavailable")
+
+    chunk_id = f"chatcmpl-{uuid4().hex[:24]}"
+    created = int(time())
+    model_name = req.model or "cascade"
+
+    async def event_gen():
+        accepted_prefix = 0
+        mode = "speculative"
+        first_sent = False
+        async for token in engine.run_stream(infer_req, plan, ctx):
+            if token.metrics and "accepted_prefix_len" in token.metrics:
+                accepted_prefix = int(token.metrics["accepted_prefix_len"])
+            mode = str(ctx.baggage.get("ascr_mode") or mode)
+            if token.finished and not token.text:
+                # Final metadata comment for clients / evidence.
+                yield (
+                    f": X-ASCR-Accepted-Prefix: {accepted_prefix}\n"
+                    f": X-ASCR-Mode: {mode}\n\n"
+                )
+                yield "data: [DONE]\n\n"
+                return
+            if not token.text:
+                continue
+            payload = {
+                "id": chunk_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": model_name,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {"content": token.text}
+                        if first_sent
+                        else {"role": "assistant", "content": token.text},
+                        "finish_reason": None,
+                    }
+                ],
+                "ascr": {
+                    "accepted_prefix_len": accepted_prefix,
+                    "mode": mode,
+                },
+            }
+            first_sent = True
+            yield f"data: {json.dumps(payload)}\n\n"
+        mode = str(ctx.baggage.get("ascr_mode") or mode)
+        accepted_prefix = int(ctx.baggage.get("ascr_accepted_prefix") or accepted_prefix)
+        yield (
+            f": X-ASCR-Accepted-Prefix: {accepted_prefix}\n"
+            f": X-ASCR-Mode: {mode}\n\n"
+        )
+        yield "data: [DONE]\n\n"
+
+    # Mode known after first draft decision — use plan speculation strategy hint.
+    initial_mode = "speculative"
+    meta = dict(plan.metadata or {})
+    spec = meta.get("speculation") or {}
+    if isinstance(spec, dict) and spec.get("strategy"):
+        initial_mode = str(spec["strategy"])
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-ASCR-Mode": initial_mode,
+            "X-ASCR-Accepted-Prefix": "0",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/v1/kv-cache/status")

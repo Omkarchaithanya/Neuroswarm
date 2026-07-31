@@ -1,0 +1,26 @@
+gap-G12 streaming speculative accept — TTFT evidence
+=====================================================
+Date: 2026-07-31
+Prompt: "What is the capital?" / draft "Paris is the capital" (+ bonus)
+Method: synthetic delayed target logprobs (50ms/step × 5 steps)
+
+BEFORE (block Leviathan — wait full target k+1):
+  TTFT_ms ≈ 250.79
+  first client token only after all target steps
+
+AFTER (stream accept_one_draft_position as logprobs arrive):
+  TTFT_ms ≈ 64.76
+  first client token after draft + first verify step
+  chunks = accepted_prefix_len + 1 bonus = 4 + 1 = 5
+  order preserved: Paris is the capital bonus
+
+SPEEDUP (TTFT): ~3.9× on this synthetic schedule
+Note: real TTFT = O(draft + target_first_token), not pure O(draft).
+      Win removes wait for remaining target positions.
+
+Tests:
+  pytest tests/runtime/armcascade/test_streaming_spec.py -q  → pass
+  pytest tests/runtime/armcascade/test_logits_verifier.py -q → pass
+  build_dipa(use_mock=True) run_stream smoke → ok
+
+Tag: gap-G12
