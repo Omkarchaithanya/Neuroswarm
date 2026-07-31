@@ -135,6 +135,7 @@ def test_top_tau_fallback_accepts() -> None:
     out = leviathan_accept(bundle, greedy=True, tau_floor=0.8)
     assert out.accepted_prefix_len == 1
     assert out.top_tau_used
+    assert out.bonus_token == "target"
 
 
 def test_bonus_token_when_all_accepted() -> None:
@@ -171,6 +172,7 @@ class _LogitsMockBackend:
         session_id: str = "",
         quant: str = "",
         kv_handle: str | None = None,
+        id_slot: int | None = None,
         ctx: Any = None,
     ) -> GenerateResult:
         self.calls.append(

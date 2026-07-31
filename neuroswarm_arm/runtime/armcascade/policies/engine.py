@@ -12,6 +12,11 @@ from neuroswarm_arm.runtime.armcascade.interfaces.types import (
     TaskKind,
     ThresholdSet,
 )
+from neuroswarm_arm.runtime.armcascade.policies.cost_model import (
+    CostSignals,
+    cost_model_enabled,
+    should_skip_spec,
+)
 
 if TYPE_CHECKING:
     from neuroswarm_arm.runtime.dipa.interfaces.types import ExecutionPlan
@@ -21,6 +26,25 @@ class DefaultCascadePolicyEngine(CascadePolicyEngine):
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         self.config = dict(config or {})
         self.base = default_thresholds(self.config)
+        self._last_skip_reason: str = ""
+
+    def apply(self, plan: ExecutionPlan, signals: CostSignals) -> ExecutionPlan:
+        """Mutate plan to skip speculation when cost model says so (G15)."""
+        self._last_skip_reason = ""
+        if not cost_model_enabled(self.config):
+            return plan
+        skip, reason = should_skip_spec(plan, signals)
+        if not skip:
+            return plan
+        self._last_skip_reason = reason
+        plan.speculation = False
+        if getattr(plan, "self_speculation", False):
+            plan.self_speculation = False
+        meta = dict(getattr(plan, "metadata", None) or {})
+        meta["ascr_skip_spec_reason"] = reason
+        meta["ascr_skip_spec"] = True
+        plan.metadata = meta
+        return plan
 
     def decide(
         self,

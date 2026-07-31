@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
 from neuroswarm_arm.runtime.armcascade.acceptance.engine import AdaptiveAcceptanceEngine
@@ -44,12 +44,15 @@ from neuroswarm_arm.runtime.armcascade.proposal.registry import (
     VerifierRegistry,
 )
 from neuroswarm_arm.runtime.armcascade.thresholds.engine import AdaptiveThresholdEngine
+from neuroswarm_arm.runtime.dipa.cascade.cascade_executor import CascadeExecutor
+from neuroswarm_arm.runtime.dipa.cascade.cascade_policy import TierPolicy
 from neuroswarm_arm.runtime.dipa.interfaces.cascade import ICascadeEngine
 from neuroswarm_arm.runtime.dipa.interfaces.types import (
     ExecutionPlan,
     GenerateRequest,
     GenerateResult,
     InferenceRequest,
+    TokenChunk,
 )
 from neuroswarm_arm.runtime.dipa.reasoning_emit import (
     tier_model_name,
@@ -112,6 +115,7 @@ class ASCREngine(ICascadeEngine):
         self._history_accept = 0.7
         self.reasoning_emitter: Any | None = None
         self.dipa_runtime: Any | None = None
+        self.executor = CascadeExecutor(registry)
 
     def apply_rl_action(self, action: Any) -> None:
         """AROP actuation: rebind threshold agent to a fixed RLAction (rule/bandit).
@@ -225,12 +229,37 @@ class ASCREngine(ICascadeEngine):
         verifier = self._get_verifier(policy)
         await self._bind_strategies(proposer, verifier, ctx)
 
+        # G15: cost model may disable speculation before propose/verify.
+        from neuroswarm_arm.runtime.armcascade.policies.cost_model import CostSignals
+
+        apply_fn = getattr(self.policy_engine, "apply", None)
+        if callable(apply_fn):
+            cost_signals = CostSignals(
+                historical_acceptance=float(self._history_accept),
+                latency_used_ms=float((time.monotonic() - t0) * 1000.0),
+                latency_budget_ms=float(req.latency_sla_ms or 4000.0),
+                max_tokens=int(getattr(req, "max_tokens", 1024) or 1024),
+                workload=getattr(plan, "workload", None),
+            )
+            plan = apply_fn(plan, cost_signals)
+            skip_reason = str(
+                (getattr(plan, "metadata", None) or {}).get("ascr_skip_spec_reason")
+                or getattr(self.policy_engine, "_last_skip_reason", "")
+                or ""
+            )
+            if skip_reason:
+                self.metrics.inc(f"ascr_skip_spec_total{{reason={skip_reason}}}")
+                self.metrics.inc("ascr_skip_spec_total")
+
         # Quality-cascade path when plan disables speculation or strategy unavailable.
         use_quality = False
         if not plan.speculation and not plan.self_speculation:
             if policy.proposal_strategy not in {"self_speculation", "ngram", "suffix"}:
                 use_quality = policy.quality_cascade_fallback
         # Starting above tier1 must use full generate — unless tier-3 speculative path.
+        plan_meta = dict(plan.metadata or {})
+        policy_meta = dict(getattr(policy, "metadata", None) or {})
+        start_tier = max(1, min(3, int(planned or 1)))
         tier3_spec = (
             policy.proposal_strategy == "speculative_from_tier1"
             or bool(plan_meta.get("tier3_speculative"))
@@ -642,6 +671,228 @@ class ASCREngine(ICascadeEngine):
                 ),
             },
         )
+
+    async def run_stream(
+        self,
+        req: InferenceRequest,
+        plan: ExecutionPlan,
+        ctx: ExecutionContext,
+    ) -> AsyncIterator[TokenChunk]:
+        """Propose → stream-verify → yield accepted tokens as logprobs arrive."""
+        t0 = time.monotonic()
+        placement = self.arm.detect()
+        self.arm.pin_current_thread("draft")
+
+        classification = self.classifier.classify(req, plan)
+        telemetry = {
+            "kv_pressure": float(getattr(ctx, "kv_pressure", 0.0) or 0.0),
+            "cpu_utilization": float(getattr(ctx, "cpu_utilization", 0.5) or 0.5),
+            "cache_hit_ratio": float(getattr(ctx, "cache_hit_ratio", 0.0) or 0.0),
+            "aqr_prefer_fast": float((plan.metadata or {}).get("aqr_prefer_fast", 0.0)),
+        }
+        policy = self.policy_engine.decide(classification, plan, telemetry)
+        thr_in = ThresholdInputs(
+            latency_budget_ms=float(req.latency_sla_ms or 4000.0),
+            latency_used_ms=0.0,
+            cpu_utilization=telemetry["cpu_utilization"],
+            numa_locality=placement.locality,
+            kv_pressure=telemetry["kv_pressure"],
+            governor_cap=float(req.tool_confidence or 0.5),
+            historical_acceptance=self._history_accept,
+            complexity=classification.complexity,
+            entropy_estimate=classification.entropy_estimate,
+            base_draft_len=policy.thresholds.draft_len,
+            base_accept_threshold=policy.thresholds.accept_threshold,
+            base_escalate_threshold=policy.thresholds.escalate_threshold,
+            base_verify_batch=policy.thresholds.verify_batch_size,
+            base_depth=policy.thresholds.speculation_depth,
+            base_max_rounds=int(policy.thresholds.max_rounds or 4),
+        )
+        thresholds = self.thresholds.compute(thr_in)
+        policy.thresholds = thresholds
+
+        proposer = self._get_proposer(policy)
+        verifier = self._get_verifier(policy)
+        await self._bind_strategies(proposer, verifier, ctx)
+
+        if hasattr(proposer, "backend_name"):
+            proposer.backend_name = policy.draft_backend  # type: ignore[attr-defined]
+
+        prop_req = ProposalRequest(
+            prompt_text=req.prompt_text,
+            messages=build_messages(req.messages, req.system_prompt),
+            draft_len=thresholds.draft_len,
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+            session_id=req.session_id,
+            quant=plan.quant,
+            kv_handle=getattr(ctx, "kv_handle", None),
+            id_slot=getattr(ctx, "id_slot", None),
+            classification=classification,
+        )
+        try:
+            proposal = await proposer.propose(prop_req)
+        except NotImplementedError:
+            proposal = Proposal.from_text("", strategy=policy.proposal_strategy)
+
+        sid = proposal.metadata.get("slot_id") or proposal.metadata.get("id_slot")
+        if sid is not None:
+            ctx.id_slot = int(sid)
+
+        strategy = str(policy.proposal_strategy or "draft_model")
+        verify_tier_id = max(2, int(getattr(plan, "cascade_start_tier", 1) or 1))
+        if verify_tier_id >= 3:
+            backend_name = policy.escalate_backend
+        else:
+            backend_name = policy.verify_backend
+        tier = TierPolicy(
+            id=verify_tier_id,
+            backend=backend_name,
+            model=backend_name,
+            acceptance_threshold=thresholds.accept_threshold,
+        )
+
+        tau_floor = float(
+            ((self.config.get("strategies") or {}).get("logits") or {}).get(
+                "tau_floor", 0.0
+            )
+            or 0.0
+        )
+        try:
+            tau_floor = float(os.getenv("NSA_ASCR_TAU_FLOOR", str(tau_floor)))
+        except ValueError:
+            pass
+        top_n = int(os.getenv("NSA_ASCR_LOGITS_TOP_N", "5") or 5)
+
+        accepted_prefix = 0
+        index = 0
+        first = True
+        rejected = False
+        if not proposal.text.strip() and not proposal.tokens:
+            # No draft → escalate to tier3 stream if possible.
+            async for chunk in self._escalate_stream(req, ctx, policy, index, strategy):
+                yield chunk
+            return
+
+        async for chunk in self.executor.generate_tier_stream(
+            req,
+            tier,
+            ctx,
+            proposal,
+            quant=plan.quant,
+            top_logprobs=top_n,
+            tau_floor=tau_floor,
+            max_tokens=max(thresholds.draft_len, 1) + 1,
+            kv_handle=getattr(ctx, "kv_handle", None),
+        ):
+            metrics = dict(chunk.metrics or {})
+            if "accepted_prefix_len" in metrics:
+                accepted_prefix = int(metrics["accepted_prefix_len"])
+            if metrics.get("rejected"):
+                rejected = True
+            if first:
+                ctx.baggage["ascr_mode"] = strategy
+                metrics["ascr_mode"] = 1.0
+                first = False
+            ctx.baggage["ascr_accepted_prefix"] = accepted_prefix
+            if chunk.text:
+                yield TokenChunk(
+                    text=chunk.text,
+                    token_id=chunk.token_id,
+                    index=index,
+                    finished=False,
+                    channel=chunk.channel,
+                    metrics={
+                        **metrics,
+                        "accepted_prefix_len": float(accepted_prefix),
+                    },
+                )
+                index += 1
+            if chunk.finished:
+                break
+
+        ctx.baggage["ascr_mode"] = strategy
+        ctx.baggage["ascr_accepted_prefix"] = accepted_prefix
+
+        if rejected and accepted_prefix == 0:
+            async for chunk in self._escalate_stream(
+                req, ctx, policy, index, strategy
+            ):
+                yield chunk
+            return
+
+        yield TokenChunk(
+            text="",
+            index=index,
+            finished=True,
+            metrics={
+                "accepted_prefix_len": float(accepted_prefix),
+                "ttft_ms": (time.monotonic() - t0) * 1000.0,
+            },
+        )
+
+    async def _escalate_stream(
+        self,
+        req: InferenceRequest,
+        ctx: ExecutionContext,
+        policy: PolicyDecision,
+        start_index: int,
+        strategy: str,
+    ) -> AsyncIterator[TokenChunk]:
+        """Optional tier3 continuation after stream reject."""
+        backend_name = policy.escalate_backend
+        try:
+            backend = self.registry.require(backend_name)
+        except Exception:
+            yield TokenChunk(
+                text="",
+                index=start_index,
+                finished=True,
+                metrics={"accepted_prefix_len": 0.0},
+            )
+            return
+        if not hasattr(backend, "decode"):
+            text = await self._final_generate(req, ctx, backend_name, getattr(ctx, "quant", ""))
+            if text:
+                yield TokenChunk(
+                    text=text,
+                    index=start_index,
+                    finished=False,
+                    metrics={"ascr_mode": 0.0, "escalated": 1.0},
+                )
+            yield TokenChunk(
+                text="",
+                index=start_index + 1,
+                finished=True,
+                metrics={"accepted_prefix_len": 0.0},
+            )
+            return
+        from neuroswarm_arm.runtime.dipa.interfaces.types import DecodeRequest
+
+        decode_req = DecodeRequest(
+            messages=build_messages(req.messages, req.system_prompt),
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+            session_id=req.session_id,
+            quant=getattr(ctx, "quant", "") or "",
+            kv_handle=getattr(ctx, "kv_handle", None),
+            stream=True,
+        )
+        index = start_index
+        ctx.baggage["ascr_mode"] = strategy
+        async for chunk in backend.decode(decode_req, ctx):
+            if chunk.text:
+                yield TokenChunk(
+                    text=chunk.text,
+                    index=index,
+                    finished=False,
+                    channel=chunk.channel,
+                    metrics={"escalated": 1.0},
+                )
+                index += 1
+            if chunk.finished:
+                break
+        yield TokenChunk(text="", index=index, finished=True)
 
     def _get_proposer(self, policy: PolicyDecision) -> ProposalStrategy:
         try:

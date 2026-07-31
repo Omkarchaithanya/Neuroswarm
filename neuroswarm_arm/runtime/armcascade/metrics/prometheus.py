@@ -25,6 +25,12 @@ ASCR_METRIC_HELP: dict[str, tuple[str, str]] = {
     "ascr_rounds_total": ("counter", "ASCR propose/verify rounds."),
     "ascr_escalations_total": ("counter", "Escalation edge traversals."),
     "ascr_quality_cascade_total": ("counter", "Requests in quality-cascade mode."),
+    "ascr_skip_spec_total": (
+        "counter",
+        "Speculation skipped by cost model (use ascr_skip_spec_total{reason=...} keys).",
+    ),
+    "kleidiai_kernel_in_use": ("gauge", "1 if a specific KleidiAI kernel is identified."),
+    "kleidiai_sme2_available": ("gauge", "1 if SME2 is available on the host."),
 }
 
 
@@ -128,3 +134,8 @@ class ASCRMetrics:
         # Optional callback-style bridge used by legacy CascadeEngine metrics.
         if callable(self.bridge):
             self.bridge(event, fields)
+
+    def record_kleidiai_kernel(self, kernel_name: str, sme2: bool) -> None:
+        """Record KleidiAI kernel identity and SME2 availability."""
+        self.set("kleidiai_kernel_in_use", 1.0 if kernel_name else 0.0)
+        self.set("kleidiai_sme2_available", 1.0 if sme2 else 0.0)
