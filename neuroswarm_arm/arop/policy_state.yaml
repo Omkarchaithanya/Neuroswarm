@@ -1,0 +1,9 @@
+# AROP v1 policy state — seeded from real ascr.yaml / RTG budgets (not fantasy defaults).
+# cascade_draft_k  ↔ ASCR defaults.draft_len (NSA_ASCR_DRAFT_LEN)
+# tier_escalation_confidence ↔ ASCR defaults.accept_threshold (NSA_ASCR_ACCEPT_THRESHOLD)
+# governor_thinking_cap ↔ RTG budgets.base_budget
+# quant_tier2 — recorded only; v1 does NOT apply model-path / weight swaps
+cascade_draft_k: 8
+tier_escalation_confidence: 0.7
+governor_thinking_cap: 4096
+quant_tier2: Q4_0

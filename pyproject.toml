@@ -8,6 +8,7 @@ include = ["neuroswarm_arm*"]
 
 [tool.setuptools.package-data]
 "neuroswarm_arm.runtime.dipa" = ["config/*.yaml"]
+"neuroswarm_arm.arop" = ["*.yaml", "README.md"]
 
 [tool.uv.workspace]
 members = [

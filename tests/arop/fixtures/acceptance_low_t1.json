@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "pillar": "pillar_1_live_acceptance",
+  "overall_acceptance_rate": 0.45,
+  "avg_speedup_vs_baseline": 1.1,
+  "sample_size": 10,
+  "avg_latency_ms": 3200.0,
+  "per_prompt_type": {},
+  "config": {
+    "ascr_enabled": true,
+    "draft_len": 8,
+    "accept_threshold": 0.7
+  },
+  "ascr_prometheus": {},
+  "per_request": [
+    {"prompt_type": "medium", "tokens_proposed": 8, "tokens_accepted": 3, "tier_used": 2, "latency_ms": 3000.0, "speedup_vs_baseline": 1.1},
+    {"prompt_type": "hard", "tokens_proposed": 8, "tokens_accepted": 2, "tier_used": 3, "latency_ms": 4000.0, "speedup_vs_baseline": 1.0},
+    {"prompt_type": "medium", "tokens_proposed": 8, "tokens_accepted": 3, "tier_used": 2, "latency_ms": 3100.0, "speedup_vs_baseline": 1.1},
+    {"prompt_type": "hard", "tokens_proposed": 8, "tokens_accepted": 2, "tier_used": 3, "latency_ms": 4200.0, "speedup_vs_baseline": 0.9},
+    {"prompt_type": "simple", "tokens_proposed": 8, "tokens_accepted": 4, "tier_used": 1, "latency_ms": 2000.0, "speedup_vs_baseline": 1.3},
+    {"prompt_type": "medium", "tokens_proposed": 8, "tokens_accepted": 3, "tier_used": 2, "latency_ms": 2900.0, "speedup_vs_baseline": 1.1},
+    {"prompt_type": "hard", "tokens_proposed": 8, "tokens_accepted": 2, "tier_used": 3, "latency_ms": 4100.0, "speedup_vs_baseline": 1.0},
+    {"prompt_type": "medium", "tokens_proposed": 8, "tokens_accepted": 3, "tier_used": 2, "latency_ms": 3050.0, "speedup_vs_baseline": 1.1},
+    {"prompt_type": "simple", "tokens_proposed": 8, "tokens_accepted": 5, "tier_used": 1, "latency_ms": 1800.0, "speedup_vs_baseline": 1.4},
+    {"prompt_type": "hard", "tokens_proposed": 8, "tokens_accepted": 2, "tier_used": 3, "latency_ms": 4300.0, "speedup_vs_baseline": 0.9}
+  ]
+}

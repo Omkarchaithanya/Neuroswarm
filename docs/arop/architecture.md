@@ -37,6 +37,16 @@ Never: Reflect → Deploy.
 
 `neuroswarm_arm/evolution/` — see `factory.build_arop()` and FastAPI `/arop/*`.
 
+## AROP v1 CLI tuner (rule-based, shipping now)
+
+Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **independent of** the evolution `RuntimeOptimizer` pipeline for v1.
+
+- Rule-based only (no PPO / GEPA / Mem0 in this path).
+- Consumes honest `apx` JSON + benchmark outputs; fail-loud on missing/null fields (never invent `0`).
+- Dry-run by default: `python -m neuroswarm_arm.arop.evolve_cycle`.
+- Live apply restarts **gateway** only (`NSA_ASCR_DRAFT_LEN` / `NSA_ASCR_ACCEPT_THRESHOLD`); no runtime GGUF swap.
+- See [`neuroswarm_arm/arop/README.md`](../../neuroswarm_arm/arop/README.md).
+
 ## Config
 
 | Env | Default | Meaning |

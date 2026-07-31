@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "pillar": "pillar_4_governor_live",
+  "sample_size": 4,
+  "avg_tokens_run_a": 1800.0,
+  "avg_tokens_run_b": 5200.0,
+  "pct_reduction": -188.889,
+  "avg_latency_a_ms": 4000.0,
+  "avg_latency_b_ms": 8000.0,
+  "cap_a_used": 4096,
+  "cap_b_used": 4096,
+  "plan_a": {},
+  "plan_b": {},
+  "config": {
+    "tier3_url": "http://localhost:8083",
+    "temperature": 0.0
+  },
+  "per_prompt": []
+}

@@ -1,0 +1,121 @@
+{
+  "source": "apx",
+  "run_id": "ca3b2eb4c169",
+  "hotspots": [
+    {
+      "function": "<Unknown code in libggml-cpu.so.0.17.0>",
+      "pct": 79.047,
+      "samples": 2207.0
+    },
+    {
+      "function": "<Unknown code in libomp.so.5>",
+      "pct": 12.393,
+      "samples": 346.0
+    },
+    {
+      "function": "__sched_yield",
+      "pct": 3.188,
+      "samples": 89.0
+    },
+    {
+      "function": "__expf_finite",
+      "pct": 1.97,
+      "samples": 55.0
+    },
+    {
+      "function": "<Unknown code in libllama-server-impl.so>",
+      "pct": 0.967,
+      "samples": 27.0
+    },
+    {
+      "function": "<Unknown code in libggml-base.so.0.17.0>",
+      "pct": 0.681,
+      "samples": 19.0
+    },
+    {
+      "function": "<Unknown code in libllama-common.so.0.0.1>",
+      "pct": 0.466,
+      "samples": 13.0
+    },
+    {
+      "function": "<Unknown code in libllama.so.0.0.1>",
+      "pct": 0.394,
+      "samples": 11.0
+    },
+    {
+      "function": "Unknown symbol @ 0x000a1cc0",
+      "pct": 0.322,
+      "samples": 9.0
+    },
+    {
+      "function": "<Unknown code in [vdso]>",
+      "pct": 0.143,
+      "samples": 4.0
+    },
+    {
+      "function": "<Unknown code in libc.so.6>",
+      "pct": 0.072,
+      "samples": 2.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00094244",
+      "pct": 0.072,
+      "samples": 2.0
+    },
+    {
+      "function": "pthread_mutex_lock",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "__exp2f_finite",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "cosf32",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "powf32",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00081dd0",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00094630",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "Unknown symbol @ 0x00092ac0",
+      "pct": 0.036,
+      "samples": 1.0
+    },
+    {
+      "function": "__libc_free",
+      "pct": 0.036,
+      "samples": 1.0
+    }
+  ],
+  "summary": {
+    "cycles": null,
+    "instructions": null,
+    "ipc": null
+  },
+  "metadata": {
+    "run.result": "success",
+    "run.recipe_name": "code_hotspots",
+    "engine.version": "1.19.0",
+    "target.name": "localhost"
+  },
+  "pmu_available": 1.0,
+  "recommendations": [
+    "Focus hottest function with Arm Performix code_hotspots / cpu_microarchitecture recipes"
+  ]
+}

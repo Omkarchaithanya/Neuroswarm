@@ -1,0 +1,30 @@
+{
+  "source": "apx",
+  "run_id": "contaminated-posix-fallocate",
+  "hotspots": [
+    {
+      "function": "posix_fallocate",
+      "pct": 56.67,
+      "samples": 1200.0
+    },
+    {
+      "function": "<Unknown code in libggml-cpu.so.0.17.0>",
+      "pct": 20.0,
+      "samples": 400.0
+    },
+    {
+      "function": "__sched_yield",
+      "pct": 5.0,
+      "samples": 100.0
+    }
+  ],
+  "summary": {
+    "cycles": null,
+    "instructions": null,
+    "ipc": null
+  },
+  "metadata": {
+    "run.result": "success",
+    "run.recipe_name": "code_hotspots"
+  }
+}

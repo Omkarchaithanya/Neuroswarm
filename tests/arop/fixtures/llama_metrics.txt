@@ -1,0 +1,6 @@
+# HELP llamacpp:predicted_tokens_seconds Predicted tokens per second gauge.
+# TYPE llamacpp:predicted_tokens_seconds gauge
+llamacpp:predicted_tokens_seconds 42.5
+# HELP llamacpp:prompt_tokens_total Total prompt tokens.
+# TYPE llamacpp:prompt_tokens_total counter
+llamacpp:prompt_tokens_total 1000
