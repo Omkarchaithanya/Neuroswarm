@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -154,6 +154,10 @@ gateway = [
     "typer>=0.16",
     "loguru>=0.7",
 ]
+# Apple Silicon (M3/M4/M5) native Metal inference via mlx-lm.
+apple = [
+    "mlx-lm>=0.21",
+]
 
 [dependency-groups]
 gateway = [
@@ -236,6 +240,9 @@ dev = [
     "pre-commit>=4.2",
     "black>=25.1",
     "ipykernel>=6.30",
+]
+apple = [
+    "mlx-lm>=0.21",
 ]
 evolution = [
     "gepa>=0.1.3",
