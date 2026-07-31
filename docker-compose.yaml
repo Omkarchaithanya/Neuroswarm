@@ -51,6 +51,9 @@ services:
       NSA_MEM_EMBEDDER: ${NSA_MEM_EMBEDDER:-hash}
       NSA_ASCR_TEXT_AGREE: ${NSA_ASCR_TEXT_AGREE:-1}
       NSA_LLAMA_N_PROBS: ${NSA_LLAMA_N_PROBS:-0}
+      # Container path; host bind source uses NSA_LLAMA_SLOT_DIR from .env
+      NSA_LLAMA_SLOT_DIR: /var/lib/ns/slots
+      NSA_LLAMA_SLOT_KV_REUSE: ${NSA_LLAMA_SLOT_KV_REUSE:-1}
     ports:
       - "127.0.0.1:8000:8000"
     extra_hosts:
@@ -62,6 +65,7 @@ services:
       - ./okf:/app/okf:ro
       - ./templates:/app/templates:ro
       - ${MODEL_DIR:-/models}:/models:ro
+      - ${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots
     depends_on:
       tier1:
         condition: service_started
@@ -125,6 +129,7 @@ services:
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
+      - ${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
       interval: 20s
@@ -177,6 +182,7 @@ services:
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
+      - ${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
       interval: 20s
@@ -241,7 +247,7 @@ services:
       - --metrics
     volumes:
       - ${MODEL_DIR:-/models}:/models:ro
-      - tier3-slots:/var/lib/ns/slots
+      - ${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
       interval: 20s
@@ -562,4 +568,3 @@ services:
 
 volumes:
   grafana-data:
-  tier3-slots:

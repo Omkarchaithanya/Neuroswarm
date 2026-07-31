@@ -84,6 +84,71 @@ async def test_generate_saves_kv_when_handle_set(
 
 
 @pytest.mark.asyncio
+async def test_verifier_missing_kv_soft_fails_then_exports(
+    shared_slot_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Round 1 with no slot file: soft-fail import, still verify + export."""
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "1")
+    verify = _make_backend("tier2", shared_slot_dir, tier=2)
+
+    import_calls: list[str] = []
+    export_calls: list[str] = []
+
+    def _import(sid: int, fn: str) -> dict:
+        import_calls.append(fn)
+        raise SlotKVError(f"kv_import: slot file not found for handle {fn!r}")
+
+    def _export(sid: int, fn: str) -> dict:
+        export_calls.append(fn)
+        Path(fn).write_bytes(b"verify-kv")
+        return {}
+
+    verify._slots.kv_import = _import  # type: ignore[method-assign]
+    verify._slots.kv_export = _export  # type: ignore[method-assign]
+    verify.generate = AsyncMock(  # type: ignore[method-assign]
+        return_value=GenerateResult(
+            text="hello world",
+            prompt_tokens=5,
+            completion_tokens=2,
+            metrics={"slot_id": 0.0},
+            raw={"choices": [{"message": {"content": "hello world"}}]},
+        )
+    )
+
+    registry = MagicMock()
+    registry.require.return_value = verify
+    verifier = BlockVerifier(backend_name="tier2")
+    await verifier.initialize(
+        ASCRInitContext(
+            registry=registry,
+            config={"strategies": {"slot_kv_reuse": {"enabled": True}}},
+        )
+    )
+    verifier.bind_execution_context(
+        ExecutionContext(
+            request=InferenceRequest(messages=[{"role": "user", "content": "hi"}]),
+        )
+    )
+
+    req = VerifyRequest(
+        messages=[{"role": "user", "content": "hi"}],
+        prompt_text="hi",
+        mode=VerifyMode.BLOCK,
+        kv_handle="missing-round1",
+        id_slot=0,
+        verifier_tier=2,
+    )
+    result = await verifier.verify(
+        Proposal.from_text("hello world", strategy="draft_model", source_tier=1),
+        req,
+    )
+    assert result.text == "hello world"
+    assert len(import_calls) == 1
+    assert len(export_calls) == 1
+    assert Path(export_calls[0]).is_file()
+
+
+@pytest.mark.asyncio
 async def test_verifier_restores_before_and_saves_after_two_rounds(
     shared_slot_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -21,6 +21,8 @@ llama-server already exposes `/slots/{id}?action=save|restore` and `--slot-save-
 ## Consequences
 
 - Verify rounds 2+ skip full prompt prefill when slot file exists (lossless — acceptance unchanged).
-- Docker deployments need a **shared** slot directory mount across tier1/tier2 containers; separate per-tier volumes do not work without a shared bind.
+- Round-1 (or wrong-model) `kv_import` soft-fails on `SlotKVError` and falls back to full prefill; after verify, export overwrites the shared handle with verify-model KV.
+- `SlotContext` remains save-source-on-enter / restore-target-on-exit for explicit transfers. Verify warm path uses import→generate→export because restore must happen *before* generate.
+- Docker deployments bind `${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots` on gateway + tier1/tier2/tier3; gateway sets `NSA_LLAMA_SLOT_DIR=/var/lib/ns/slots` so resolved filenames match llama `--slot-save-path`.
 - Bare-metal `/tmp/neuroswarm-slots` works when both llama-server processes use the same `--slot-save-path` or absolute filenames.
 - Reversible: set `slot_kv_reuse.enabled: false` or `NSA_LLAMA_SLOT_KV_REUSE=0` for legacy re-prefill behavior.
