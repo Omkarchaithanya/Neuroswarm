@@ -1,0 +1,39 @@
+{
+  "gap": "G13-G18",
+  "title": "NgramCache O(1) lookup + DraftModelRegistry",
+  "files_changed": [
+    "neuroswarm_arm/runtime/armcascade/proposal/ngram_cache.py",
+    "neuroswarm_arm/runtime/armcascade/proposal/self_speculation.py",
+    "neuroswarm_arm/runtime/armcascade/proposal/draft_registry.py",
+    "neuroswarm_arm/runtime/armcascade/proposal/draft_model.py",
+    "neuroswarm_arm/runtime/armcascade/proposal/__init__.py",
+    "neuroswarm_arm/runtime/armcascade/config/strategies.yaml",
+    ".env.example",
+    "tests/runtime/armcascade/test_ngram_cache.py",
+    "tests/runtime/armcascade/test_draft_registry.py",
+    "docs/armcascade/draft-registry.md",
+    "docs/dipa/adr/0014-ngram-cache-draft-registry.md"
+  ],
+  "before": {
+    "lookup_path": "linear_scan_or_echo",
+    "lookup_latency_us_10k_tokens": 1907.665,
+    "draft_selection": "always tier1"
+  },
+  "after": {
+    "lookup_path": "NgramCache dict O(1)",
+    "lookup_latency_us_10k_tokens": 0.562,
+    "speedup": "3394.4x",
+    "cache_entries": 9801,
+    "cache_bytes": 3330844,
+    "draft_selection": "NSA_DRAFT_MODEL_PATH | DraftModelRegistry(target, host_arch) | tier1"
+  },
+  "method": "unit microbench on 10k-token random sequence (n=3); ASCR live probe not required for latency claim",
+  "tests": "6 passed in 4.99s (test_ngram_cache.py + test_draft_registry.py)",
+  "adr": "docs/dipa/adr/0014-ngram-cache-draft-registry.md",
+  "gates": {
+    "NSA_NGRAM_CACHE": "0",
+    "strategies.ngram_cache.enabled": false,
+    "NSA_DRAFT_REGISTRY_AUTO": "1",
+    "strategies.draft_registry.enabled": false
+  }
+}
