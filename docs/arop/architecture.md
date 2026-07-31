@@ -67,3 +67,5 @@ Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **ind
 - [0001-plane5-not-maks.md](adr/0001-plane5-not-maks.md)
 - [0002-propose-only-reflection.md](adr/0002-propose-only-reflection.md)
 - [0003-immutable-policies.md](adr/0003-immutable-policies.md)
+- [0004-gepa-text-only.md](adr/0004-gepa-text-only.md)
+- [0005-rule-based-closed-loop-not-rl.md](adr/0005-rule-based-closed-loop-not-rl.md) — shipping closed loop is rule-based; no PPO/GRPO; GEPA text-only; Axion 0.5B/3B/7B Q4
