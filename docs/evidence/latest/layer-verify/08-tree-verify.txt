@@ -1,0 +1,30 @@
+{
+  "gap": "G2",
+  "verify_strategy": "tree",
+  "branching": 4,
+  "before": {
+    "verify_strategy": "block",
+    "ascr_speculation_gain": 0.3333333333333333,
+    "source": "docs/evidence/latest/layer-verify/05-ascr-smoke.txt / 06-logits-accept.txt",
+    "note": "linear draft; one path per draft forward"
+  },
+  "after": {
+    "verify_strategy": "tree",
+    "strategies.tree.enabled": true,
+    "NSA_ASCR_TREE_ENABLED": "1",
+    "unit_greedy_prefix_len": 3,
+    "unit_no_match_prefix_len": 0,
+    "unit_full_match_depth": 4,
+    "unit_bonus_token": "bonus_tok",
+    "unit_stochastic_trials": 10000,
+    "unit_stochastic_matches_leviathan": true,
+    "branching_width_cap": 4,
+    "leaf_bound": "branching ** depth",
+    "accept_mode_metric": 3.0,
+    "ascr_speculation_gain_delta": "tree multiplies candidate tokens per target forward; live probe needs gateway :8000",
+    "effective_draft_length": "≈2x block baseline at branching=4 (SpecInfer)"
+  },
+  "tests": "7 passed in 6.84s (test_tree_verifier.py + test_tree_branching.py)",
+  "compileall": "ok",
+  "probe_note": "scripts/probe-ascr-speculation.py requires gateway on :8000; unit evidence used for gain proxy"
+}

@@ -82,8 +82,6 @@ class _BackendVerifierBase(VerifierStrategy):
         id_slot: int | None = None,
         top_logprobs: int = 0,
     ) -> Any:
-        from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
-
         if self._registry is None:
             raise RuntimeError(f"{self.name} not initialized")
         backend = self._registry.require(self.backend_name)
@@ -115,6 +113,8 @@ class _BackendVerifierBase(VerifierStrategy):
                 )
                 await asyncio.to_thread(slots.kv_export, sid, slot_file)
             return result
+        from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
+
         gen = GenerateRequest(
             messages=messages,
             max_tokens=max(1, int(max_tokens)),

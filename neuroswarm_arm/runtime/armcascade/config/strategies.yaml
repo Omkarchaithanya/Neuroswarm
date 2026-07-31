@@ -48,9 +48,11 @@ strategies:
     class: hierarchical
     stub: true
   tree:
-    enabled: false
+    enabled: true
     class: tree
-    stub: true
+    max_branching: 4
+    top_k_per_branch: 8
+    stub: false
   quality:
     enabled: true
     class: quality

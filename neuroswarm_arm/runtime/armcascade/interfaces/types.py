@@ -81,6 +81,7 @@ class Proposal:
     confidence: float = 0.0
     source_tier: int = 1
     metadata: dict[str, Any] = field(default_factory=dict)
+    tree: Any | None = None  # Optional TokenTree when branching > 1
 
     @classmethod
     def from_text(

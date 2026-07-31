@@ -18,6 +18,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+try:
+    import simdjson
+except ImportError:  # pragma: no cover - optional accel
+    simdjson = json  # type: ignore[assignment]
+
 from .mcp_env import (
     build_mcp_child_env,
     destructive_approved,
@@ -388,7 +393,8 @@ class McpServerManager:
                 raise RuntimeError(
                     f"MCP server closed stdout: {err.decode(errors='replace')[:500]}"
                 )
-            msg = json.loads(raw.decode("utf-8"))
+            parser = simdjson.Parser()
+            msg = parser.parse(raw.decode("utf-8"))
             if msg.get("method") == "notifications/tools/list_changed":
                 await self._handle_list_changed(conn)
                 continue
