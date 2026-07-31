@@ -4,7 +4,7 @@ VM_HOST ?= neuroswarm-axion.us-central1-a.project-5bcdea88-8805-4908-991
 VM_PROJECT_ROOT ?= ~/neuroswarm-arm
 BENCH_OUT ?= C:/tmp/neuroswarm-run-all.json
 
-.PHONY: setup-local package sync-vm bootstrap-vm smoke-vm bench-vm logs-vm stop-vm
+.PHONY: setup-local package sync-vm bootstrap-vm smoke-vm bench-vm bench-spec bench-spec-live logs-vm stop-vm
 
 setup-local:
 	uv sync --all-groups
@@ -24,6 +24,12 @@ smoke-vm:
 
 bench-vm:
 	ssh "$(VM_HOST)" 'cd $(VM_PROJECT_ROOT) && uv run python benchmarks/run_all.py --out benchmarks/results/run_all.json'
+
+bench-spec:
+	NSA_SPECDEC_BENCH=1 uv run python benchmarks/specdec_bench.py --out benchmarks/results/specdec_bench.json
+
+bench-spec-live:
+	NSA_SPECDEC_BENCH=1 uv run python benchmarks/specdec_bench.py --live --out benchmarks/results/specdec_bench_live.json
 
 logs-vm:
 	ssh "$(VM_HOST)" 'cd $(VM_PROJECT_ROOT) && docker compose logs --tail=200'

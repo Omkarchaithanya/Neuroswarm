@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
 
 jobs:
   python:
@@ -28,6 +30,82 @@ jobs:
         run: |
           uv run python -m compileall neuroswarm_arm packages/okf/nexus_okf benchmarks
           uv run python benchmarks/run_all.py --out /tmp/neuroswarm-run-all.json
+
+  spec-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync dependencies
+        run: uv sync --all-groups
+      - name: Run SpecDec mock benchmark
+        env:
+          NSA_SPECDEC_BENCH: "1"
+        run: |
+          mkdir -p benchmarks/results
+          uv run python benchmarks/specdec_bench.py --out benchmarks/results/specdec_bench.json
+      - name: SpecDec unit tests
+        env:
+          NSA_SPECDEC_BENCH: "1"
+        run: uv run pytest tests/benchmarks/test_specdec_bench.py -q --tb=short
+      - name: Upload SpecDec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: specdec-bench-${{ github.sha }}
+          path: benchmarks/results/specdec_bench.json
+          if-no-files-found: warn
+      - name: Regression check vs baseline
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NSA_SPECDEC_BENCH: "1"
+        run: |
+          python3 <<'PY'
+          import json
+          import math
+          import os
+          from pathlib import Path
+
+          current_path = Path("benchmarks/results/specdec_bench.json")
+          baseline_path = Path("docs/evidence/latest/layer-verify/17-spec-bench-baseline.json")
+          if not current_path.is_file() or not baseline_path.is_file():
+              print("skip regression: missing current or baseline JSON")
+              raise SystemExit(0)
+
+          current = json.loads(current_path.read_text(encoding="utf-8"))
+          baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+
+          def gain(payload: dict) -> float:
+              v = payload.get("ascr_speculation_gain")
+              if v is None and isinstance(payload.get("overall"), dict):
+                  v = payload["overall"].get("ascr_speculation_gain")
+              try:
+                  f = float(v or 0.0)
+              except (TypeError, ValueError):
+                  return 0.0
+              return f if math.isfinite(f) else 0.0
+
+          cur = gain(current)
+          base = gain(baseline)
+          drop = 0.0 if base <= 0 else (base - cur) / base
+          print(f"baseline_gain={base} current_gain={cur} drop={drop:.4f}")
+          Path("/tmp/specdec_regression.txt").write_text(
+              "SpecDec regression check\n"
+              f"- baseline ascr_speculation_gain: {base:.6f}\n"
+              f"- current ascr_speculation_gain: {cur:.6f}\n"
+              f"- drop: {drop*100:.2f}%\n",
+              encoding="utf-8",
+          )
+          if drop > 0.05:
+              Path("/tmp/specdec_regress").write_text("1", encoding="utf-8")
+          else:
+              Path("/tmp/specdec_regress").write_text("0", encoding="utf-8")
+          PY
+          if [ "$(cat /tmp/specdec_regress)" = "1" ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$(cat /tmp/specdec_regression.txt)"
+          else
+            echo "no SpecDec regression (>5%)"
+          fi
 
   docker-arm64:
     runs-on: ubuntu-latest

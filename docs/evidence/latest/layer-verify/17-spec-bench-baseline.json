@@ -1,0 +1,135 @@
+{
+  "status": "ok",
+  "mode": "mock",
+  "verify_strategies": [
+    "block",
+    "logits",
+    "tree"
+  ],
+  "iterations_per_prompt": 4,
+  "overall": {
+    "tokens_per_sec": 2051.0090727759534,
+    "acceptance_rate": 1.0,
+    "mean_accepted_prefix_len": 591.5714285714286,
+    "p50_ttft_ms": 2.9999999969732016,
+    "p95_ttft_ms": 3.200000000651926,
+    "mean_draft_ms": 3.714285714280171,
+    "mean_verify_ms": 5.571428571420256,
+    "ascr_speculation_gain": 1.0,
+    "engine_ascr_speculation_gain": 0.0,
+    "n": 84
+  },
+  "by_verify": {
+    "block": {
+      "tokens_per_sec": 1548.5300472811196,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 591.5714285714286,
+      "p50_ttft_ms": 2.9999999998835847,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 3.785714286329624,
+      "mean_verify_ms": 5.678571429494435,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 28
+    },
+    "logits": {
+      "tokens_per_sec": 1800.0791495748224,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 591.5714285714286,
+      "p50_ttft_ms": 3.0000000027939677,
+      "p95_ttft_ms": 6.199999997625127,
+      "mean_draft_ms": 4.699999998722758,
+      "mean_verify_ms": 7.049999998084137,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 28
+    },
+    "tree": {
+      "tokens_per_sec": 3825.703852012156,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 591.5714285714286,
+      "p50_ttft_ms": 0.0,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 2.6571428577881306,
+      "mean_verify_ms": 3.985714286682196,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 28
+    }
+  },
+  "by_workload": {
+    "chat_short": {
+      "tokens_per_sec": 11.77650586426053,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 6.0,
+      "p50_ttft_ms": 2.9999999998835847,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 3.9499999989250987,
+      "mean_verify_ms": 5.924999998387648,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 24
+    },
+    "code_completion": {
+      "tokens_per_sec": 19.69096022494169,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 4.5,
+      "p50_ttft_ms": 0.0,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 3.1000000002677552,
+      "mean_verify_ms": 4.650000000401633,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 24
+    },
+    "rag_long": {
+      "tokens_per_sec": 21634.4221833914,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 4105.0,
+      "p50_ttft_ms": 3.0000000027939677,
+      "p95_ttft_ms": 6.289999999280553,
+      "mean_draft_ms": 6.699999999060917,
+      "mean_verify_ms": 10.049999998591375,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 12
+    },
+    "tool_use": {
+      "tokens_per_sec": 28.05293813887365,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 5.0,
+      "p50_ttft_ms": 0.0,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 1.5666666673496366,
+      "mean_verify_ms": 2.350000001024455,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 12
+    },
+    "reasoning": {
+      "tokens_per_sec": 57.14699621862532,
+      "acceptance_rate": 1.0,
+      "mean_accepted_prefix_len": 10.0,
+      "p50_ttft_ms": 3.0000000027939677,
+      "p95_ttft_ms": 3.200000000651926,
+      "mean_draft_ms": 3.6333333351649344,
+      "mean_verify_ms": 5.450000002747402,
+      "ascr_speculation_gain": 1.0,
+      "engine_ascr_speculation_gain": 0.0,
+      "n": 12
+    }
+  },
+  "ascr_speculation_gain": 1.0,
+  "engine_ascr_speculation_gain": 0.0,
+  "tokens_per_sec": 2051.0090727759534,
+  "acceptance_rate": 1.0,
+  "mean_accepted_prefix_len": 591.5714285714286,
+  "p50_ttft_ms": 2.9999999969732016,
+  "p95_ttft_ms": 3.200000000651926,
+  "mean_draft_ms": 3.714285714280171,
+  "mean_verify_ms": 5.571428571420256,
+  "n": 84,
+  "rows_n": 84,
+  "version": "v0",
+  "gap": "G16"
+}
