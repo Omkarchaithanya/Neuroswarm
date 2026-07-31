@@ -19,6 +19,7 @@ from neuroswarm_arm.runtime.armcascade.interfaces.types import (
     build_messages,
 )
 from neuroswarm_arm.runtime.armcascade.proposal.registry import register_verifier
+from neuroswarm_arm.runtime.dipa.backends.llama_cpp.slot_client import SlotKVError
 
 
 def _env_slot_kv_reuse() -> bool:
@@ -82,8 +83,6 @@ class _BackendVerifierBase(VerifierStrategy):
         id_slot: int | None = None,
         top_logprobs: int = 0,
     ) -> Any:
-        from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
-
         if self._registry is None:
             raise RuntimeError(f"{self.name} not initialized")
         backend = self._registry.require(self.backend_name)
@@ -95,7 +94,11 @@ class _BackendVerifierBase(VerifierStrategy):
             if self._slot_kv_enabled() and req.kv_handle and slots is not None:
                 slot_file = slots.resolve_filename(req.kv_handle)
                 sid = int(effective_slot) if effective_slot is not None else 0
-                await asyncio.to_thread(slots.kv_import, sid, slot_file)
+                try:
+                    await asyncio.to_thread(slots.kv_import, sid, slot_file)
+                except SlotKVError:
+                    # Missing/incompatible KV → full prefill this round.
+                    pass
             result = await backend.generate_with_logits(
                 messages=messages,
                 max_tokens=max(1, int(max_tokens)),
@@ -115,6 +118,8 @@ class _BackendVerifierBase(VerifierStrategy):
                 )
                 await asyncio.to_thread(slots.kv_export, sid, slot_file)
             return result
+        from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
+
         gen = GenerateRequest(
             messages=messages,
             max_tokens=max(1, int(max_tokens)),
@@ -131,7 +136,11 @@ class _BackendVerifierBase(VerifierStrategy):
         if self._slot_kv_enabled() and req.kv_handle and slots is not None:
             slot_file = slots.resolve_filename(req.kv_handle)
             sid = int(effective_slot) if effective_slot is not None else 0
-            await asyncio.to_thread(slots.kv_import, sid, slot_file)
+            try:
+                await asyncio.to_thread(slots.kv_import, sid, slot_file)
+            except SlotKVError:
+                # Missing/incompatible KV → full prefill this round.
+                pass
         result = await backend.generate(gen, self._ctx_exec)
         if self._slot_kv_enabled() and req.kv_handle and slots is not None and slot_file:
             sid = int(
