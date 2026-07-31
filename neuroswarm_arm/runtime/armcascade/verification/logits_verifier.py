@@ -215,6 +215,160 @@ class LeviathanAcceptResult:
     top_tau_used: bool = False
 
 
+@dataclass(slots=True)
+class PositionAcceptResult:
+    """One-position streaming accept outcome."""
+
+    accepted_token: str | None = None
+    is_final: bool = False
+    residual_or_bonus: str = ""
+    top_tau_used: bool = False
+    entropy: float = 0.5
+    waiting: bool = False  # True when step not yet available
+
+
+def accept_one_draft_position(
+    bundle: LogitsBundle,
+    draft: Any | None,
+    position: int,
+    *,
+    greedy: bool = False,
+    tau_floor: float = 0.0,
+    rng: random.Random | None = None,
+) -> PositionAcceptResult:
+    """Accept/reject a single draft position as target logprobs arrive.
+
+    Returns ``(accepted_token, is_final)`` semantics via :class:`PositionAcceptResult`:
+    - accepted → ``accepted_token`` set; ``is_final`` only on last draft (bonus may follow)
+    - rejected → ``accepted_token=None``, ``is_final=True``, residual in ``residual_or_bonus``
+    - top-τ → accept draft then stop with target top-1 as ``residual_or_bonus``
+    - bonus step (``position == k``) → ``residual_or_bonus`` = bonus, ``is_final=True``
+    """
+    rng = rng or random.Random()
+    draft_tokens = list(bundle.draft_tokens)
+    draft_ids = list(bundle.draft_token_ids)
+    draft_logps = list(bundle.draft_logprobs)
+    if draft is not None and not draft_tokens:
+        if getattr(draft, "tokens", None):
+            for tok in draft.tokens:
+                draft_tokens.append(tok.text)
+                draft_ids.append(
+                    tok.token_id if tok.token_id is not None else hash(tok.text)
+                )
+                draft_logps.append(float(tok.logprob or 0.0))
+        elif getattr(draft, "text", ""):
+            words = draft.text.split() if str(draft.text).strip() else []
+            draft_tokens = list(words)
+            draft_ids = [hash(w) for w in words]
+            draft_logps = [0.0 for _ in words]
+
+    k = len(draft_tokens)
+    if k == 0:
+        return PositionAcceptResult(is_final=True, entropy=1.0)
+
+    # Bonus beyond fully accepted draft.
+    if position == k:
+        if position >= len(bundle.steps):
+            return PositionAcceptResult(waiting=True, entropy=0.5)
+        bonus_step = bundle.steps[position]
+        top1 = _argmax_entry(bonus_step.top)
+        bonus = top1.token if top1 is not None else (bonus_step.token or "")
+        return PositionAcceptResult(
+            is_final=True,
+            residual_or_bonus=bonus,
+            entropy=_entropy_top_n(bonus_step.top),
+        )
+
+    if position < 0 or position > k:
+        return PositionAcceptResult(is_final=True, entropy=1.0)
+
+    if position >= len(bundle.steps):
+        return PositionAcceptResult(waiting=True, entropy=0.5)
+
+    step = bundle.steps[position]
+    draft_token = draft_tokens[position]
+    draft_id = draft_ids[position] if position < len(draft_ids) else None
+    draft_p = draft_logps[position] if position < len(draft_logps) else 0.0
+    last_draft = position == k - 1
+    ent = _entropy_top_n(step.top)
+
+    target_entry = _find_in_top(step.top, draft_token, draft_id)
+
+    if target_entry is None:
+        # Top-τ truncation: accept draft if p_draft >= tau, then stop with top-1 bonus.
+        p_draft = math.exp(min(0.0, float(draft_p)))
+        if tau_floor > 0 and p_draft >= tau_floor:
+            top1 = _argmax_entry(step.top)
+            return PositionAcceptResult(
+                accepted_token=draft_token,
+                is_final=True,
+                residual_or_bonus=top1.token if top1 is not None else "",
+                top_tau_used=True,
+                entropy=ent,
+            )
+        residual = ""
+        top1 = _argmax_entry(step.top)
+        if top1 is not None:
+            residual = top1.token
+        elif step.token:
+            residual = step.token
+        return PositionAcceptResult(
+            accepted_token=None,
+            is_final=True,
+            residual_or_bonus=residual,
+            entropy=ent,
+        )
+
+    q = target_entry.logprob
+    ratio = min(1.0, math.exp(q - draft_p))
+
+    if greedy:
+        argmax = _argmax_entry(step.top)
+        if argmax is None:
+            return PositionAcceptResult(
+                accepted_token=None,
+                is_final=True,
+                residual_or_bonus=step.token or "",
+                entropy=ent,
+            )
+        match = False
+        if draft_id is not None and argmax.token_id is not None:
+            match = draft_id == argmax.token_id
+        else:
+            match = draft_token == argmax.token
+        if match:
+            return PositionAcceptResult(
+                accepted_token=draft_token,
+                is_final=last_draft,
+                entropy=ent,
+            )
+        return PositionAcceptResult(
+            accepted_token=None,
+            is_final=True,
+            residual_or_bonus=argmax.token,
+            entropy=ent,
+        )
+
+    if rng.random() < ratio:
+        return PositionAcceptResult(
+            accepted_token=draft_token,
+            is_final=last_draft,
+            entropy=ent,
+        )
+    residual = ""
+    top1 = _argmax_entry(step.top)
+    if top1 is not None:
+        residual = top1.token
+    elif step.token:
+        residual = step.token
+    return PositionAcceptResult(
+        accepted_token=None,
+        is_final=True,
+        residual_or_bonus=residual,
+        entropy=ent,
+    )
+
+
 def leviathan_accept(
     bundle: LogitsBundle,
     *,
@@ -231,65 +385,46 @@ def leviathan_accept(
     accepted = 0
     top_tau_used = False
     reject_entropy = 0.5
+    tau_bonus = ""
 
     for i in range(k):
-        if i >= len(bundle.steps):
-            reject_entropy = _entropy_top_n(bundle.steps[min(i, len(bundle.steps) - 1)].top)
+        pos = accept_one_draft_position(
+            bundle,
+            None,
+            i,
+            greedy=greedy,
+            tau_floor=tau_floor,
+            rng=rng,
+        )
+        if pos.waiting:
+            reject_entropy = pos.entropy
             break
-        step = bundle.steps[i]
-        draft_token = bundle.draft_tokens[i]
-        draft_id = bundle.draft_token_ids[i]
-        draft_p = bundle.draft_logprobs[i] if i < len(bundle.draft_logprobs) else 0.0
-        rank = bundle.draft_ranks[i] if i < len(bundle.draft_ranks) else 0
-
-        target_entry = _find_in_top(step.top, draft_token, draft_id)
-        cum_p = _cumulative_p(draft_p, rank, bundle.top_n or len(step.top))
-
-        if target_entry is None:
-            if cum_p >= tau_floor and tau_floor > 0:
-                top_tau_used = True
-                if greedy:
-                    accepted += 1
-                    continue
-                if rng.random() < min(1.0, cum_p):
-                    accepted += 1
-                    continue
-            reject_entropy = _entropy_top_n(step.top)
-            break
-
-        q = target_entry.logprob
-        p = draft_p
-        ratio = min(1.0, math.exp(q - p))
-
-        if greedy:
-            argmax = _argmax_entry(step.top)
-            if argmax is None:
-                reject_entropy = _entropy_top_n(step.top)
-                break
-            match = False
-            if draft_id is not None and argmax.token_id is not None:
-                match = draft_id == argmax.token_id
-            else:
-                match = draft_token == argmax.token
-            if match:
+        if pos.top_tau_used:
+            top_tau_used = True
+            if pos.accepted_token is not None:
                 accepted += 1
-            else:
-                reject_entropy = _entropy_top_n(step.top)
-                break
-        elif rng.random() < ratio:
-            accepted += 1
-        else:
-            reject_entropy = _entropy_top_n(step.top)
+            tau_bonus = pos.residual_or_bonus
+            reject_entropy = pos.entropy
             break
+        if pos.accepted_token is not None:
+            accepted += 1
+            reject_entropy = pos.entropy
+            continue
+        reject_entropy = pos.entropy
+        break
 
-    bonus = ""
-    if accepted >= k and len(bundle.steps) > k:
-        bonus_step = bundle.steps[k]
-        top1 = _argmax_entry(bonus_step.top)
-        if top1 is not None:
-            bonus = top1.token
-        elif bonus_step.token:
-            bonus = bonus_step.token
+    bonus = tau_bonus
+    if not bonus and accepted >= k and len(bundle.steps) > k:
+        bonus_pos = accept_one_draft_position(
+            bundle,
+            None,
+            k,
+            greedy=greedy,
+            tau_floor=tau_floor,
+            rng=rng,
+        )
+        if not bonus_pos.waiting:
+            bonus = bonus_pos.residual_or_bonus
 
     return LeviathanAcceptResult(
         accepted_prefix_len=accepted,

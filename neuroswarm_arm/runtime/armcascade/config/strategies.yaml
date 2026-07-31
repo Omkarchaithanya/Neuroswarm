@@ -67,6 +67,11 @@ strategies:
     enabled: true
     class: logits
     tau_floor: 0.0
+  cost_model:
+    enabled: false
+    historical_min: 0.3
+    pressure_max: 0.8
+    max_tokens_min: 8
   slot_kv_reuse:
     enabled: true
   draft_verify_affinity:
@@ -88,3 +93,6 @@ strategies:
     context_shift_k: 8
   draft_registry:
     enabled: false
+  specdec_bench:
+    enabled: false
+    class: specdec_bench

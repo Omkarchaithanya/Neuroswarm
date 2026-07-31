@@ -1,0 +1,39 @@
+{
+  "gap": "G14-G15",
+  "title": "top-tau acceptance + skip-spec cost model",
+  "before": {
+    "tau_semantics": "cum_p heuristic; could continue draft after tau-accept",
+    "cost_model": "absent",
+    "ascr_skip_spec_total": 0,
+    "tau_floor_default": 0.0,
+    "unit_p_draft_0.85_tau_0.8": "n/a (pre-G14)",
+    "unit_p_draft_0.85_tau_0.9": "n/a"
+  },
+  "after": {
+    "tau_semantics": "p_draft=exp(draft_logprob); accept+bonus=target top-1+break",
+    "cost_model": "strategies.cost_model.enabled + NSA_ASCR_COST_MODEL_ENABLED",
+    "skip_reasons": ["hist", "pressure", "short", "vision"],
+    "thresholds": {
+      "historical_min": 0.3,
+      "pressure_max": 0.8,
+      "max_tokens_min": 8
+    },
+    "unit_p_draft_0.85_tau_0.8": "accept top_tau_used=true bonus=target",
+    "unit_p_draft_0.85_tau_0.9": "reject",
+    "unit_skip_table": {
+      "hist_0.1_pressure_0.1": true,
+      "hist_0.5_pressure_0.1": false,
+      "hist_0.5_pressure_0.9": true,
+      "max_tokens_4": true,
+      "vision": true
+    },
+    "latency_improvement_tight_sla": "skip draft under pressure>0.8 → quality cascade; avoids draft RTT when SLA already spent (unit-proven; live probe optional)"
+  },
+  "tests": "pytest tests/runtime/armcascade/test_topk_tau_floor.py tests/runtime/armcascade/test_skip_spec.py -q",
+  "adr": [
+    "docs/dipa/adr/0014-top-tau-truncation.md",
+    "docs/dipa/adr/0015-skip-spec-cost-model.md"
+  ],
+  "docs": "docs/armcascade/cost-model.md",
+  "probe_note": "scripts/probe-ascr-speculation.py needs gateway :8000 for live skip-rate scrape; unit table is source of truth for G14/G15 land"
+}

@@ -118,6 +118,35 @@ def apply_env_overrides(cfg: dict[str, Any]) -> dict[str, Any]:
         logits["top_n"] = int(v)
         strategies["logits"] = logits
         out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_COST_MODEL_ENABLED"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        cm = dict(strategies.get("cost_model") or {})
+        cm["enabled"] = v.strip().lower() in {"1", "true", "yes", "on"}
+        strategies["cost_model"] = cm
+        out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_SKIP_HISTORICAL_MIN"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        cm = dict(strategies.get("cost_model") or {})
+        cm["historical_min"] = float(v)
+        strategies["cost_model"] = cm
+        out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_SKIP_PRESSURE_MAX"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        cm = dict(strategies.get("cost_model") or {})
+        cm["pressure_max"] = float(v)
+        strategies["cost_model"] = cm
+        out["strategies"] = strategies
+    if v := os.environ.get("NSA_ASCR_SKIP_MAX_TOKENS_MIN"):
+        out.setdefault("strategies", {})
+        strategies = dict(out.get("strategies") or {})
+        cm = dict(strategies.get("cost_model") or {})
+        cm["max_tokens_min"] = int(v)
+        strategies["cost_model"] = cm
+        out["strategies"] = strategies
+
     if v := os.environ.get("NSA_ASCR_MAX_ROUNDS"):
         out.setdefault("defaults", {})
         out["defaults"] = dict(out.get("defaults") or {})
