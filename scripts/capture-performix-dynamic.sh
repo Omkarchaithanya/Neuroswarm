@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Dynamic Kleidi vs stock Performix capture (Axion host apx).
 # Produces docs/evidence/performix/03–06 + COMPARISON.md
+#
+# FIXED SEQUENCE (per task requirements):
+# 1. Start llama-server, wait for /health = ready (model fully loaded)
+# 2. Start sustained load generator (50-100 concurrent prompts)
+# 3. THEN attach apx to WARM PID for 120s+ profiling window
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,7 +15,8 @@ mkdir -p "$PUB" work/performix/dynamic
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 
 API="${NSA_CHAT_URL:-http://127.0.0.1:8000/v1/chat/completions}"
-TIMEOUT="${PERFORMIX_TIMEOUT:-20}"
+LLAMA_HEALTH="${NSA_LLAMA_HEALTH:-http://127.0.0.1:8080/health}"
+TIMEOUT="${PERFORMIX_TIMEOUT:-120}"  # INCREASED: 120s minimum for decode to dominate
 
 fire_burst() {
   echo "==> continuous decode load → $API"
@@ -47,6 +53,27 @@ pick_llama_pid() {
     return 1
   fi
   echo "$pid"
+}
+
+wait_llama_ready() {
+  local timeout="${1:-300}"
+  local health_url="${2:-$LLAMA_HEALTH}"
+  echo "==> Waiting for llama-server health at $health_url (timeout ${timeout}s)..."
+  local start
+  start="$(date +%s)"
+  while true; do
+    if curl -sf "$health_url" >/dev/null 2>&1; then
+      echo "    llama-server /health OK (model loaded, mmap complete)"
+      return 0
+    fi
+    local now
+    now="$(date +%s)"
+    if (( now - start > timeout )); then
+      echo "    TIMEOUT: llama-server not healthy after ${timeout}s" >&2
+      return 1
+    fi
+    sleep 2
+  done
 }
 
 run_recipe() {
@@ -118,6 +145,8 @@ echo "=== Kleidi tiers ==="
 docker compose ps | grep -E 'tier|kleidi' || true
 
 # --- 03 dynamic Kleidi instruction_mix ---
+# FIXED: Wait for llama-server ready, then fire burst, then profile
+wait_llama_ready 300 "$LLAMA_HEALTH"
 fire_burst
 PID="$(pick_llama_pid)"
 echo "profiling pid=$PID"
@@ -137,6 +166,8 @@ for i in $(seq 1 30); do
 done
 docker compose ps tier3
 
+# FIXED: Wait for stock llama-server ready, then fire burst, then profile
+wait_llama_ready 300 "$LLAMA_HEALTH"
 fire_burst
 # Prefer stock tier3 pid (qwen 0.5b often on tier3 — match newest container pid)
 PID3="$(docker inspect neuroswarm-arm-tier3-1 --format '{{.State.Pid}}')"
@@ -155,6 +186,8 @@ for i in $(seq 1 30); do
 done
 
 # --- 05 / 06 on Kleidi ---
+# FIXED: Wait for restored Kleidi llama-server ready before profiling
+wait_llama_ready 300 "$LLAMA_HEALTH"
 fire_burst
 PID="$(pick_llama_pid)"
 run_recipe cpu_microarchitecture "$PUB/05-cpu_microarchitecture.json" "$PID"

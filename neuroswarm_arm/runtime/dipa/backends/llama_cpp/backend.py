@@ -155,6 +155,24 @@ class LlamaHttpClient:
                 continue
         return False
 
+    def wait_ready(self, timeout_s: float = 300.0, interval_s: float = 2.0) -> bool:
+        """Poll /health until llama-server reports ready (model loaded, mmap done).
+        
+        Args:
+            timeout_s: Maximum seconds to wait for readiness
+            interval_s: Polling interval between checks
+            
+        Returns:
+            True if server becomes ready within timeout, False otherwise
+        """
+        import time
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            if self.is_ready():
+                return True
+            time.sleep(interval_s)
+        return False
+
     def tokenize(self, content: str) -> list[int] | None:
         try:
             data = self._post("/tokenize", {"content": content})
@@ -296,6 +314,19 @@ class LlamaCppBackend(InferenceBackend):
 
     def warmup(self, model: str | None = None) -> None:
         self._client.is_ready()
+
+    def wait_ready(self, timeout_s: float = 300.0) -> bool:
+        """Wait for llama-server to be fully ready (model loaded, mmap complete).
+        
+        Delegates to the HTTP client's wait_ready method.
+        
+        Args:
+            timeout_s: Maximum seconds to wait for readiness
+            
+        Returns:
+            True if server becomes ready within timeout, False otherwise
+        """
+        return self._client.wait_ready(timeout_s=timeout_s)
 
     def tokenize(self, text: str) -> list[int]:
         tokens = self._client.tokenize(text)
