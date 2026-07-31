@@ -334,7 +334,7 @@ def accept_one_draft_position(
         match = False
         if draft_id is not None and argmax.token_id is not None:
             match = draft_id == argmax.token_id
-        else:
+        if not match:
             match = draft_token == argmax.token
         if match:
             return PositionAcceptResult(

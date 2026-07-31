@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     agent_role: str = "tool_call"
     session_id: str | None = None
     agent_id: str = "default"
+    stream: bool = False
 
 
 class ToolDef(BaseModel):
