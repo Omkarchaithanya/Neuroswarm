@@ -1,0 +1,24 @@
+workloads:
+  - name: chat_short
+    prompts:
+      - "What is the capital of France?"
+      - "Translate 'hello' to Spanish."
+
+  - name: code_completion
+    prompts:
+      - "def fibonacci(n):\n    "
+      - "function add(a, b) {\n  return "
+
+  - name: rag_long
+    prompts:
+      - "Given the following context: [LONG_DOC_4K]\n\nQ: What is X?"
+
+  - name: tool_use
+    prompts:
+      - '{"name": "search", "arguments": {"q":'
+
+  - name: reasoning
+    prompts:
+      - "If 2x + 3 = 11, what is x?"
+
+iterations_per_prompt: 4
