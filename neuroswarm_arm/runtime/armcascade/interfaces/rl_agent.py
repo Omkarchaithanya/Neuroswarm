@@ -1,4 +1,9 @@
-"""RL-ready observation / action ports for future PPO agents."""
+"""RL-ready observation / action ports for AROP rule/bandit actuation.
+
+Online PPO / GRPO are intentionally not implemented (ADR 0005).
+``StaticPolicyAgent`` applies a fixed ``RLAction`` from the rule-based tuner
+or offline bandit; ``HeuristicPolicyAgent`` is the default until a policy is applied.
+"""
 
 from __future__ import annotations
 
@@ -43,8 +48,27 @@ class RLPolicyAgent(ABC):
         return None
 
 
+class StaticPolicyAgent(RLPolicyAgent):
+    """Fixed RLAction sink for AROP rule/bandit actuation (not PPO training).
+
+    See docs/arop/adr/0005-rule-based-closed-loop-not-rl.md.
+    """
+
+    def __init__(self, action: RLAction) -> None:
+        self.action = action
+
+    def act(self, obs: RLObservation) -> RLAction:
+        return RLAction(
+            draft_len=int(self.action.draft_len),
+            accept_threshold=float(self.action.accept_threshold),
+            verify_batch_size=int(self.action.verify_batch_size),
+            escalate_threshold=float(self.action.escalate_threshold),
+            speculation_depth=int(self.action.speculation_depth),
+        )
+
+
 class HeuristicPolicyAgent(RLPolicyAgent):
-    """Deterministic heuristic stand-in until Performix/PPO wired."""
+    """Deterministic heuristic stand-in. Not online PPO (ADR 0005)."""
 
     def __init__(
         self,

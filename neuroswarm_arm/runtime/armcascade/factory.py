@@ -28,6 +28,7 @@ def build_ascr(
     legacy_metrics: Any | None = None,
     dipa_cascade_cfg: Mapping[str, Any] | None = None,
     memory_connector: Any | None = None,
+    threshold_agent: Any | None = None,
 ) -> ASCREngine:
     """Construct a fully wired ASCREngine."""
     load_plugins()
@@ -43,6 +44,13 @@ def build_ascr(
         alias_dipa=bool((cfg.get("telemetry") or {}).get("alias_dipa_cascade", True)),
     )
     arm = ArmRuntimeAdapter(cfg)
+    thresholds = None
+    if threshold_agent is not None:
+        from neuroswarm_arm.runtime.armcascade.thresholds.engine import (
+            AdaptiveThresholdEngine,
+        )
+
+        thresholds = AdaptiveThresholdEngine(threshold_agent)
     return ASCREngine(
         config=cfg,
         registry=registry,
@@ -54,6 +62,7 @@ def build_ascr(
         performix=PerformixHook(),
         legacy_metrics=legacy_metrics,
         memory_connector=memory_connector,
+        thresholds=thresholds,
     )
 
 

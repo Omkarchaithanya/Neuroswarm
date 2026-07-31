@@ -12,7 +12,13 @@ from .proposal import (
     ThresholdEngine,
     VerifierStrategy,
 )
-from .rl_agent import HeuristicPolicyAgent, RLAction, RLObservation, RLPolicyAgent
+from .rl_agent import (
+    HeuristicPolicyAgent,
+    RLAction,
+    RLObservation,
+    RLPolicyAgent,
+    StaticPolicyAgent,
+)
 from .types import (
     ASCRInitContext,
     ASCRRuntimeState,
@@ -54,6 +60,7 @@ __all__ = [
     "EscalationNode",
     "EscalationState",
     "HeuristicPolicyAgent",
+    "StaticPolicyAgent",
     "PolicyDecision",
     "Proposal",
     "ProposalRequest",

@@ -16,6 +16,8 @@ Standalone CLI tuner that consumes Performix `apx` JSON and adjusts ASCR/RTG kno
 
 Decision record: [ADR 0005](../../docs/arop/adr/0005-rule-based-closed-loop-not-rl.md) — why closed-loop AROP has no PPO / GEPA-as-knobs / GRPO, and the correct Axion cascade sizes (0.5B / 3B / 7B Q4).
 
+**In code (not docs-only):** live ASCR actuation uses `ASCREngine.apply_rl_action` → `StaticPolicyAgent`, and `main.py` binds `cascade_engine` + `PolicyRegistryBackedAgent`. `OfflineRLTrainer.train_ppo` / `train_grpo` raise `NotImplementedError`.
+
 ## Honesty
 
 - Parses real `apx` JSON only (`source=apx`). Demo/synthetic → fail loud.

@@ -123,14 +123,31 @@ class OfflineContextualBandit:
 
 
 class OfflineRLTrainer:
-    """Stub interface for future CQL/IQL — currently delegates to bandit."""
+    """Stub for future offline CQL/IQL — currently delegates to bandit only.
+
+    Online PPO / GRPO are intentionally not implemented
+    (docs/arop/adr/0005-rule-based-closed-loop-not-rl.md).
+    """
 
     def __init__(self, bandit: OfflineContextualBandit | None = None) -> None:
         self.bandit = bandit or OfflineContextualBandit()
 
     def train(self, experiences: list[Experience]) -> OfflineContextualBandit:
+        """Fit offline contextual bandit on logged experiences (not PPO)."""
         self.bandit.fit(experiences)
         return self.bandit
+
+    def train_ppo(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError(
+            "Online PPO is not implemented on Axion MVP (ADR 0005). "
+            "Use OfflineContextualBandit.fit / neuroswarm_arm.arop rule tuner instead."
+        )
+
+    def train_grpo(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError(
+            "GRPO is not implemented in this repository (ADR 0005). "
+            "GRPO is an LLM finetune method — this stack does not finetune GGUFs at runtime."
+        )
 
     def propose(self, state: Mapping[str, float]) -> list[PolicyDelta]:
         return self.bandit.propose(state)

@@ -113,6 +113,37 @@ class ASCREngine(ICascadeEngine):
         self.reasoning_emitter: Any | None = None
         self.dipa_runtime: Any | None = None
 
+    def apply_rl_action(self, action: Any) -> None:
+        """AROP actuation: rebind threshold agent to a fixed RLAction (rule/bandit).
+
+        Not online PPO — see docs/arop/adr/0005-rule-based-closed-loop-not-rl.md.
+        """
+        from neuroswarm_arm.runtime.armcascade.interfaces.rl_agent import (
+            RLAction,
+            StaticPolicyAgent,
+        )
+
+        if not isinstance(action, RLAction):
+            action = RLAction(
+                draft_len=int(getattr(action, "draft_len", 8)),
+                accept_threshold=float(getattr(action, "accept_threshold", 0.7)),
+                verify_batch_size=int(getattr(action, "verify_batch_size", 1)),
+                escalate_threshold=float(getattr(action, "escalate_threshold", 0.4)),
+                speculation_depth=int(getattr(action, "speculation_depth", 1)),
+            )
+        if isinstance(self.thresholds, AdaptiveThresholdEngine):
+            self.thresholds.agent = StaticPolicyAgent(action)
+        else:
+            self.thresholds = AdaptiveThresholdEngine(StaticPolicyAgent(action))
+        self._arop_rl_action = action
+
+    def set_threshold_agent(self, agent: Any) -> None:
+        """Inject PolicyRegistryBackedAgent (or any RLPolicyAgent) for live resolve."""
+        if isinstance(self.thresholds, AdaptiveThresholdEngine):
+            self.thresholds.agent = agent
+        else:
+            self.thresholds = AdaptiveThresholdEngine(agent)
+
     def _trace(
         self,
         ctx: ExecutionContext,

@@ -49,7 +49,8 @@ Optional: `TIER3_MODEL=Llama-3.2-8B-Instruct-Q4_K_M.gguf` — still ~8B Q4-class
 ## Consequences
 
 - AROP v1 docs and commit messages must not claim PPO, GRPO, or GEPA-as-knob-tuner.
-- Deferred closed-loop wiring plan may enable **rule/bandit actuation** — not PPO training.
+- Deferred closed-loop wiring enables **rule/bandit actuation** via `ASCREngine.apply_rl_action` / `StaticPolicyAgent` and `main.py` → `cascade_engine` — **not** PPO training.
+- `OfflineRLTrainer.train_ppo` / `train_grpo` raise `NotImplementedError` (code-level guard).
 - Performix evidence and rule tuner remain the judge-facing closed-loop story.
 
 ## References

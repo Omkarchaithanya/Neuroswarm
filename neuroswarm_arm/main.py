@@ -250,13 +250,27 @@ arop = build_arop(
     arop_cfg,
     memory=memory,
     metrics_bridge=metrics,
-    ascr=getattr(dipa, "ascr", None) or getattr(dipa, "cascade", None),
+    # Live ASCR sink is cascade_engine (not dipa.ascr / dipa.cascade — those are missing).
+    ascr=getattr(dipa, "cascade_engine", None),
     rtg=rtg,
     router=tool_router,
     haoe=haoe,
     maks=maks_runtime,
     rcis=rcis,
 )
+# Per-request thresholds resolve from AROP PolicyRegistry (rule/bandit policies).
+# Not online PPO — ADR 0005.
+_cascade = getattr(dipa, "cascade_engine", None)
+if _cascade is not None and hasattr(_cascade, "set_threshold_agent"):
+    try:
+        _cascade.set_threshold_agent(arop.policy_agent)
+    except Exception:
+        pass
+elif _cascade is not None and hasattr(getattr(_cascade, "thresholds", None), "agent"):
+    try:
+        _cascade.thresholds.agent = arop.policy_agent
+    except Exception:
+        pass
 try:
     arop.aggregator.add(ROFObservationProvider(rof))
 except Exception:
