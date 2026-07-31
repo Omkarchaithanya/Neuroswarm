@@ -48,6 +48,7 @@ Standalone module [`neuroswarm_arm/arop/`](../../neuroswarm_arm/arop/) — **ind
 - Preflight: `python -m neuroswarm_arm.arop.preflight` / `scripts/arop-preflight.sh` — requires `NSA_PERFORMIX_ALLOW_DEMO=0`, `source=apx`, rejects `posix_fallocate`/low-sample captures; logs CPU features honestly (does not invent KleidiAI/SME2/CSS V3/MTE).
 - **Not claimed on Axion MVP:** CSS V3, CXL, MTE, SME2 product acceleration, true P/D disaggregation, or dynamic multi-quant fleets.
 - The `neuroswarm_arm/evolution/` Plane 5 pipeline (GEPA, PolicyRegistry, canary) remains scaffolding for a later closed loop — do not treat it as the shipping AROP v1 path.
+- **Why no PPO / GEPA-as-knobs / GRPO:** [ADR 0005](adr/0005-rule-based-closed-loop-not-rl.md). Axion cascade stays **0.5B / 3B / 7B Q4** — optimize knobs and KleidiAI, not model scale.
 - See [`neuroswarm_arm/arop/README.md`](../../neuroswarm_arm/arop/README.md).
 
 ## Config

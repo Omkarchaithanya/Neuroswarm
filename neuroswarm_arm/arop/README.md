@@ -14,6 +14,8 @@ Standalone CLI tuner that consumes Performix `apx` JSON and adjusts ASCR/RTG kno
 
 `neuroswarm_arm/evolution/` remains the broader Plane 5 scaffold; v1 does **not** wire into it.
 
+Decision record: [ADR 0005](../../docs/arop/adr/0005-rule-based-closed-loop-not-rl.md) — why closed-loop AROP has no PPO / GEPA-as-knobs / GRPO, and the correct Axion cascade sizes (0.5B / 3B / 7B Q4).
+
 ## Honesty
 
 - Parses real `apx` JSON only (`source=apx`). Demo/synthetic → fail loud.

@@ -48,6 +48,18 @@ docker inspect neuroswarm-arm-tier1-1 --format '{{.HostConfig.CpusetCpus}}'
 
 Env: `NSA_LOCALITY_MODE`, `NSA_TIER1_CPUSET`, `NSA_TIER2_CPUSET`, `NSA_TIER3_CPUSET` (see `.env.example`).
 
+## Cascade model sizes (correct for c4a-standard-8)
+
+Keep the Compose defaults — **do not “optimize” by upsizing weights**:
+
+| Tier | Model | Quant | Cpuset |
+|------|-------|-------|--------|
+| tier1 | Qwen2.5-0.5B-Instruct | Q4_0 | 0–1 |
+| tier2 | Qwen2.5-3B-Instruct | Q4_0 | 2–4 |
+| tier3 | DeepSeek-R1-Distill-Qwen-7B (or Llama-3.2-8B Q4 via `TIER3_MODEL`) | Q4_0 / Q4_K_M | 5–7 |
+
+Optimization on this SKU is KleidiAI + cascade routing + rule-based AROP knobs — **not** PPO/GRPO finetuning and **not** 13B/70B GGUFs. See [ADR 0005](../arop/adr/0005-rule-based-closed-loop-not-rl.md).
+
 ## SME
 
 Unset `GGML_KLEIDIAI_SME` for auto. **Axion C4A has no SME2** — kernels use DotProd/I8MM/SVE2. Do not document SME2 as available on Axion.

@@ -9,4 +9,4 @@
 - [plugin-guide.md](plugin-guide.md)
 - [gepa.md](gepa.md) — official Genetic-Pareto text evolution
 - [gepa-gap-analysis.md](gepa-gap-analysis.md)
-- ADRs under `adr/`
+- ADRs under `adr/` — especially [0005-rule-based-closed-loop-not-rl.md](adr/0005-rule-based-closed-loop-not-rl.md) (why no PPO/GEPA-as-knobs/GRPO; Axion 0.5B/3B/7B Q4 cascade)
