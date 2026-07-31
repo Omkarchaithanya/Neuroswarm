@@ -24,11 +24,18 @@ strategies:
   eagle3:
     enabled: false
     class: eagle3
-    stub: true
+    head_path: /models/eagle3/
+    reduced_vocab_size: 32000
+    quant: Q4_0
+    target_backend: tier2
+    temperature: 0.2
   medusa:
     enabled: false
     class: medusa
-    stub: true
+    num_heads: 4
+    branching_per_head: 3
+    head_path: /models/medusa/
+    max_depth: 4
   pard:
     enabled: false
     class: pard
@@ -48,9 +55,11 @@ strategies:
     class: hierarchical
     stub: true
   tree:
-    enabled: false
+    enabled: true
     class: tree
-    stub: true
+    max_branching: 4
+    top_k_per_branch: 8
+    stub: false
   quality:
     enabled: true
     class: quality
@@ -60,3 +69,22 @@ strategies:
     tau_floor: 0.0
   slot_kv_reuse:
     enabled: true
+  draft_verify_affinity:
+    enabled: true
+    class: draft_verify_affinity
+  mlx_spec:
+    enabled: false
+    class: mlx_spec
+    num_draft_tokens: 5
+  kleidiai:
+    enabled: true
+    class: kleidiai
+    report_kernel: true
+    sme2_enabled: false
+  ngram_cache:
+    enabled: false
+    n: 3
+    max_entries: 1000000
+    context_shift_k: 8
+  draft_registry:
+    enabled: false
