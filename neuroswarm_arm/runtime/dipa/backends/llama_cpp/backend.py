@@ -60,6 +60,50 @@ def _resolve_slot_dir() -> Path:
     return Path(os.getenv("NSA_LLAMA_SLOT_DIR", "/tmp/neuroswarm-slots"))
 
 
+class SpecDecodeMetrics:
+    """Local ASR counters/gauges for token-level speculative decoding (no prometheus_client)."""
+
+    _EWMA_ALPHA = 0.2
+
+    def __init__(self) -> None:
+        self._local: dict[str, float] = {
+            "asr_draft_tokens_total": 0.0,
+            "asr_accepted_tokens_total": 0.0,
+            "asr_verify_calls_total": 0.0,
+            "asr_tok_per_s": 0.0,
+        }
+
+    def reset(self) -> None:
+        for key in self._local:
+            self._local[key] = 0.0
+
+    def snapshot(self) -> dict[str, float]:
+        return dict(self._local)
+
+    def get(self, name: str) -> float:
+        return float(self._local.get(name, 0.0))
+
+    def inc(self, name: str, value: float = 1.0) -> None:
+        self._local[name] = self._local.get(name, 0.0) + value
+
+    def set(self, name: str, value: float) -> None:
+        self._local[name] = value
+
+    def observe_tok_per_s(self, tokens: float, elapsed_s: float) -> None:
+        if elapsed_s <= 0 or tokens <= 0:
+            return
+        sample = tokens / elapsed_s
+        prev = self._local.get("asr_tok_per_s", 0.0)
+        if prev <= 0:
+            self._local["asr_tok_per_s"] = sample
+        else:
+            a = self._EWMA_ALPHA
+            self._local["asr_tok_per_s"] = a * sample + (1.0 - a) * prev
+
+
+ASR_METRICS = SpecDecodeMetrics()
+
+
 @dataclass(slots=True)
 class LlamaHttpClient:
     """HTTP client for OpenAI-compatible llama.cpp servers."""
@@ -236,7 +280,9 @@ class LlamaHttpClient:
 
 
 class LlamaCppBackend(InferenceBackend):
-    """Async DIPA backend for llama.cpp server (HTTP + optional process ownership)."""
+    """Token-level speculative decoding via llama.cpp --model-draft on
+    tier-spec; draft tokens are produced by the draft model and verified by
+    the target using top-τ acceptance (G14) and n-gram fallback (G13)."""
 
     slot_dir: Path | None = None
 
@@ -258,6 +304,7 @@ class LlamaCppBackend(InferenceBackend):
         self.name = name
         self.base_url = base_url
         self.tier = tier
+        self._spec_url = os.getenv("NSA_TIER_SPEC_URL", "").strip()
         env_k = os.getenv("NSA_DIPA_KLEIDIAI", "").strip() in {"1", "true", "TRUE", "yes"}
         self._kleidiai = env_k if kleidiai is None else kleidiai
         self.capabilities = BackendCapabilities(
@@ -295,6 +342,23 @@ class LlamaCppBackend(InferenceBackend):
             in {"1", "true", "TRUE", "yes"}
         )
         self._kleidiai_active: bool | None = None
+
+    def record_spec_verify(self, draft: Any, *, accepted: bool) -> None:
+        """Record ASR metrics for a draft verification outcome (no-op if spec URL unset)."""
+        if not self._spec_url:
+            return
+        words: list[str] = []
+        tokens = getattr(draft, "tokens", None)
+        if tokens:
+            words = [str(getattr(t, "text", "") or "") for t in tokens]
+        else:
+            text = str(getattr(draft, "text", "") or "")
+            words = text.split() if text.strip() else []
+        n = len(words)
+        ASR_METRICS.inc("asr_draft_tokens_total", float(n))
+        ASR_METRICS.inc("asr_verify_calls_total", 1.0)
+        if accepted:
+            ASR_METRICS.inc("asr_accepted_tokens_total", float(n))
 
     def _probe_kleidiai_runtime(self) -> bool:
         """Check llama-server for KleidiAI kernel evidence (not env assumption)."""
@@ -472,7 +536,7 @@ class LlamaCppBackend(InferenceBackend):
             okf_block_hashes=_okf_hashes_from_request(req),
             cache_prompt_tokens=list(req.cache_prompt_tokens or []),
             response_format=response_format,
-            request_logprobs=bool(req.speculative),
+            request_logprobs=bool(req.speculative) or bool(self._spec_url),
             explicit_id_slot=req.id_slot,
         )
         slot_id = slot_meta.get("slot_id")
@@ -720,6 +784,8 @@ class LlamaCppBackend(InferenceBackend):
 
         greedy = float(temperature) == 0.0
         sync_q: queue.Queue[Any] = queue.Queue()
+        spec_enabled = bool(self._spec_url)
+        stream_t0 = time.perf_counter()
 
         def _producer() -> None:
             try:
@@ -728,6 +794,8 @@ class LlamaCppBackend(InferenceBackend):
                     if prop.tokens
                     else (prop.text.split() if prop.text.strip() else [])
                 )
+                if spec_enabled:
+                    ASR_METRICS.inc("asr_draft_tokens_total", float(len(words)))
                 bundle = LogitsBundle(
                     draft_tokens=list(words),
                     draft_token_ids=[
@@ -748,6 +816,7 @@ class LlamaCppBackend(InferenceBackend):
                 index = 0
                 finished = False
                 seen_steps = 0
+                accepted_count = 0
                 for line in self._client.generate_with_logits_stream(
                     messages,
                     max_tokens=max_tokens,
@@ -775,6 +844,8 @@ class LlamaCppBackend(InferenceBackend):
                             continue
                         bundle.steps.append(step)
                         while True:
+                            if spec_enabled:
+                                ASR_METRICS.inc("asr_verify_calls_total", 1.0)
                             pos = accept_one_draft_position(
                                 bundle,
                                 prop,
@@ -785,6 +856,9 @@ class LlamaCppBackend(InferenceBackend):
                             if pos.waiting:
                                 break
                             if pos.accepted_token is not None:
+                                if spec_enabled:
+                                    ASR_METRICS.inc("asr_accepted_tokens_total", 1.0)
+                                    accepted_count += 1
                                 sync_q.put(
                                     TokenChunk(
                                         text=pos.accepted_token,
@@ -887,6 +961,11 @@ class LlamaCppBackend(InferenceBackend):
                             )
                         )
                         index += 1
+                if spec_enabled and accepted_count > 0:
+                    ASR_METRICS.observe_tok_per_s(
+                        float(accepted_count),
+                        time.perf_counter() - stream_t0,
+                    )
                 sync_q.put(
                     TokenChunk(
                         text="",

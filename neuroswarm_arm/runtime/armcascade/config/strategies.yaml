@@ -67,6 +67,12 @@ strategies:
     enabled: true
     class: logits
     tau_floor: 0.0
+  spec_verify:
+    enabled: true
+    class: spec_verify
+    accept_threshold: 0.78
+    top_tau_floor: 0.30
+    ngram_fallback: true
   cost_model:
     enabled: false
     historical_min: 0.3

@@ -1,0 +1,35 @@
+{
+  "status": "ok",
+  "spec": {
+    "label": "tier-spec-draft-simple",
+    "url": "http://127.0.0.1:8084",
+    "prompts": 3,
+    "rounds": 3,
+    "completion_tokens": 319,
+    "total_seconds": 27.9516,
+    "tok_per_s": 11.787,
+    "tok_per_s_rounds": [
+      10.693,
+      11.787,
+      11.864
+    ],
+    "latency_ms_mean": 3105.74
+  },
+  "baseline": {
+    "label": "tier2-no-spec",
+    "url": "http://127.0.0.1:8085",
+    "prompts": 3,
+    "rounds": 3,
+    "completion_tokens": 321,
+    "total_seconds": 39.5005,
+    "tok_per_s": 8.237,
+    "tok_per_s_rounds": [
+      7.82,
+      8.237,
+      8.338
+    ],
+    "latency_ms_mean": 4388.94
+  },
+  "measured_speedup": 1.431,
+  "note": "Compare tier-spec (in-process draft-simple) vs standalone target server."
+}

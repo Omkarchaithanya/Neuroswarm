@@ -39,6 +39,19 @@ services:
       timeout: 10s
       retries: 30
 
+  tier-spec:
+    platform: linux/amd64
+    build: !reset null
+    image: ghcr.io/ggml-org/llama.cpp:server
+    deploy: !reset null
+    cpus: 2
+    mem_limit: 1024m
+    healthcheck:
+      start_period: 180s
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
   tier3:
     platform: linux/amd64
     build: !reset null

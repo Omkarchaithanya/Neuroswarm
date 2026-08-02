@@ -10,6 +10,7 @@ services:
       NSA_TIER1_URL: http://tier1:8080
       NSA_TIER2_URL: http://tier2:8080
       NSA_TIER3_URL: http://tier3:8080
+      NSA_TIER_SPEC_URL: http://tier-spec:8080
       NSA_TOOL_METADATA_ROOT: /app/templates/mcp-servers
       NSA_ROUTER_EMBEDDING_BACKEND: ${NSA_ROUTER_EMBEDDING_BACKEND:-fastembed}
       NSA_ROUTER_ENCODER: ${NSA_ROUTER_ENCODER:-BAAI/bge-small-en-v1.5}
@@ -72,6 +73,8 @@ services:
       tier2:
         condition: service_started
       tier3:
+        condition: service_started
+      tier-spec:
         condition: service_started
       qdrant:
         condition: service_started
@@ -142,6 +145,68 @@ services:
         limits:
           cpus: "2.0"
           memory: 2G
+
+  tier-spec:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-kleidiai
+    image: ${NSA_LLAMA_IMAGE:-nexus-arm/llama-kleidiai:server}
+    platform: linux/arm64
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    # Target+draft on verifier mid-tier cores (3B needs room; avoid clash with host :8082).
+    cpuset: "${NSA_TIER2_CPUSET:-2-4}"
+    depends_on: []
+    environment:
+      GGML_KLEIDIAI_SME: ${GGML_KLEIDIAI_SME:-}
+      OMP_NUM_THREADS: "8"
+      OMP_PROC_BIND: ${OMP_PROC_BIND:-close}
+      OMP_PLACES: ${OMP_PLACES:-cores}
+    # Native draft-simple: target=tier2 3B, draft=tier1 0.5B.
+    # Flag map: --draft-max → --spec-draft-n-max; --draft-cfg-scale removed upstream.
+    command:
+      - --model
+      - /models/Qwen2.5-3B-Instruct-Q4_0.gguf
+      - --model-draft
+      - /models/tier1/qwen2.5-0.5b-instruct-q5_k_m.gguf
+      - --spec-type
+      - draft-simple
+      - --spec-draft-n-max
+      - "32"
+      - --draft-p-min
+      - "0.5"
+      - --port
+      - "8080"
+      - --host
+      - 0.0.0.0
+      - -ngl
+      - "0"
+      - --threads
+      - "8"
+      - --ctx-size
+      - "4096"
+      - --cont-batching
+      - --parallel
+      - "4"
+      - --slot-save-path
+      - /var/lib/ns/slots
+      - --metrics
+    volumes:
+      - ${MODEL_DIR:-/models}:/models:ro
+      - ${NSA_LLAMA_SLOT_DIR:-/tmp/neuroswarm-slots}:/var/lib/ns/slots
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null || curl -fsS http://127.0.0.1:8080/v1/models >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+    cpus: 3.0
+    mem_limit: 6g
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: 6G
 
   tier2:
     build:

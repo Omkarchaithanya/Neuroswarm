@@ -514,3 +514,82 @@ class LogitsAcceptanceVerifier(_BackendVerifierBase):
             },
             raw=raw,
         )
+
+
+@register_verifier("spec_verify")
+class SpecVerifyVerifier(LogitsAcceptanceVerifier):
+    """Pair proposers with top-τ logits verify; optional quality/n-gram fallback."""
+
+    name = "spec_verify"
+
+    def __init__(self, backend_name: str = "tier2", tau_floor: float = 0.30) -> None:
+        super().__init__(backend_name=backend_name, tau_floor=tau_floor)
+        self._accept_threshold = 0.78
+        self._ngram_fallback = True
+
+    async def initialize(self, ctx: ASCRInitContext) -> None:
+        await super().initialize(ctx)
+        strategies = dict((ctx.config or {}).get("strategies") or {})
+        sv = dict(strategies.get("spec_verify") or {})
+        self._enabled = bool(sv.get("enabled", True))
+        self._accept_threshold = float(sv.get("accept_threshold", self._accept_threshold))
+        self._tau_floor = float(sv.get("top_tau_floor", self._tau_floor))
+        self._tau_floor = _env_float("NSA_ASCR_TAU_FLOOR", self._tau_floor)
+        self._ngram_fallback = bool(sv.get("ngram_fallback", self._ngram_fallback))
+
+    async def verify(self, draft: Proposal, req: VerifyRequest) -> VerifyResult:
+        if not self._enabled:
+            raise NotImplementedError(
+                "spec_verify disabled (strategies.spec_verify.enabled=false)"
+            )
+        try:
+            return await super().verify(draft, req)
+        except Exception:
+            if not self._ngram_fallback:
+                raise
+        from neuroswarm_arm.runtime.armcascade.verification.strategies import (
+            QualityVerifier,
+        )
+
+        quality = QualityVerifier()
+        await quality.initialize(
+            ASCRInitContext(
+                registry=self._registry,
+                config=self._ascr_config,
+                metrics=None,
+                arm=None,
+            )
+        )
+        thr_req = VerifyRequest(
+            messages=list(req.messages),
+            prompt_text=req.prompt_text,
+            mode=req.mode,
+            accept_threshold=self._accept_threshold,
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+            session_id=req.session_id,
+            quant=req.quant,
+            kv_handle=req.kv_handle,
+            id_slot=req.id_slot,
+            verifier_tier=req.verifier_tier,
+            batch_size=req.batch_size,
+            metadata=dict(req.metadata or {}),
+        )
+        fallback = await quality.verify(draft, thr_req)
+        metrics = dict(fallback.metrics or {})
+        metrics["ngram_fallback"] = 1.0
+        metrics["accept_threshold"] = self._accept_threshold
+        return VerifyResult(
+            accepted_prefix_len=fallback.accepted_prefix_len,
+            rejected=fallback.rejected,
+            agreement=fallback.agreement,
+            entropy=fallback.entropy,
+            text=fallback.text,
+            mode=VerifyMode.QUALITY,
+            logits_available=False,
+            quality_score=fallback.quality_score,
+            latency_ms=fallback.latency_ms,
+            tier_used=req.verifier_tier,
+            metrics=metrics,
+            raw=fallback.raw,
+        )
