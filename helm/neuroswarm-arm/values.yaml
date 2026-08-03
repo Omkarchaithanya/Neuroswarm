@@ -26,21 +26,21 @@ work:
 
 tiers:
   tier1:
-    model: Qwen2.5-0.5B-Instruct-Q4_0.gguf
+    model: xLAM-2-1b-fc-r-Q4_0.gguf
     threads: "2"
     ctx: "4096"
     resources:
       limits:
         cpu: "2"
-        memory: 1Gi
+        memory: 3Gi
   tier2:
-    model: Qwen2.5-3B-Instruct-Q4_0.gguf
+    model: xLAM-2-3b-fc-r-Q4_0.gguf
     threads: "3"
     ctx: "4096"
     resources:
       limits:
         cpu: "3"
-        memory: 4Gi
+        memory: 6Gi
   tier3:
     model: DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
     threads: "3"
