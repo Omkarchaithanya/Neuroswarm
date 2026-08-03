@@ -1,0 +1,30 @@
+{"id": "calc-01", "style": "calculator", "tool_name": "echo.add", "args": {"a": 2, "b": 3}, "prompt": "Use echo.add to compute 2 + 3", "cache_hit_likely": true}
+{"id": "calc-02", "style": "calculator", "tool_name": "echo.add", "args": {"a": 10, "b": 5}, "prompt": "add 10 and 5 with the add tool", "cache_hit_likely": true}
+{"id": "calc-03", "style": "calculator", "tool_name": "echo.add", "args": {"a": 41, "b": 1}, "prompt": "what is 41 plus 1 using echo.add", "cache_hit_likely": true}
+{"id": "calc-04", "style": "calculator", "tool_name": "echo.add", "args": {"a": 100, "b": 250}, "prompt": "sum 100 and 250 via echo.add", "cache_hit_likely": true}
+{"id": "calc-05", "style": "calculator", "tool_name": "echo.add", "args": {"a": 7, "b": 8}, "prompt": "please add 7 + 8", "cache_hit_likely": true}
+{"id": "calc-06", "style": "calculator", "tool_name": "echo.add", "args": {"a": 19, "b": 23}, "prompt": "echo.add: 19 and 23", "cache_hit_likely": false}
+{"id": "calc-07", "style": "calculator", "tool_name": "echo.add", "args": {"a": 0.5, "b": 1.5}, "prompt": "add half and one-and-a-half (0.5 + 1.5)", "cache_hit_likely": false}
+{"id": "calc-08", "style": "calculator", "tool_name": "echo.add", "args": {"a": -3, "b": 9}, "prompt": "compute -3 plus 9 with add", "cache_hit_likely": false}
+{"id": "calc-09", "style": "calculator", "tool_name": "echo.add", "args": {"a": 12, "b": 34}, "prompt": "I need 12+34 from the calculator tool", "cache_hit_likely": false}
+{"id": "calc-10", "style": "calculator", "tool_name": "echo.add", "args": {"a": 99, "b": 1}, "prompt": "almost a hundred: add 99 and 1", "cache_hit_likely": false}
+{"id": "echo-01", "style": "echo", "tool_name": "echo.echo", "args": {"text": "hello"}, "prompt": "echo hello", "cache_hit_likely": true}
+{"id": "echo-02", "style": "echo", "tool_name": "echo.echo", "args": {"text": "ping"}, "prompt": "use the echo tool to say ping", "cache_hit_likely": true}
+{"id": "echo-03", "style": "echo", "tool_name": "echo.echo", "args": {"text": "world"}, "prompt": "echo world back to me", "cache_hit_likely": true}
+{"id": "echo-04", "style": "echo", "tool_name": "echo.echo", "args": {"text": "axion"}, "prompt": "repeat this text: axion", "cache_hit_likely": true}
+{"id": "echo-05", "style": "echo", "tool_name": "echo.echo", "args": {"text": "ready"}, "prompt": "echo ready", "cache_hit_likely": true}
+{"id": "echo-06", "style": "echo", "tool_name": "echo.echo", "args": {"text": "speculative-tool-call"}, "prompt": "echo the phrase speculative-tool-call", "cache_hit_likely": false}
+{"id": "echo-07", "style": "echo", "tool_name": "echo.echo", "args": {"text": "cache-miss-probe"}, "prompt": "please echo cache-miss-probe", "cache_hit_likely": false}
+{"id": "echo-08", "style": "echo", "tool_name": "echo.echo", "args": {"text": "neuroswarm"}, "prompt": "use echo.echo with text neuroswarm", "cache_hit_likely": false}
+{"id": "echo-09", "style": "echo", "tool_name": "echo.echo", "args": {"text": "kleidiai"}, "prompt": "echo kleidiai", "cache_hit_likely": false}
+{"id": "echo-10", "style": "echo", "tool_name": "echo.echo", "args": {"text": "judge-demo"}, "prompt": "repeat judge-demo via echo", "cache_hit_likely": false}
+{"id": "search-01", "style": "search", "tool_name": "web.search", "args": {"query": "Arm Neoverse V2", "limit": "3"}, "prompt": "search the web for Arm Neoverse V2", "cache_hit_likely": true}
+{"id": "search-02", "style": "search", "tool_name": "web.search", "args": {"query": "KleidiAI llama.cpp", "limit": "3"}, "prompt": "web search KleidiAI llama.cpp", "cache_hit_likely": true}
+{"id": "search-03", "style": "search", "tool_name": "web.search", "args": {"query": "speculative tool calling", "limit": "5"}, "prompt": "search public docs for speculative tool calling", "cache_hit_likely": true}
+{"id": "search-04", "style": "search", "tool_name": "web.search", "args": {"query": "GCP Axion C4A", "limit": "3"}, "prompt": "look up GCP Axion C4A on the web", "cache_hit_likely": true}
+{"id": "search-05", "style": "search", "tool_name": "web.search", "args": {"query": "MCP tool schema", "limit": "5"}, "prompt": "search the web for MCP tool schema", "cache_hit_likely": true}
+{"id": "search-06", "style": "search", "tool_name": "web.search", "args": {"query": "SVE2 I8MM instruction mix", "limit": "5"}, "prompt": "find sources about SVE2 I8MM instruction mix", "cache_hit_likely": false}
+{"id": "search-07", "style": "search", "tool_name": "web.search", "args": {"query": "Nichols speculative tool calls arxiv", "limit": "3"}, "prompt": "search for Nichols speculative tool calls arxiv", "cache_hit_likely": false}
+{"id": "search-08", "style": "search", "tool_name": "web.search", "args": {"query": "Ye speculative actions", "limit": "3"}, "prompt": "web search Ye speculative actions", "cache_hit_likely": false}
+{"id": "search-09", "style": "search", "tool_name": "web.search", "args": {"query": "llama.cpp draft model", "limit": "5"}, "prompt": "search docs for llama.cpp draft model", "cache_hit_likely": false}
+{"id": "search-10", "style": "search", "tool_name": "web.search", "args": {"query": "neuroswarm arm cascade", "limit": "5"}, "prompt": "look up neuroswarm arm cascade online", "cache_hit_likely": false}

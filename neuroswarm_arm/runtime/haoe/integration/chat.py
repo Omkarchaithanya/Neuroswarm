@@ -441,7 +441,15 @@ def build_chat_handlers(
             response.metrics["cost_router_reason"] = cost_meta.get("reason")
         state["response"] = response
         ctx.baggage["response"] = response
-        _memory_writeback(ctx, response)
+        # Memory plane can block (json_emergency lock / Mem0). Never stall chat reply.
+        try:
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _pool:
+                _fut = _pool.submit(_memory_writeback, ctx, response)
+                _fut.result(timeout=2.0)
+        except Exception:
+            pass
         return response
 
     def _memory_writeback(ctx: ExecutionContext, response: Any) -> None:

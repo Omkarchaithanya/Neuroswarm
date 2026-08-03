@@ -46,6 +46,7 @@ class ToolRecord:
     input_schema: dict[str, Any] = field(default_factory=dict)
     output_schema: dict[str, Any] = field(default_factory=dict)
     example_prompts: list[str] = field(default_factory=list)
+    example_args: dict[str, Any] = field(default_factory=dict)
     endpoint: str | None = None
     auth: str | None = None
     okf_path: str | None = None

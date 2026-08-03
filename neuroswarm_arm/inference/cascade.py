@@ -179,12 +179,23 @@ class CascadeRouter:
                 "memory_pressure": min(1.0, max(0.0, req.max_tokens / 16384.0)),
             }
         snap = self.kv_runtime.pressure_snapshot()
+        # Plane-2 facade may return MAKS dict or KV PressureSnapshot object.
+        if isinstance(snap, dict):
+            pressure = float(snap.get("pressure", 0.0) or 0.0)
+            hit_rate = float(snap.get("hit_rate", 0.0) or 0.0)
+            dominant = snap.get("dominant_tier", 1)
+            migration = float(snap.get("migration_latency_ms", 0.0) or 0.0)
+        else:
+            pressure = float(getattr(snap, "pressure", 0.0) or 0.0)
+            hit_rate = float(getattr(snap, "hit_rate", 0.0) or 0.0)
+            dominant = getattr(snap, "dominant_tier", 1)
+            migration = float(getattr(snap, "migration_latency_ms", 0.0) or 0.0)
         return {
-            "kv_pressure": snap.pressure,
-            "kv_hit_rate": snap.hit_rate,
-            "kv_storage_tier": int(snap.dominant_tier),
-            "kv_migration_latency_ms": snap.migration_latency_ms,
-            "memory_pressure": snap.pressure,
+            "kv_pressure": pressure,
+            "kv_hit_rate": hit_rate,
+            "kv_storage_tier": int(dominant),
+            "kv_migration_latency_ms": migration,
+            "memory_pressure": pressure,
         }
 
     def _confidence(self, text: str) -> float:

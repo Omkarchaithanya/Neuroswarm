@@ -60,6 +60,7 @@ Key scripts:
 | `governor_tokens.py` | RTG token caps |
 | `kv_*.py` | KV share / compress / latency |
 | `economics.py` | tokens/$ model |
+| `speculative_tool_bench.py` | Speculative tool-call hit rate / latency saved vs sync MCP (`make bench-tool-spec`) |
 
 Publish copies under `docs/evidence/latest/` (gitignored raw dir: `benchmarks/results/`).
 
@@ -96,6 +97,7 @@ Do **not** claim measurable NUMA-split speedup or “NUMA activated” on this V
 | Kleidi vs stock tok/s | >1× | Kleidi image proven live (`nexus-arm/llama-kleidiai:server`); full tok/s A/B still optional | `kleidiai-runtime-gate.txt`, `docker-compose-ps.txt` |
 | Instruction Mix SIMD share | up vs stock | Kleidi static mix: **Advanced SIMD (NEON) 1.61%** + **SVE 0.34%** (~**1.95%** SIMD-class); integer 44.4% / load-store 27.7% | `static_instruction_mix.csv`, `02-instruction_mix.json` |
 | $/1M tokens vs H100 spot | ≥3.5× | sample RCIS **~$0.0016**/req; economics savings score **0.57** (under-claim; not H100 A/B yet) | `chat-completion.json`, `run_all.json` economics |
+| Speculative tool call latency / hit rate | overlap MCP while cascade runs; warm-cache hits | **hit_rate 0.50**; avg_time_saved **46.8 ms**; p50 **57.9** / p95 **75.9** ms; latency_speedup **1.45×**; tokens_per_dollar_delta **+5723** (ref 12580×speedup−ref); predicted_correct_rate **0.50** (15/30 cache-hit-likely) | `docs/evidence/speculative_tool/` (`make bench-tool-spec`) |
 
 ---
 

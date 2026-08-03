@@ -35,6 +35,7 @@ ROUTER_METRIC_DEFS: list[tuple[str, str, str]] = [
     ("tool_search_mode_total_bridge", "counter", "tool_search bridge mode activations."),
     ("tool_search_mode_total_pass_through", "counter", "tool_search pass_through mode activations."),
     ("tool_search_truncated_total", "counter", "tool_search listing truncations."),
+    ("tool_predictor_fallback_total", "counter", "ToolCallPredictor tier1_llm → embedding fallbacks."),
 ]
 
 

@@ -1,0 +1,10 @@
+id: echo
+name: Echo MCP
+description: Self-contained demo tools with no external credentials — echo text and add numbers.
+tools:
+  - echo.echo
+  - echo.add
+params:
+  text: text to echo
+  a: first addend
+  b: second addend

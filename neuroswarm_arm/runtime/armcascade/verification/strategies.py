@@ -116,7 +116,11 @@ class _BackendVerifierBase(VerifierStrategy):
                         "slot_id", effective_slot if effective_slot is not None else 0
                     )
                 )
-                await asyncio.to_thread(slots.kv_export, sid, slot_file)
+                try:
+                    await asyncio.to_thread(slots.kv_export, sid, slot_file)
+                except SlotKVError:
+                    # Export failure must not fail the verified generation.
+                    pass
             return result
         from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest
 
@@ -146,7 +150,11 @@ class _BackendVerifierBase(VerifierStrategy):
             sid = int(
                 result.metrics.get("slot_id", effective_slot if effective_slot is not None else 0)
             )
-            await asyncio.to_thread(slots.kv_export, sid, slot_file)
+            try:
+                await asyncio.to_thread(slots.kv_export, sid, slot_file)
+            except SlotKVError:
+                # Export failure must not fail the verified generation.
+                pass
         return result
 
 

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import os
+import threading
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Coroutine, TypeVar
 from uuid import uuid4
 
 from .runtime.haoe.integration.chat import build_chat_handlers, correlation_from_request
@@ -13,9 +16,42 @@ from .tools.semantic_mcp_router import SemanticMCPRouter
 if TYPE_CHECKING:
     from .inference.cascade import CascadeRouter
     from .runtime.dipa import DIPARuntime
+    from .runtime.dipa.speculative.engine import SpeculativeEngine
+    from .runtime.dipa.speculative.predictor import ToolCallPredictor
     from .runtime.haoe import HAOERuntime
     from .runtime.kv.manager.runtime import KVRuntimeManager
     from .runtime.router import SemanticToolRouter
+
+_T = TypeVar("_T")
+
+
+def _tool_spec_enabled() -> bool:
+    raw = os.getenv("NSA_TOOL_SPEC_ENABLED", "")
+    return raw in {"1", "true", "True", "yes", "YES"}
+
+
+def _run_coro_sync(coro: Coroutine[Any, Any, _T]) -> _T:
+    """Run async coroutine from sync gateway (safe with/without running loop)."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    result: list[_T] = []
+    error: list[BaseException] = []
+
+    def _target() -> None:
+        try:
+            result.append(asyncio.run(coro))
+        except BaseException as exc:  # noqa: BLE001
+            error.append(exc)
+
+    thread = threading.Thread(target=_target, daemon=True)
+    thread.start()
+    thread.join()
+    if error:
+        raise error[0]
+    return result[0]
 
 
 @dataclass
@@ -27,6 +63,10 @@ class AgentGateway:
     kv_runtime: KVRuntimeManager | None = None
     haoe: HAOERuntime | None = None
     tool_router: SemanticToolRouter | None = None
+    # Optional Ye/Nichols Speculator (Tier-1 draft). Inject later — Prompt B3 wires call sites.
+    tool_predictor: ToolCallPredictor | None = None
+    # Optional SpeculativeEngine (arxiv 2512.15834). None = byte-identical legacy path.
+    speculative_engine: SpeculativeEngine | None = None
     armora_policy: Any | None = None
     budget_service: Any | None = None
     rcis: Any | None = None
@@ -127,8 +167,36 @@ class AgentGateway:
             latency_slo_ms=latency,
         )
 
+    def _router_has_tool_schemas(self, req: ChatRequest) -> bool:
+        """True when semantic router injects ≥1 tool schema for this request."""
+        query = req.messages[-1].content if req.messages else ""
+        try:
+            if hasattr(self.semantic_router, "route_result"):
+                ctx = self._route_context(req, query)
+                routed = self.semantic_router.route_result(query, context=ctx)
+                schemas = list(getattr(routed, "schemas", None) or [])
+                if schemas:
+                    return True
+                names = list(getattr(routed, "tool_names", None) or [])
+                return bool(names)
+            selected = self.semantic_router.route(query)
+            return bool(selected)
+        except Exception:
+            return False
+
     def handle_chat(self, req: ChatRequest) -> ChatResponse:
         """Execute chat as a HAOE task graph (never a single unstructured coroutine)."""
+        # Speculative tool path — only when engine wired + flag + router schemas.
+        # Default (engine=None) is byte-identical to legacy HAOE/cascade path.
+        if (
+            self.speculative_engine is not None
+            and _tool_spec_enabled()
+            and self._router_has_tool_schemas(req)
+        ):
+            return self._attach_runtime_cost_report(
+                req, _run_coro_sync(self.speculative_engine.generate(req))
+            )
+
         profile_session_id = ""
         if self.rpf is not None and getattr(getattr(self.rpf, "config", None), "enabled", False):
             try:

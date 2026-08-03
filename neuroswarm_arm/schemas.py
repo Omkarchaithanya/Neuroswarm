@@ -71,3 +71,8 @@ class ChatResponse(BaseModel):
     metrics: dict[str, float | str] = Field(default_factory=dict)
     # Dual output: ExecutionResult fields above + optional RuntimeCostReport payload
     runtime_cost_report: dict[str, object] | None = None
+    # OpenAI-style tool_calls emitted by cascade (empty = no tool call).
+    tool_calls: list[dict[str, object]] = Field(default_factory=list)
+    # Speculative tool-call engine (arxiv 2512.15834) annotations — defaults keep call sites intact.
+    speculative_hit: bool = False
+    speculative_latency_saved_ms: float = 0.0

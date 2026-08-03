@@ -47,3 +47,16 @@
 - User will supply the actual `PROJECT_ID` at runtime; script will not hardcode a display name.
 - GGUF model files are manual inputs because license/size make auto-download out of scope.
 - Artifact Registry API stays enabled because it is in the runbook and useful for future image work, even though current compose pulls from GHCR.
+
+## Speculative Tool Routing (Layer 2)
+
+Plane 3.5 tool-level speculation (see `02-ARCHITECTURE.md`, `04-IMPLEMENTATION-PLAN.md`). Canonical key: `ToolOutputCache.make_key` in `neuroswarm_arm/runtime/dipa/speculative/tool_cache.py`.
+
+Prompt B4 checklist:
+
+- [ ] **1.** Parallel `predictor.predict` + `cascade.generate` (`asyncio.Task`)
+- [ ] **2.** High-conf preds (`>= NSA_TOOL_SPEC_THRESHOLD`) → cache hit via `make_key` **or** `executor.speculate`
+- [ ] **3.** On actor `tool_call` → match key / await in-flight / else sync MCP; tag `speculative_hit`
+- [ ] **4.** No tool call → cancel speculative tasks
+
+After VM sync: `docker compose up --build gateway`, then `curl /v1/tools/cache` must be 200 before claiming live Layer-2 status in README.

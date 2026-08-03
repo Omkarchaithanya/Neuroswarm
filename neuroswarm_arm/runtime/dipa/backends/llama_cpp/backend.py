@@ -601,8 +601,12 @@ class LlamaCppBackend(InferenceBackend):
             and isinstance(slot_id, int)
         ):
             slot_file = self._slots.resolve_filename(req.kv_handle)
-            await asyncio.to_thread(self._slots.kv_export, slot_id, slot_file)
-            metrics["slot_kv_saved"] = 1.0
+            try:
+                await asyncio.to_thread(self._slots.kv_export, slot_id, slot_file)
+                metrics["slot_kv_saved"] = 1.0
+            except Exception:
+                # Soft-fail: next turn prefills; do not fail the completion.
+                metrics["slot_kv_saved"] = 0.0
         if isinstance(self._slot_router, RadixSlotRouter):
             prompt_text = " ".join(str(m.get("content", "")) for m in req.messages)
             token_ids = await asyncio.to_thread(self.tokenize, prompt_text)

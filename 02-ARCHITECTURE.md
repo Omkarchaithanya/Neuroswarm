@@ -1,6 +1,6 @@
 # Architecture — NeuroSwarm-Arm
 
-> Unified 5-plane design. **Demo hardware = GCP Axion.** Multi-NUMA/CXL are capabilities, not assumed hosts.
+> Unified 5-plane design (+ Plane 3.5 speculative tool engine). **Demo hardware = GCP Axion.** Multi-NUMA/CXL are capabilities, not assumed hosts.
 
 ---
 
@@ -11,6 +11,9 @@
 ║  PLANE 5 · AROP — Performix / OTel / GEPA closed-loop tuning     ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  PLANE 4 · HAOE + semantic MCP router + RTG + AWPP + MAKS        ║
+╠══════════════════════════════════════════════════════════════════╣
+║  PLANE 3.5 · Speculative tool engine (predict ∥ cascade → MCP)   ║
+║              ToolOutputCache.make_key · optional when ENABLED    ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  PLANE 3 · DIPA / ASCR cascade — KleidiAI llama.cpp tiers        ║
 ║            Tier1 0.5B → Tier2 3B → Tier3 8B (Compose/Helm)       ║
@@ -64,6 +67,27 @@ bash scripts/deploy-kleidiai-tiers.sh
 
 ---
 
+## PLANE 3.5 — Speculative tool engine
+
+Sits **between** HAOE/router (Plane 4) and DIPA/ASCR decode (Plane 3): after Top-K tool schemas are chosen, `SpeculativeEngine` may run a draft predictor in parallel with cascade generation and fire MCP early into `ToolOutputCache`.
+
+Canonical cache key (do not invent another hash):
+
+`ToolOutputCache.make_key(tool_name, args)` → `sha256(f"{tool_name}:{canonical_json(args)}")[:32]`  
+(`neuroswarm_arm/runtime/dipa/speculative/tool_cache.py`)
+
+Papers: arXiv:2512.15834 (Nichols), arXiv:2510.04371 (Ye). Default-on in compose via `NSA_TOOL_SPEC_ENABLED=1`; live Axion gateway must be rebuilt before `/v1/tools/cache` answers (404 until redeploy).
+
+```text
+gateway → HAOE → router Top-K
+              └─► SpeculativeEngine (Plane 3.5)
+                    ├─ predictor(T1) ─► executor(MCP) ─► ToolOutputCache.make_key
+                    └─ DIPA/ASCR gen(T2/3) ─► match tool_call → reuse cache / else sync MCP
+                         └─► tier llama-server → metrics
+```
+
+---
+
 ## PLANE 4 — Orchestration
 
 - HAOE task graphs; semantic MCP router (TurboVec / Top-K); RTG; AWPP; MAKS connectors.
@@ -92,6 +116,10 @@ Capture: `bash performix_capture.sh` → `docs/evidence/performix/`.
 
 ## Request path
 
-`gateway → HAOE graph → router Top-K → DIPA/ASCR → tier llama-server → metrics (RMF/Prometheus)`
+```
+gateway → HAOE graph → router Top-K
+       → [optional] SpeculativeEngine (predict ∥ cascade; cache via ToolOutputCache.make_key)
+       → DIPA/ASCR → tier llama-server → metrics (RMF/Prometheus)
+```
 
-Evidence scripts: `scripts/capture-evidence.sh`, `scripts/deploy-kleidiai-tiers.sh`.
+Evidence scripts: `scripts/capture-evidence.sh`, `scripts/deploy-kleidiai-tiers.sh`, `benchmarks/speculative_tool_bench.py`.

@@ -1,13 +1,14 @@
 # NeuroSwarm-Arm
 
-**Live Axion checklist (GCP `neuroswarm-axion`, Neoverse-V2): PASS=10 FAIL=0**
+**Live Status (GCP `neuroswarm-axion`, Neoverse-V2) — from live `/ready` 2026-08-03**
 
 ```
-embedding_backend=fastembed  dims=384  tools_registered=46
+embedding_backend=fastembed  dims=384  tools_indexed=42
 build-info: SVE2+I8MM present; SME2 not available
 router accuracy: top1=1.0 top3=1.0 top5=1.0  reduction≈0.89 (schema-token ratio, not 40→3/92%)
-MCP execute: gated OFF by default (honest 503 until NSA_MCP_EXECUTE=1)
-MCP manager: protocol 2025-11-25; executable only after tools/list reconcile
+MCP execute: ON (default in 1.x; compose NSA_MCP_EXECUTE=1)
+MCP manager: protocol 2025-11-25; tools_executable=29 after tools/list reconcile
+tool_cache GET /v1/tools/cache: 404 on live gateway (Layer-2 speculative endpoints not redeployed yet)
 ```
 
 NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization Challenge. The MVP runs on a single GCP Axion VM and combines:
@@ -19,6 +20,7 @@ NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization 
 - adaptive quantization policy metadata
 - HAOE Layer-1 runtime kernel (task graphs, work stealing, affinity HAL, telemetry)
 - DIPA Layer-2 inference runtime kernel (planner, **ASCR** cascade, backends, streaming, recovery)
+- Speculative tool calling (predict → overlap MCP → `ToolOutputCache`; see Key Components)
 - Prometheus metrics for latency, tier usage, tool schemas, and token caps
 
 ## Acronym map (5-plane stack)
@@ -36,7 +38,7 @@ NeuroSwarm-Arm is an Arm-native agent runtime for the ARM Cloud AI Optimization 
 | **RTG** | Reasoning-token governor |
 | **ACR** | Agent conversation / memory recall plane |
 
-## Latency note (measured on Axion)
+## Latency Performance
 
 **Arm Performix evidence (in-repo):** [`docs/evidence/performix/OPTIMIZATIONS.md`](docs/evidence/performix/OPTIMIZATIONS.md) — Code Hotspots (`source=apx`, `libggml-cpu` ~79%) + Kleidi vs stock Instruction Mix + flame PNG. Runtime `work/performix/` is gitignored; judges use the docs pack.
 
@@ -48,7 +50,23 @@ Baseline checklist showed tier1 chat ~**1116ms** while `haoe_workflow_latency_ms
 
 Router gates stay at top1=1.0 (`threshold=0.42`, `high_conf_gate=0.70`) — not tuned for speed.
 
-## Semantic MCP Tool Router
+**Speculative tool calling (measured, `mode=inproc`):** from [`benchmarks/results/speculative_tool_bench.json`](benchmarks/results/speculative_tool_bench.json) — not a live-gateway Axion A/B yet:
+
+| Metric | Value |
+|--------|------:|
+| hit_rate | 0.5 |
+| avg_time_saved_ms | 45.185 |
+| p50 time_saved_ms | 49.245 |
+| p95 time_saved_ms | 80.785 |
+| mean_latency_baseline_ms | 150.894 |
+| mean_latency_speculative_ms | 105.825 |
+| tokens_per_dollar_delta | 650287.45 |
+
+Reproduce: `python benchmarks/speculative_tool_bench.py` (or `make bench-tool-spec`).
+
+## Key Components
+
+### Semantic MCP Tool Router
 
 Replaces naïve injection of all MCP tool schemas with Top-K semantic routing:
 
@@ -61,7 +79,7 @@ pytest tests/runtime/router -q
 python benchmarks/router_full.py
 ```
 
-## HAOE (Layer 1)
+### HAOE (Layer 1)
 
 Chat requests execute as HAOE task graphs (route → KV session → DIPA → checkpoint → response). High-confidence turns may take the gateway fast-path (cascade direct). HAOE coordinates inference; it does not run models. Topology/affinity providers degrade safely on Axion (no NUMA/MTE/CXL assumptions). See [`docs/haoe/architecture.md`](docs/haoe/architecture.md) and ADRs under `docs/haoe/adr/`.
 
@@ -69,7 +87,7 @@ Chat requests execute as HAOE task graphs (route → KV session → DIPA → che
 pytest tests/runtime/haoe -q
 ```
 
-## DIPA (Layer 2)
+### DIPA (Layer 2)
 
 DIPA is the Inference Runtime Kernel. Agents never call llama.cpp / vLLM / ExecuTorch / LiteRT directly — everything flows through DIPA (execution planner → model/backend/quant routers → **ASCR** → prefill/decode → streaming → metrics). AQR / AWPP / MAKS are connectors only. See [`docs/dipa/architecture.md`](docs/dipa/architecture.md) and [`docs/armcascade/`](docs/armcascade/README.md).
 
@@ -83,6 +101,29 @@ See [`docs/dipa/mlx.md`](docs/dipa/mlx.md) for Metal setup, model conversion, an
 
 ```bash
 pytest tests/runtime/dipa -q
+```
+
+### Speculative Tool Calling
+
+Overlaps a draft **tool prediction** with the main cascade generation so MCP work can finish (or hit cache) before the actor emits the real `tool_call`. This is **tool-level** speculation (not token draft/verify ASCR). Cache keys are canonical via `ToolOutputCache.make_key(tool_name, args)` → `sha256(f"{tool}:{canonical_json(args)}")[:32]` in [`neuroswarm_arm/runtime/dipa/speculative/tool_cache.py`](neuroswarm_arm/runtime/dipa/speculative/tool_cache.py).
+
+Draws on [arXiv:2512.15834](https://arxiv.org/abs/2512.15834) (Nichols et al., Speculative Tool Calling) and [arXiv:2510.04371](https://arxiv.org/abs/2510.04371) (Ye et al., Speculative Actions). Engine algorithm lives in [`neuroswarm_arm/runtime/dipa/speculative/engine.py`](neuroswarm_arm/runtime/dipa/speculative/engine.py) (Prompt B4 / paper §4).
+
+See it work (after gateway rebuild with `NSA_TOOL_SPEC_ENABLED=1`, default in compose 1.x):
+
+```bash
+curl -s http://127.0.0.1:8000/v1/tools/cache
+curl -s http://127.0.0.1:8000/v1/tools/spec_debug
+curl -s http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"Use echo.add to compute 2 + 3"}],"max_tokens":128}'
+```
+
+```text
+query ──► predictor(T1) ──► executor(MCP) ──► cache
+                     │                ▲
+                     ▼                │
+                 main gen(T2/3) ──► if tool_call matches, use cached
 ```
 
 ## Local Axion MVP
@@ -100,6 +141,7 @@ Health check:
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
+curl http://127.0.0.1:8000/v1/tools/cache
 ```
 
 Chat request:

@@ -1,0 +1,31 @@
+id,style,tool_name,predicted_correct,cache_hit,latency_baseline_ms,latency_speculative_ms,time_saved_ms,cache_hit_likely,warmed,prompt
+calc-01,calculator,echo.add,True,True,159.459,84.893,74.566,True,True,Use echo.add to compute 2 + 3
+calc-02,calculator,echo.add,True,True,154.722,96.69,58.032,True,True,add 10 and 5 with the add tool
+calc-03,calculator,echo.add,True,True,154.417,92.75,61.667,True,True,what is 41 plus 1 using echo.add
+calc-04,calculator,echo.add,True,True,161.204,90.384,70.82,True,True,sum 100 and 250 via echo.add
+calc-05,calculator,echo.add,True,True,150.385,86.594,63.791,True,True,please add 7 + 8
+calc-06,calculator,echo.add,False,True,137.509,79.648,57.861,False,True,echo.add: 19 and 23
+calc-07,calculator,echo.add,False,True,145.509,79.572,65.937,False,True,add half and one-and-a-half (0.5 + 1.5)
+calc-08,calculator,echo.add,False,True,148.188,104.01,44.178,False,True,compute -3 plus 9 with add
+calc-09,calculator,echo.add,False,True,137.203,70.373,66.83,False,True,I need 12+34 from the calculator tool
+calc-10,calculator,echo.add,False,True,157.313,78.736,78.577,False,True,almost a hundred: add 99 and 1
+echo-01,echo,echo.echo,True,True,157.985,96.844,61.141,True,True,echo hello
+echo-02,echo,echo.echo,True,True,132.32,94.261,38.059,True,True,use the echo tool to say ping
+echo-03,echo,echo.echo,True,True,143.23,93.703,49.527,True,True,echo world back to me
+echo-04,echo,echo.echo,True,True,149.458,94.779,54.679,True,True,repeat this text: axion
+echo-05,echo,echo.echo,True,True,154.026,79.828,74.198,True,True,echo ready
+echo-06,echo,echo.echo,False,False,154.512,140.095,14.417,False,False,echo the phrase speculative-tool-call
+echo-07,echo,echo.echo,False,False,146.997,132.802,14.195,False,False,please echo cache-miss-probe
+echo-08,echo,echo.echo,False,False,153.346,145.221,8.125,False,False,use echo.echo with text neuroswarm
+echo-09,echo,echo.echo,False,False,145.906,136.233,9.674,False,False,echo kleidiai
+echo-10,echo,echo.echo,False,False,158.34,148.078,10.262,False,False,repeat judge-demo via echo
+search-01,search,web.search,True,False,143.487,67.59,75.897,True,False,search the web for Arm Neoverse V2
+search-02,search,web.search,True,False,146.406,80.382,66.024,True,False,web search KleidiAI llama.cpp
+search-03,search,web.search,True,False,155.292,79.386,75.906,True,False,search public docs for speculative tool calling
+search-04,search,web.search,True,False,148.769,78.828,69.941,True,False,look up GCP Axion C4A on the web
+search-05,search,web.search,True,False,153.423,78.216,75.208,True,False,search the web for MCP tool schema
+search-06,search,web.search,False,False,151.526,147.251,4.275,False,False,find sources about SVE2 I8MM instruction mix
+search-07,search,web.search,False,False,147.102,136.835,10.267,False,False,search for Nichols speculative tool calls arxiv
+search-08,search,web.search,False,False,146.178,124.54,21.638,False,False,web search Ye speculative actions
+search-09,search,web.search,False,False,136.844,125.095,11.749,False,False,search docs for llama.cpp draft model
+search-10,search,web.search,False,False,159.276,142.689,16.587,False,False,look up neuroswarm arm cascade online

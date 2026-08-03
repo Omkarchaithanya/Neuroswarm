@@ -1,0 +1,29 @@
+id: echo.echo
+name: Echo Text
+description: Echo the provided text back unchanged. Useful for demo and connectivity checks.
+namespace: echo
+category: echo
+tags:
+- echo
+- mcp
+- demo
+params:
+  text: text to echo
+example_prompts:
+- echo hello world
+- repeat this text back to me
+- use the echo tool to say ping
+capabilities:
+- echo
+- mcp
+endpoint: mcp://echo/echo
+input_schema:
+  type: object
+  properties:
+    text:
+      type: string
+      description: text to echo
+  required:
+  - text
+output_schema:
+  type: object

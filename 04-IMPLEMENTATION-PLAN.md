@@ -571,6 +571,26 @@ Submit Aug 13, leaving Aug 14 as buffer. **Do not** wait until Aug 14 — judges
 
 ---
 
+## Speculative Tool Routing (Layer 2)
+
+Tool-level speculation (Plane 3.5) — **not** token ASCR. Algorithm from Prompt B4 / `SpeculativeEngine` (`neuroswarm_arm/runtime/dipa/speculative/engine.py`). Cache identity is always `ToolOutputCache.make_key(tool_name, args)`.
+
+Checklist (ship / verify):
+
+- [ ] **1. Parallel start** — kick off `predictor.predict(messages)` **and** `cascade.generate(...)` as two `asyncio.Task`s.
+- [ ] **2. Speculative MCP while cascade runs** — for each prediction with `confidence >= NSA_TOOL_SPEC_THRESHOLD` (default `0.75`):
+  - [ ] cache hit via `ToolOutputCache.make_key` → mark `cache_hit=True`
+  - [ ] else `executor.speculate(pred)` → in-flight `SpeculativeTask`
+- [ ] **3. On cascade `tool_call`** — recompute canonical key with `ToolOutputCache.make_key`:
+  - [ ] matching finished task → return output, `speculative_hit=true`, `neuroswarm_tool_spec_hit_total`
+  - [ ] matching in-flight task → await (bounded by `tool_timeout_s`)
+  - [ ] else fall through to sync MCP
+- [ ] **4. No tool call** — cancel all in-flight speculative tasks; return cascade result; miss counters only.
+
+Verify: `GET /v1/tools/cache`, `GET /v1/tools/spec_debug`, `python benchmarks/speculative_tool_bench.py`. Cite arXiv:2512.15834 + arXiv:2510.04371; do not claim live Axion gateway numbers until `/v1/tools/cache` is 200 after redeploy.
+
+---
+
 ## Risk register (what could go wrong)
 
 | Risk | Probability | Mitigation |

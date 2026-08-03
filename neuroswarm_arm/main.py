@@ -4,9 +4,11 @@ import os
 import platform
 from pathlib import Path
 import re
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
+from pydantic import BaseModel, Field
 
 from .aqr import pick_quant
 from .armora import ArmoraBudgetPolicy, build_armora, build_budget_service, build_rcis, build_rof, build_rpf
@@ -224,6 +226,127 @@ try:
 except Exception:
     pass
 
+def _tool_spec_enabled() -> bool:
+    raw = os.getenv("NSA_TOOL_SPEC_ENABLED", "")
+    return raw in {"1", "true", "True", "yes", "YES"}
+
+
+speculative_engine = None
+_mcp_manager = None
+if _tool_spec_enabled():
+    import asyncio as _asyncio
+
+    from neuroswarm_arm.runtime.dipa.backends.llama_cpp.backend import LlamaHttpClient
+    from neuroswarm_arm.runtime.dipa.speculative.engine import SpeculativeEngine
+    from neuroswarm_arm.runtime.dipa.speculative.executor import SpeculativeExecutor
+    from neuroswarm_arm.runtime.dipa.speculative.predictor import ToolCallPredictor
+    from neuroswarm_arm.runtime.dipa.speculative.tool_cache import ToolOutputCache
+    from neuroswarm_arm.runtime.router.mcp_executor import call_tool, get_mcp_manager
+
+    class _CascadeGenerateAdapter:
+        """Wrap sync CascadeRouter.handle as async SpeculativeEngine cascade."""
+
+        def __init__(self, cascade_router: Any, router: Any) -> None:
+            self._cascade = cascade_router
+            self._router = router
+
+        async def generate(self, request: ChatRequest):
+            def _run():
+                tool_names: list[str] = []
+                kwargs: dict[str, Any] = {}
+                try:
+                    query = request.messages[-1].content if request.messages else ""
+                    if hasattr(self._router, "route_result"):
+                        routed = self._router.route_result(query)
+                        tool_names = list(getattr(routed, "tool_names", None) or [])
+                        schemas = list(getattr(routed, "schemas", None) or [])
+                        if schemas:
+                            kwargs["tool_schemas"] = schemas
+                        conf = float(getattr(routed, "confidence_top1", 0.0) or 0.0)
+                        kwargs["tool_confidence"] = conf
+                except Exception:
+                    pass
+                return self._cascade.handle(request, tool_names or None, **kwargs)
+
+            return await _asyncio.to_thread(_run)
+
+    class _MCPExecuteAdapter:
+        """Public MCPManager execute surface for SpeculativeExecutor."""
+
+        def __init__(self, manager: Any, tool_registry: Any = None) -> None:
+            self._manager = manager
+            self._registry = tool_registry
+
+        def _resolve_tool_id(self, tool_name: str) -> str:
+            """Map draft short names (echo) / display names → registry ids (echo.echo)."""
+            name = (tool_name or "").strip()
+            if not name:
+                return name
+            if self._manager.is_executable(name):
+                return name
+            lower = name.lower()
+            compact = "".join(ch for ch in lower if ch.isalnum())
+            # Prefer exact registry id / leaf match among reconciled tools.
+            executable = list(getattr(self._manager, "executable_tools", None) or [])
+            for tid in executable:
+                if tid.lower() == lower:
+                    return tid
+                leaf = tid.split(".", 1)[-1].lower()
+                if leaf == lower or leaf == compact:
+                    return tid
+            # Fall back to registry catalog (name / id / aliases).
+            reg = self._registry
+            tools: list[Any] = []
+            if reg is not None:
+                raw_tools = getattr(reg, "tools", None)
+                if isinstance(raw_tools, dict):
+                    tools = list(raw_tools.values())
+                elif hasattr(reg, "all"):
+                    try:
+                        tools = list(reg.all() or [])
+                    except Exception:
+                        tools = []
+                elif isinstance(raw_tools, list):
+                    tools = list(raw_tools)
+            for tool in tools:
+                tid = str(getattr(tool, "id", "") or "")
+                tname = str(getattr(tool, "name", "") or "")
+                tcompact = "".join(ch for ch in tname.lower() if ch.isalnum())
+                if tid.lower() == lower or tname.lower() == lower or tcompact == compact:
+                    return tid or name
+                aliases = list(getattr(tool, "aliases", None) or [])
+                if any(str(a).lower() == lower for a in aliases):
+                    return tid or name
+                if tid and tid.split(".", 1)[-1].lower() in {lower, compact}:
+                    return tid
+            return name
+
+        async def execute(self, tool_name: str, args: dict, **kwargs: Any) -> Any:
+            del kwargs
+            return await call_tool(self._resolve_tool_id(tool_name), args, pool=self._manager)
+
+    _mcp_manager = get_mcp_manager()
+    _spec_cache = ToolOutputCache()
+    _draft = LlamaHttpClient(base_url=cfg.tier1_url)
+    _predictor = ToolCallPredictor(
+        draft_client=_draft,
+        registry=registry,
+        semantic_router=semantic_router,
+    )
+    _inflight = _asyncio.Semaphore(int(os.getenv("NSA_TOOL_SPEC_INFLIGHT", "4") or 4))
+    _executor = SpeculativeExecutor(
+        mcp_manager=_MCPExecuteAdapter(_mcp_manager, registry),
+        cache=_spec_cache,
+        inflight_sem=_inflight,
+    )
+    speculative_engine = SpeculativeEngine(
+        predictor=_predictor,
+        executor=_executor,
+        cascade=_CascadeGenerateAdapter(cascade, semantic_router),
+        cache=_spec_cache,
+        metrics=metrics,
+    )
+
 gateway = AgentGateway(
     registry=registry,
     semantic_router=semantic_router,
@@ -242,6 +365,7 @@ gateway = AgentGateway(
     okf_runtime=okf_runtime,
     memory=memory,
     acr=acr_runtime,
+    speculative_engine=speculative_engine,
 )
 performix = PerformixClient()
 
@@ -358,6 +482,22 @@ app.include_router(create_experience_router(workflow_service))
 
 
 @app.on_event("startup")
+async def _startup_tool_cache() -> None:
+    """Shared Speculative Tool Cache (Nichols et al. §3) for Layer 2."""
+    from neuroswarm_arm.runtime.dipa.speculative.tool_cache import ToolOutputCache
+
+    # Reuse engine cache when speculative path is live; else fresh singleton.
+    if speculative_engine is not None:
+        app.state.tool_cache = speculative_engine._cache  # noqa: SLF001
+        app.state.speculative_engine = speculative_engine
+        app.state.mcp_manager = _mcp_manager
+    else:
+        app.state.tool_cache = ToolOutputCache()
+        app.state.speculative_engine = None
+        app.state.mcp_manager = None
+
+
+@app.on_event("startup")
 async def _startup_mcp_reconcile() -> None:
     """When NSA_MCP_EXECUTE=1, discover tools/list and mark reconciled tools executable."""
     try:
@@ -413,6 +553,8 @@ def _shutdown_runtime() -> None:
         except Exception:
             pass
         _arop_loop_task = None
+    if hasattr(app.state, "tool_cache"):
+        app.state.tool_cache = None
     try:
         rmf.shutdown()
     except Exception:
@@ -713,7 +855,11 @@ def export_metrics(request: Request) -> Response:
 async def chat(req: ChatRequest):
     if req.stream:
         return await _chat_stream(req)
-    response = gateway.handle_chat(req)
+    # handle_chat is sync and may call _run_coro_sync (thread.join). Never run it
+    # on the event-loop thread — that deadlocks /health and every other request.
+    import asyncio as _aio
+
+    response = await _aio.to_thread(gateway.handle_chat, req)
     return response.model_dump()
 
 
@@ -832,6 +978,46 @@ def kv_cache_status(tier: int | None = None) -> dict:
     else:
         statuses = fetch_all_tier_kv_cache_status()
     return {"tiers": [s.to_dict() for s in statuses]}
+
+
+class CacheInvalidateBody(BaseModel):
+    tool: str | None = None
+    args: dict[str, Any] = Field(default_factory=dict)
+    all: bool = False
+
+
+@app.get("/v1/tools/cache")
+async def tools_cache_status() -> dict[str, Any]:
+    """Debug: speculative tool-cache size / hit rate / top keys."""
+    cache = getattr(app.state, "tool_cache", None)
+    if cache is None:
+        return {"size": 0, "hits": 0, "misses": 0, "hit_rate": 0.0, "top_keys": []}
+    snap = cache.snapshot() if hasattr(cache, "snapshot") else dict(cache.metrics())
+    snap.setdefault("top_keys", [])
+    return snap
+
+
+@app.post("/v1/tools/cache/invalidate")
+async def tools_cache_invalidate(body: CacheInvalidateBody) -> dict[str, int]:
+    """Invalidate one tool+args key or clear the entire speculative cache."""
+    cache = getattr(app.state, "tool_cache", None)
+    if cache is None:
+        return {"invalidated": 0}
+    if body.all:
+        n = await cache.invalidate(all_entries=True)
+    else:
+        n = await cache.invalidate(body.tool, body.args, all_entries=False)
+    return {"invalidated": int(n)}
+
+
+@app.get("/v1/tools/spec_debug")
+def tools_spec_debug(reset: int = 0) -> dict[str, Any]:
+    """Demo ring-buffer of last N speculative events (cap 200)."""
+    eng = getattr(app.state, "speculative_engine", None) or speculative_engine
+    if eng is None or not hasattr(eng, "debug_snapshot"):
+        return {"events": [], "count": 0}
+    events = eng.debug_snapshot(reset=bool(reset))
+    return {"events": events, "count": len(events)}
 
 
 @app.get("/v1/cost/economics")

@@ -18,7 +18,10 @@ services:
       NSA_ROUTER_TURBOVEC_MIN_TOOLS: ${NSA_ROUTER_TURBOVEC_MIN_TOOLS:-0}
       NSA_ROUTER_HIGH_CONF_GATE: ${NSA_ROUTER_HIGH_CONF_GATE:-0.70}
       NSA_AROP_CANARY_PCT: ${NSA_AROP_CANARY_PCT:-5}
-      NSA_MCP_EXECUTE: ${NSA_MCP_EXECUTE:-0}
+      # default-on for the speculative tool calling demo; the 503-when-OFF behavior is still exposed via the env override
+      NSA_MCP_EXECUTE: ${NSA_MCP_EXECUTE:-1}
+      NSA_TOOL_SPEC_ENABLED: ${NSA_TOOL_SPEC_ENABLED:-1}
+      NSA_TOOL_SPEC_THRESHOLD: ${NSA_TOOL_SPEC_THRESHOLD:-0.75}
       NSA_REQUIRE_KLEIDIAI: ${NSA_REQUIRE_KLEIDIAI:-0}
       NSA_DIPA_KLEIDIAI: ${NSA_DIPA_KLEIDIAI:-1}
       NSA_DIPA_PD_MODE: ${NSA_DIPA_PD_MODE:-off}
@@ -84,13 +87,13 @@ services:
       timeout: 5s
       retries: 6
     # Plain docker compose honors mem_limit/cpus; deploy kept for swarm/--compatibility.
-    cpus: 1.0
-    mem_limit: 1536m
+    cpus: 1.5
+    mem_limit: 3072m
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1536M
+          cpus: "1.5"
+          memory: 3072M
 
   tier1:
     build:
@@ -169,7 +172,7 @@ services:
       - --model
       - /models/Qwen2.5-3B-Instruct-Q4_0.gguf
       - --model-draft
-      - /models/tier1/qwen2.5-0.5b-instruct-q5_k_m.gguf
+      - /models/Qwen2.5-0.5B-Instruct-Q4_0.gguf
       - --spec-type
       - draft-simple
       - --spec-draft-n-max

@@ -52,6 +52,7 @@ def record_from_mapping(data: dict[str, Any], *, okf_path: str | None = None) ->
         input_schema=input_schema,
         output_schema=dict(data.get("output_schema") or {}),
         example_prompts=_as_list(data.get("example_prompts") or data.get("examples")),
+        example_args=dict(data.get("example_args") or {}),
         endpoint=data.get("endpoint"),
         auth=data.get("auth"),
         okf_path=okf_path or data.get("okf_path"),

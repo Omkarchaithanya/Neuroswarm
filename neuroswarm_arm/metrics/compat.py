@@ -148,7 +148,27 @@ def build_default_store() -> MetricsStore:
         ("router_avg_token_reduction", "gauge", "Average token reduction ratio."),
         ("router_index_size", "gauge", "Vectors currently indexed."),
         ("router_tools_registered", "gauge", "Tools in registry."),
+        ("neuroswarm_tool_cache_hits", "counter", "Speculative tool-cache hits."),
+        ("neuroswarm_tool_cache_misses", "counter", "Speculative tool-cache misses."),
+        ("neuroswarm_tool_cache_size", "gauge", "Current speculative tool-cache entry count."),
+        ("neuroswarm_tool_cache_hit_rate", "gauge", "Speculative tool-cache hit rate."),
+        ("neuroswarm_tool_spec_hit_total", "counter", "Speculative tool-call hits."),
+        ("neuroswarm_tool_spec_miss_total", "counter", "Speculative tool-call misses."),
+        (
+            "neuroswarm_tool_spec_time_saved_ms_total",
+            "counter",
+            "Milliseconds saved by speculative tool-call overlap.",
+        ),
+        ("neuroswarm_tool_spec_inflight", "gauge", "In-flight speculative tool executions."),
     )
     for name, mtype, help_text in builtins:
         store.describe(name, mtype, help_text)
+    # Materialize tool-spec series so /metrics always exposes the 4 names.
+    for name in (
+        "neuroswarm_tool_spec_hit_total",
+        "neuroswarm_tool_spec_miss_total",
+        "neuroswarm_tool_spec_time_saved_ms_total",
+    ):
+        store.inc(name, 0.0)
+    store.set("neuroswarm_tool_spec_inflight", 0.0)
     return store

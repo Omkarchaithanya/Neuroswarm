@@ -1,0 +1,35 @@
+id: echo.add
+name: Echo Add
+description: Add two numbers and return the sum. Self-contained arithmetic demo tool.
+namespace: echo
+category: echo
+tags:
+- echo
+- mcp
+- demo
+- math
+params:
+  a: first addend
+  b: second addend
+example_prompts:
+- add 2 and 3
+- what is 41 plus 1 using the add tool
+- use echo.add to sum 10 and 5
+capabilities:
+- echo
+- mcp
+endpoint: mcp://echo/add
+input_schema:
+  type: object
+  properties:
+    a:
+      type: number
+      description: first addend
+    b:
+      type: number
+      description: second addend
+  required:
+  - a
+  - b
+output_schema:
+  type: object
