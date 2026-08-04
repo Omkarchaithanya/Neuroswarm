@@ -135,9 +135,9 @@ Use these model tiers:
 
 | Tier | Purpose | Model | Quant |
 |---|---|---|---|
-| Tier 1 | Drafter | Qwen2.5-0.5B-Instruct | Q4_K_M |
-| Tier 2 | Verifier | Llama-3.2-3B-Instruct | Q5_K_M |
-| Tier 3 | Arbiter | Llama-3.1-8B-Instruct | Q5_K_M |
+| Tier 1 | Drafter | xLAM-2-1B-Instruct | Q4_0 |
+| Tier 2 | Verifier | xLAM-2-3B-Instruct | Q4_0 |
+| Tier 3 | Arbiter | DeepSeek-R1-Distill-Qwen-7B | Q4_0 |
 | Reasoning | Optional | DeepSeek-R1-Distill-Llama-8B | Q5_K_M |
 | Embedding | Tool routing | BGE-small-en-v1.5 | ONNX/int8 or CPU sentence-transformers |
 
@@ -154,7 +154,7 @@ Run one non-cascade server first:
 
 ```bash
 llama-server \
-  -m /models/llama-3.1-8b-q5_k_m.gguf \
+  -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf \
   --host 0.0.0.0 \
   --port 8080 \
   -ngl 0 \
@@ -183,11 +183,11 @@ Acceptance criteria:
 docker compose up -d tier1 tier2 tier3 gateway
 
 # Manual Axion-equivalent (single-UMA locality):
-taskset -c 0,1 llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf \
+taskset -c 0,1 llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf \
   --port 8081 -ngl 0 -t 2 -c 4096
-taskset -c 2-4 llama-server -m /models/llama-3.2-3b-q5_k_m.gguf \
+taskset -c 2-4 llama-server -m /models/xLAM-2-3b-fc-r-Q4_0.gguf \
   --port 8082 -ngl 0 -t 3 -c 8192
-taskset -c 5-7 llama-server -m /models/llama-3.1-8b-q5_k_m.gguf \
+taskset -c 5-7 llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf \
   --port 8083 -ngl 0 -t 3 -c 8192
 
 # Only on multi-NUMA hosts (future), topology-gated numactl is valid:

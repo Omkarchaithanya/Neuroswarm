@@ -11,7 +11,7 @@ pytest tests/runtime/dipa/test_control_plane.py tests/runtime/dipa/test_inferenc
 ```bash
 # One-shot
 docker compose run --rm --entrypoint llama-bench tier2 \
-  -m /models/Qwen2.5-3B-Instruct-Q4_0.gguf -t $(nproc)
+  -m /models/xLAM-2-3b-fc-r-Q4_0.gguf -t $(nproc)
 
 # Matrix sweep → work/profiling/llama-bench-*.json
 TIER=2 bash scripts/run-llama-bench-sweep.sh

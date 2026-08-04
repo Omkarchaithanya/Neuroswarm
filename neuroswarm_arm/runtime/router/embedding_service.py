@@ -18,7 +18,7 @@ from .similarity import l2_normalize, validate_embedding
 
 
 KNOWN_MODELS = {
-    "BAAI/bge-small-en-v1.5": 384,
+    "nomic-embed-text-v1.5": 384,
     "bge-small-en-v1.5": 384,
     "sentence-transformers/all-MiniLM-L6-v2": 384,
     "all-MiniLM-L6-v2": 384,

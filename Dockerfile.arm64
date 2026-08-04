@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir -r /app/requirements-gateway.txt \
     && pip install --no-cache-dir /app/packages/okf \
     && pip install --no-cache-dir --no-deps -e . \
     && mkdir -p /app/work/fastembed \
-    && python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5', cache_dir='/app/work/fastembed')"
+    && python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='nomic-embed-text-v1.5', cache_dir='/app/work/fastembed')"
 
 EXPOSE 8000
 CMD ["python", "-m", "neuroswarm_arm.main"]

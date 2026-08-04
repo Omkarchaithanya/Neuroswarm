@@ -42,7 +42,7 @@ Schema-token reduction: report measured ratios from `RoutingResult` / MCPGA — 
 
 | Piece | Reality |
 |-------|---------|
-| Default encoder | `BAAI/bge-small-en-v1.5` — **~33.4M params, 384-dim** |
+| Default encoder | `nomic-embed-text-v1.5` — **~33.4M params, 384-dim** |
 | Default embed backend | **FastEmbed** (`NSA_ROUTER_EMBEDDING_BACKEND=fastembed`) via ONNX Runtime — preferred on ARM gateway |
 | Sentence-Transformers | Optional fallback when FastEmbed unavailable |
 | TurboVec | **4-bit** TurboQuant product quantization when `tools >= NSA_ROUTER_TURBOVEC_MIN_TOOLS` (default **0** — activate whenever the wheel imports); below a raised threshold → exact float32. Not an int8 index. |

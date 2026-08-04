@@ -12,7 +12,7 @@ export COMPOSE_FILE=docker-compose.yaml
 mkdir -p "${MODEL_DIR}/tier1"
 TARGET="${MODEL_DIR}/tier1/qwen2.5-0.5b-instruct-q5_k_m.gguf"
 if [[ ! -e "${TARGET}" ]]; then
-  ln -sfn "${MODEL_DIR}/Qwen2.5-0.5B-Instruct-Q4_0.gguf" "${TARGET}"
+  ln -sfn "${MODEL_DIR}/xLAM-2-1b-fc-r-Q4_0.gguf" "${TARGET}"
 fi
 ls -lh "${MODEL_DIR}/tier1/"
 

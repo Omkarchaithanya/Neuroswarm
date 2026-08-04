@@ -40,9 +40,9 @@ NeuroSwarm-Arm neuro installed.
 Gateway service: neuro-neuroswarm-arm-gateway:8000
 
 1. Ensure GGUF models are available at /models on the node/PVC:
-   - qwen2.5-0.5b-q4_k_m.gguf
-   - llama-3.2-3b-q5_k_m.gguf
-   - llama-3.1-8b-q5_k_m.gguf
+   - xLAM-2-1b-fc-r-Q4_0.gguf
+   - xLAM-2-3b-fc-r-Q4_0.gguf
+   - DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
 
    For local demos with host models:
      --set models.hostPath=/models

@@ -27,8 +27,8 @@ function Write-DebugLog {
 }
 
 $required = @(
-    "Qwen2.5-0.5B-Instruct-Q4_0.gguf",
-    "Qwen2.5-3B-Instruct-Q4_0.gguf",
+    "xLAM-2-1b-fc-r-Q4_0.gguf",
+    "xLAM-2-3b-fc-r-Q4_0.gguf",
     "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 

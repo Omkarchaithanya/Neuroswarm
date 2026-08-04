@@ -930,13 +930,13 @@
           "pid": 1232450,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
         },
         {
           "pid": 1232457,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
         },
         {
           "pid": 1305126,
@@ -1146,19 +1146,19 @@
           "pid": 2225767,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
         },
         {
           "pid": 2225775,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.2-3b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-3b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
         },
         {
           "pid": 2225782,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
         },
         {
           "pid": 2243213,
@@ -2436,13 +2436,13 @@
           "pid": 1232450,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
         },
         {
           "pid": 1232457,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
         },
         {
           "pid": 1305126,
@@ -2652,19 +2652,19 @@
           "pid": 2225767,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/qwen2.5-0.5b-q4_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 2 -c 4096 --metrics"
         },
         {
           "pid": 2225775,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.2-3b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
+          "command_line": "llama-server -m /models/xLAM-2-3b-fc-r-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 8192 --metrics"
         },
         {
           "pid": 2225782,
           "name": "llama-server",
           "username": "root",
-          "command_line": "llama-server -m /models/llama-3.1-8b-q5_k_m.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
+          "command_line": "llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf --host 0.0.0.0 --port 8080 -ngl 0 -t 3 -c 4096 --metrics"
         },
         {
           "pid": 2243213,

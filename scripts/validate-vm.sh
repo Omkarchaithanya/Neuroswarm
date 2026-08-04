@@ -64,9 +64,9 @@ fi
 
 section "Models"
 required_models=(
-  "$MODEL_DIR/qwen2.5-0.5b-q4_k_m.gguf"
-  "$MODEL_DIR/llama-3.2-3b-q5_k_m.gguf"
-  "$MODEL_DIR/llama-3.1-8b-q5_k_m.gguf"
+  "$MODEL_DIR/xLAM-2-1b-fc-r-Q4_0.gguf"
+  "$MODEL_DIR/xLAM-2-3b-fc-r-Q4_0.gguf"
+  "$MODEL_DIR/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 for model in "${required_models[@]}"; do
   check "model exists: $model" test -e "$model"

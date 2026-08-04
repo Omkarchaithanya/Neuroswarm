@@ -52,7 +52,7 @@ def test_missing_embedder_raises_loud(monkeypatch):
     monkeypatch.setattr(EmbeddingService, "_try_fastembed", _no_fe)
     monkeypatch.setattr(EmbeddingService, "_try_sentence_transformers", _no_st)
     with pytest.raises(EmbeddingError, match="NSA_ROUTER_ALLOW_HASH|fastembed"):
-        EmbeddingService(EmbeddingSpec(model_name="BAAI/bge-small-en-v1.5", backend="fastembed"), allow_hash=False)
+        EmbeddingService(EmbeddingSpec(model_name="nomic-embed-text-v1.5", backend="fastembed"), allow_hash=False)
 
 
 def test_fastembed_backend_name(monkeypatch):
@@ -127,7 +127,7 @@ def test_onnx_without_tokenizer_raises(monkeypatch, tmp_path):
     with pytest.raises(EmbeddingError):
         EmbeddingService(
             EmbeddingSpec(
-                model_name="BAAI/bge-small-en-v1.5",
+                model_name="nomic-embed-text-v1.5",
                 use_onnx=True,
                 onnx_path=str(bogus),
             ),

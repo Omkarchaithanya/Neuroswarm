@@ -62,9 +62,9 @@ Host has **8 vCPU / 32 GB**. Thread defaults sum to 8; MVP ctx 4096.
 ## 4. Add Models
 
 ```text
-/models/qwen2.5-0.5b-q4_k_m.gguf
-/models/llama-3.2-3b-q5_k_m.gguf
-/models/llama-3.1-8b-q5_k_m.gguf
+/models/xLAM-2-1b-fc-r-Q4_0.gguf
+/models/xLAM-2-3b-fc-r-Q4_0.gguf
+/models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
 ```
 
 ```powershell

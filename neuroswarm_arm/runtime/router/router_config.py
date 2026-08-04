@@ -74,7 +74,7 @@ class RouterConfig:
     threshold: float = 0.42
     high_conf_gate: float = 0.70
     high_conf_thinking_budget: int = 256
-    encoder_name: str = "BAAI/bge-small-en-v1.5"
+    encoder_name: str = "nomic-embed-text-v1.5"
     embedding_backend: str = "fastembed"
     fastembed_cache_dir: str | None = None
     fallback_dims: int = 64
@@ -135,7 +135,7 @@ class RouterConfig:
             threshold=threshold,
             high_conf_gate=_f("NSA_ROUTER_HIGH_CONF_GATE", 0.70),
             high_conf_thinking_budget=_i("NSA_ROUTER_HIGH_CONF_THINKING_BUDGET", 256),
-            encoder_name=os.getenv("NSA_ROUTER_ENCODER", "BAAI/bge-small-en-v1.5"),
+            encoder_name=os.getenv("NSA_ROUTER_ENCODER", "nomic-embed-text-v1.5"),
             embedding_backend=os.getenv("NSA_ROUTER_EMBEDDING_BACKEND", "fastembed").lower(),
             fastembed_cache_dir=os.getenv("NSA_ROUTER_FASTEMBED_CACHE")
             or os.getenv("FASTEMBED_CACHE_PATH"),

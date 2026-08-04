@@ -7,7 +7,7 @@
 | `NSA_ROUTER_RERANK_TRIGGER` | (alias of threshold) | Same expand gate as `NSA_ROUTER_THRESHOLD` |
 | `NSA_ROUTER_HIGH_CONF_GATE` | 0.70 | `RoutingResult.high_confidence` when top-1 confidence exceeds this (FastEmbed-calibrated; was 0.85 for hash peaks) |
 | `NSA_ROUTER_HIGH_CONF_THINKING_BUDGET` | 256 | Cap `thinking_token_cap` when high-confidence |
-| `NSA_ROUTER_ENCODER` | `BAAI/bge-small-en-v1.5` | Embedding model (**384-dim**, ~33.4M params) |
+| `NSA_ROUTER_ENCODER` | `nomic-embed-text-v1.5` | Embedding model (**384-dim**, ~33.4M params) |
 | `NSA_ROUTER_EMBEDDING_BACKEND` | `fastembed` | fastembed\|sentence-transformers\|onnx\|hash |
 | `NSA_ROUTER_FASTEMBED_CACHE` | | FastEmbed model cache dir (also `FASTEMBED_CACHE_PATH`) |
 | `NSA_ROUTER_ANN_BACKEND` | `turbovec` | turbovec\|exact\|faiss\|hnsw\|usearch\|scann |
@@ -43,7 +43,7 @@ Env overrides: `NSA_ROUTER_W_SEMANTIC`, `_KEYWORD`, `_PARAM`, `_CAPABILITY`, `_W
 
 ## Notes
 
-- Production default is **FastEmbed** (`BAAI/bge-small-en-v1.5`). Without FastEmbed / Sentence-Transformers / ONNX, startup raises unless `NSA_ROUTER_ALLOW_HASH=1`.
+- Production default is **FastEmbed** (`nomic-embed-text-v1.5`). Without FastEmbed / Sentence-Transformers / ONNX, startup raises unless `NSA_ROUTER_ALLOW_HASH=1`.
 - Query embeds use the BGE instruction prefix by default (`NSA_ROUTER_BGE_QUERY_PREFIX=1`); tool/document embeds stay unprefixed. Restoring the prefix can raise cosine bands — **do not retune 0.42/0.70** until a FastEmbed measurement artifact exists.
 - Pooling is FastEmbed library-default (not configured in-repo); do not claim mean vs CLS from this codebase alone.
 - ONNX never silently hash-encodes: missing tokenizer raises `EmbeddingError`.

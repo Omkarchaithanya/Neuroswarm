@@ -20,14 +20,14 @@ from neuroswarm_arm.runtime.router.telemetry import gen_ai_attrs, mcp_span_attrs
 
 
 def test_bge_query_prefix_applied_for_bge_small():
-    out = apply_bge_query_prefix("list s3 buckets", model_name="BAAI/bge-small-en-v1.5")
+    out = apply_bge_query_prefix("list s3 buckets", model_name="nomic-embed-text-v1.5")
     assert out.startswith(BGE_QUERY_PREFIX)
     assert out.endswith("list s3 buckets")
 
 
 def test_bge_query_prefix_kill_switch(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_BGE_QUERY_PREFIX", "0")
-    out = apply_bge_query_prefix("list s3 buckets", model_name="BAAI/bge-small-en-v1.5")
+    out = apply_bge_query_prefix("list s3 buckets", model_name="nomic-embed-text-v1.5")
     assert out == "list s3 buckets"
 
 
@@ -41,7 +41,7 @@ def test_encode_query_prefixes_encode_does_not(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
     monkeypatch.setenv("NSA_ROUTER_BGE_QUERY_PREFIX", "1")
     svc = EmbeddingService(
-        EmbeddingSpec(model_name="BAAI/bge-small-en-v1.5", dims=384, backend="hash"),
+        EmbeddingSpec(model_name="nomic-embed-text-v1.5", dims=384, backend="hash"),
         allow_hash=True,
     )
     # Force a non-hash backend label to exercise prefix path without FastEmbed
@@ -65,7 +65,7 @@ def test_encode_query_skips_prefix_on_hash_backend(monkeypatch):
     monkeypatch.setenv("NSA_ROUTER_ALLOW_HASH", "1")
     monkeypatch.setenv("NSA_ROUTER_EMBEDDING_BACKEND", "hash")
     svc = EmbeddingService(
-        EmbeddingSpec(model_name="BAAI/bge-small-en-v1.5", dims=384, backend="hash"),
+        EmbeddingSpec(model_name="nomic-embed-text-v1.5", dims=384, backend="hash"),
         allow_hash=True,
     )
     seen: list[str] = []
@@ -86,7 +86,7 @@ def test_high_conf_gate_health_fallback_is_070():
         turbovec_min_tools = 0
         top_k = 3
         threshold = 0.42
-        encoder_name = "BAAI/bge-small-en-v1.5"
+        encoder_name = "nomic-embed-text-v1.5"
         embedding_backend = "hash"
         enable_hot_reload = False
         snapshot_dir = "."

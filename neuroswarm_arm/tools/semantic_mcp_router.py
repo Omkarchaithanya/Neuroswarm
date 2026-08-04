@@ -30,7 +30,7 @@ class SemanticMCPRouter:
     registry: ToolRegistry
     top_k: int = 3
     threshold: float = 0.42
-    encoder_name: str = "BAAI/bge-small-en-v1.5"
+    encoder_name: str = "nomic-embed-text-v1.5"
     fallback_dims: int = 64
     _inner: SemanticToolRouter | None = field(default=None, repr=False)
     _route_context_extras: dict[str, Any] = field(default_factory=dict, repr=False)

@@ -190,7 +190,7 @@ from sentence_transformers import SentenceTransformer
 
 class SemanticMCPRouter:
     def __init__(self):
-        self.encoder = SentenceTransformer("BAAI/bge-small-en-v1.5", device="cpu")
+        self.encoder = SentenceTransformer("nomic-embed-text-v1.5", device="cpu")
         self.index = faiss.IndexFlatIP(384)
         self.tools = []
 

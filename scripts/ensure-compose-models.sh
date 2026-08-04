@@ -7,8 +7,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE_MODELS=(
-  "Qwen2.5-0.5B-Instruct-Q4_0.gguf"
-  "Qwen2.5-3B-Instruct-Q4_0.gguf"
+  "xLAM-2-1b-fc-r-Q4_0.gguf"
+  "xLAM-2-3b-fc-r-Q4_0.gguf"
   "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 TIER3_COMPOSE_ALIASES=(
@@ -16,21 +16,21 @@ TIER3_COMPOSE_ALIASES=(
 )
 
 TIER1_SOURCES=(
-  "Qwen2.5-0.5B-Instruct-Q4_0.gguf"
-  "qwen2.5-0.5b-instruct-q4_k_m.gguf"
-  "qwen2.5-0.5b-q4_k_m.gguf"
+  "xLAM-2-1b-fc-r-Q4_0.gguf"
+  "xLAM-2-1b-fc-r-Q4_0.gguf"
+  "xLAM-2-1b-fc-r-Q4_0.gguf"
 )
 TIER2_SOURCES=(
-  "Qwen2.5-3B-Instruct-Q4_0.gguf"
-  "qwen2.5-3b-instruct-q4_0.gguf"
-  "Llama-3.2-3B-Instruct-Q5_K_M.gguf"
-  "llama-3.2-3b-q5_k_m.gguf"
+  "xLAM-2-3b-fc-r-Q4_0.gguf"
+  "xLAM-2-3b-fc-r-Q4_0.gguf"
+  "xLAM-2-3b-fc-r-Q4_0.gguf"
+  "xLAM-2-3b-fc-r-Q4_0.gguf"
 )
 TIER3_SOURCES=(
   "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
-  "deepseek-r1-distill-qwen-7b-q4_0.gguf"
-  "Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf"
-  "llama-3.1-8b-q5_k_m.gguf"
+  "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
+  "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
+  "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 
 resolve_model_dir() {
