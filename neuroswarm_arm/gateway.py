@@ -16,11 +16,12 @@ from .tools.semantic_mcp_router import SemanticMCPRouter
 if TYPE_CHECKING:
     from .inference.cascade import CascadeRouter
     from .runtime.dipa import DIPARuntime
-    from .runtime.dipa.speculative.engine import SpeculativeEngine
-    from .runtime.dipa.speculative.predictor import ToolCallPredictor
-    from .runtime.haoe import HAOERuntime
-    from .runtime.kv.manager.runtime import KVRuntimeManager
-    from .runtime.router import SemanticToolRouter
+from .runtime.dipa.speculative.engine import SpeculativeEngine
+from .runtime.dipa.speculative.predictor import ToolCallPredictor
+from .runtime.haoe import HAOERuntime
+from .runtime.kv.manager.runtime import KVRuntimeManager
+from .runtime.router import SemanticToolRouter
+from .runtime.router.speculative_tool_executor import SpeculativeToolExecutor
 
 _T = TypeVar("_T")
 
@@ -67,6 +68,8 @@ class AgentGateway:
     tool_predictor: ToolCallPredictor | None = None
     # Optional SpeculativeEngine (arxiv 2512.15834). None = byte-identical legacy path.
     speculative_engine: SpeculativeEngine | None = None
+    # B3: Speculative tool executor — predict + pre-warm tool calls
+    spec_executor: SpeculativeToolExecutor | None = None
     armora_policy: Any | None = None
     budget_service: Any | None = None
     rcis: Any | None = None
@@ -237,6 +240,27 @@ class AgentGateway:
                     del profile
                 except Exception:
                     pass
+
+    async def handle_chat_async(self, req: ChatRequest) -> ChatResponse:
+        """Async chat path with speculative tool pre-warming."""
+        # Run speculative tool prediction/execution before the main chat
+        if self.spec_executor is not None and req.session_id:
+            try:
+                query = req.messages[-1].content if req.messages else ""
+                ctx = self._route_context(req, query) if req.messages else None
+                specs = await self.spec_executor.speculate(
+                    query, context=ctx.__dict__ if ctx else None, session_id=req.session_id
+                )
+                # Stash on request for downstream DIPA inference to inject
+                # We can't easily modify pydantic model, so we'll inject via metrics
+                # after the main chat completes
+                req = req.model_copy(update={"_spec_results": specs})
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning("speculative_tool_executor_failed: %s", exc)
+
+        # Delegate to sync handler (which runs in thread pool from main.py)
+        return await asyncio.to_thread(self.handle_chat, req)
 
     def _fast_path_eligible(self, routed: Any) -> bool:
         """HAOE bypass when high-confidence and no ACR memory-plane work."""

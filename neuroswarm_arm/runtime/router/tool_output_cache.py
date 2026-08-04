@@ -382,6 +382,29 @@ class ToolOutputCache:
                 "size": size,
             }
 
+    def get_sync(self, tool_id: str, args: Any) -> dict[str, Any] | None:
+        """Synchronous get for confirmation checks (non-async path)."""
+        key = _make_key(tool_id, args)
+        if self._redis is not None:
+            value = self._redis.get(key)
+            if value is None:
+                return None
+            return value
+
+        with self._lock:
+            assert self._store is not None
+            try:
+                item = self._store[key]
+            except KeyError:
+                return None
+            expires_at, result = item
+            if expires_at < time.monotonic():
+                self._drop_key(key)
+                return None
+            if hasattr(self._store, "move_to_end"):
+                self._store.move_to_end(key)
+            return dict(result)
+
     def close(self) -> None:
         if self._redis is not None:
             self._redis.close()

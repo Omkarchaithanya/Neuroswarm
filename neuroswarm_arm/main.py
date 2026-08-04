@@ -51,6 +51,9 @@ from .runtime.acr import build_acr
 from .runtime.rtg import build_rtg
 from .runtime.rtg.hooks import DIPAReasoningHook
 from .runtime.router import build_router, create_tool_router, load_router_config
+from .runtime.router.speculative_tool_executor import SpeculativeToolExecutor
+from .runtime.router.tool_call_predictor import ToolCallPredictor
+from .runtime.router.tool_output_cache import ToolOutputCache
 from .schemas import ChatRequest
 from .tools.registry import ToolRegistry
 from .tools.semantic_mcp_router import SemanticMCPRouter
@@ -75,6 +78,18 @@ semantic_router = SemanticMCPRouter(
     top_k=cfg.router_top_k,
 )
 semantic_router.bind(tool_router)
+
+# Speculative tool execution layer (B3) — additive, disabled by default via env
+_tool_cache = ToolOutputCache()
+_tool_predictor = ToolCallPredictor(
+    registry=tool_router.registry,
+    embedder=tool_router.embedder,
+    tier1_url=cfg.tier1_url,
+)
+_spec_executor = SpeculativeToolExecutor(
+    cache=_tool_cache,
+    predictor=_tool_predictor,
+)
 
 kv_cfg = KVRuntimeConfig(
     root=cfg.kv_store,
@@ -366,6 +381,7 @@ gateway = AgentGateway(
     memory=memory,
     acr=acr_runtime,
     speculative_engine=speculative_engine,
+    spec_executor=_spec_executor,
 )
 performix = PerformixClient()
 
@@ -858,8 +874,27 @@ async def chat(req: ChatRequest):
     # handle_chat is sync and may call _run_coro_sync (thread.join). Never run it
     # on the event-loop thread — that deadlocks /health and every other request.
     import asyncio as _aio
+    import os
 
-    response = await _aio.to_thread(gateway.handle_chat, req)
+    # Branch: async path with speculative tool pre-warming when enabled
+    if os.getenv("NSA_SPEC_TOOL_ENABLED", "1") == "1" and not req.stream:
+        response = await gateway.handle_chat_async(req)
+    else:
+        response = await _aio.to_thread(gateway.handle_chat, req)
+
+    # Add speculative tools metrics to response
+    if hasattr(req, "_spec_results") and req._spec_results:
+        specs = req._spec_results
+        metrics_dict = dict(getattr(response, "metrics", None) or {})
+        cache_hits = sum(1 for s in specs if s.is_cache_hit)
+        metrics_dict["speculative_tools"] = {
+            "drafts": len(specs),
+            "cache_hits": cache_hits,
+            "confirmed": 0,  # incremented by post-call hook
+            "prediction_latency_ms": specs[0].prediction_latency_ms if specs else 0.0,
+        }
+        response = response.model_copy(update={"metrics": metrics_dict})
+
     return response.model_dump()
 
 
@@ -1018,6 +1053,14 @@ def tools_spec_debug(reset: int = 0) -> dict[str, Any]:
         return {"events": [], "count": 0}
     events = eng.debug_snapshot(reset=bool(reset))
     return {"events": events, "count": len(events)}
+
+
+@app.get("/v1/speculative-tools/stats")
+def speculative_tools_stats() -> dict[str, Any]:
+    """Stats for the speculative tool executor (B3)."""
+    if gateway.spec_executor is None:
+        return {"enabled": False}
+    return {"enabled": True, **gateway.spec_executor.stats()}
 
 
 @app.get("/v1/cost/economics")
