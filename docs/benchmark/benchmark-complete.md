@@ -1,4 +1,4 @@
-# Neuroswarm Comprehensive Benchmark Kit (Executive + Technical + Slides + Runbook)
+# Neuroswarm Comprehensive Benchmark Kit 
 
 ## 1) Purpose and Audience
 This single document combines five deliverables into one:
