@@ -70,7 +70,7 @@ Reproduce: `python benchmarks/speculative_tool_bench.py` (or `make bench-tool-sp
 
 Replaces naïve injection of all MCP tool schemas with Top-K semantic routing:
 
-`BGE-small → TurboVec (2/4-bit TurboQuant when active; else exact NumPy) → hybrid retrieval → rerank → Top-K schemas → DIPA`
+`nomic-embed-text-v1.5 → TurboVec (2/4-bit TurboQuant when active; else exact NumPy) → hybrid retrieval → rerank → Top-K schemas → DIPA`
 
 Default `NSA_ROUTER_TURBOVEC_MIN_TOOLS=0` so TurboVec runs whenever the ARM64 wheel imports. `/ready` reports honest `configured_backend` / `active_backend` / `fallback_reason`. Advertised tool YAML IDs match FastMCP execute names (`scripts/verify-mcp-execute-contract.py`).
 

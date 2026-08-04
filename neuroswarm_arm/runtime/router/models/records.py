@@ -15,7 +15,7 @@ class MetricKind(str, Enum):
 
 @dataclass(slots=True)
 class EmbeddingSpec:
-    model_name: str = "BAAI/bge-small-en-v1.5"
+    model_name: str = "nomic-embed-text-v1.5"
     dims: int = 384
     normalize: bool = True
     # fastembed | sentence-transformers | onnx | hash | auto
