@@ -8,7 +8,7 @@ export NSA_LLAMA_IMAGE=nexus-arm/llama-kleidiai:server
 export COMPOSE_FILE=docker-compose.yaml
 
 mkdir -p /models/tier1
-ln -sfn /models/xLAM-2-1b-fc-r-Q4_0.gguf /models/tier1/qwen2.5-0.5b-instruct-q5_k_m.gguf
+ln -sfn /models/xLAM-2-1B-fc-r-Q4_0.gguf /models/tier1/qwen2.5-0.5b-instruct-q5_k_m.gguf
 
 echo "=== gate1: compose config ==="
 docker compose -f docker-compose.yaml config | grep -A12 '^  tier-spec:' | head -40

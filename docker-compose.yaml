@@ -114,7 +114,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/xLAM-2-1b-fc-r-Q4_0.gguf
+      - /models/xLAM-2-1B-fc-r-Q4_0.gguf
       - --host
       - 0.0.0.0
       - --port
@@ -170,9 +170,9 @@ services:
     # Flag map: --draft-max → --spec-draft-n-max; --draft-cfg-scale removed upstream.
     command:
       - --model
-      - /models/xLAM-2-3b-fc-r-Q4_0.gguf
+      - /models/xLAM-2-3B-fc-r-Q4_0.gguf
       - --model-draft
-      - /models/xLAM-2-1b-fc-r-Q4_0.gguf
+      - /models/xLAM-2-1B-fc-r-Q4_0.gguf
       - --spec-type
       - draft-simple
       - --spec-draft-n-max
@@ -229,7 +229,7 @@ services:
       OMP_PLACES: ${OMP_PLACES:-cores}
     command:
       - -m
-      - /models/xLAM-2-3b-fc-r-Q4_0.gguf
+      - /models/xLAM-2-3B-fc-r-Q4_0.gguf
       - --host
       - 0.0.0.0
       - --port

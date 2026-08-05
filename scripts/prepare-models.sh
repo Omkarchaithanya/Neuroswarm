@@ -54,14 +54,14 @@ elif ! mkdir -p "$MODEL_DIR" 2>/dev/null; then
 fi
 
 expected=(
-  "xLAM-2-1b-fc-r-Q4_0.gguf"
-  "xLAM-2-3b-fc-r-Q4_0.gguf"
+  "xLAM-2-1B-fc-r-Q4_0.gguf"
+  "xLAM-2-3B-fc-r-Q4_0.gguf"
   "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 
 source_files=(
-  "xLAM-2-1b-fc-r-Q4_0.gguf"
-  "xLAM-2-3b-fc-r-Q4_0.gguf"
+  "xLAM-2-1B-fc-r-Q4_0.gguf"
+  "xLAM-2-3B-fc-r-Q4_0.gguf"
   "DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 

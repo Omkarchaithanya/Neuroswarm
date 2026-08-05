@@ -183,9 +183,9 @@ Acceptance criteria:
 docker compose up -d tier1 tier2 tier3 gateway
 
 # Manual Axion-equivalent (single-UMA locality):
-taskset -c 0,1 llama-server -m /models/xLAM-2-1b-fc-r-Q4_0.gguf \
+taskset -c 0,1 llama-server -m /models/xLAM-2-1B-fc-r-Q4_0.gguf \
   --port 8081 -ngl 0 -t 2 -c 4096
-taskset -c 2-4 llama-server -m /models/xLAM-2-3b-fc-r-Q4_0.gguf \
+taskset -c 2-4 llama-server -m /models/xLAM-2-3B-fc-r-Q4_0.gguf \
   --port 8082 -ngl 0 -t 3 -c 8192
 taskset -c 5-7 llama-server -m /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf \
   --port 8083 -ngl 0 -t 3 -c 8192

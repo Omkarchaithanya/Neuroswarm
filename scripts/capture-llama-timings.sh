@@ -22,8 +22,8 @@ SUMMARY="work/profiling/llama-timings-${STAMP}.json"
 SUMMARY_LATEST="work/profiling/llama-timings-summary.json"
 
 case "${TIER}" in
-  1) DEFAULT_BASE="http://127.0.0.1:8081"; MODEL="/models/xLAM-2-1b-fc-r-Q4_0.gguf"; SERVICE="tier1" ;;
-  2) DEFAULT_BASE="http://127.0.0.1:8082"; MODEL="/models/xLAM-2-3b-fc-r-Q4_0.gguf"; SERVICE="tier2" ;;
+  1) DEFAULT_BASE="http://127.0.0.1:8081"; MODEL="/models/xLAM-2-1B-fc-r-Q4_0.gguf"; SERVICE="tier1" ;;
+  2) DEFAULT_BASE="http://127.0.0.1:8082"; MODEL="/models/xLAM-2-3B-fc-r-Q4_0.gguf"; SERVICE="tier2" ;;
   3) DEFAULT_BASE="http://127.0.0.1:8083"; MODEL="/models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"; SERVICE="tier3" ;;
   *) echo "TIER must be 1, 2, or 3" >&2; exit 1 ;;
 esac

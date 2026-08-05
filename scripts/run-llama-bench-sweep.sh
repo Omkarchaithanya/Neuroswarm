@@ -25,8 +25,8 @@ OUT_RAW="work/profiling/llama-bench-tier${TIER}-${STAMP}.raw"
 SUMMARY="work/profiling/llama-bench-summary.json"
 
 case "${TIER}" in
-  1) MODEL="/models/xLAM-2-1b-fc-r-Q4_0.gguf"; SERVICE="tier1" ;;
-  2) MODEL="/models/xLAM-2-3b-fc-r-Q4_0.gguf"; SERVICE="tier2" ;;
+  1) MODEL="/models/xLAM-2-1B-fc-r-Q4_0.gguf"; SERVICE="tier1" ;;
+  2) MODEL="/models/xLAM-2-3B-fc-r-Q4_0.gguf"; SERVICE="tier2" ;;
   3) MODEL="/models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"; SERVICE="tier3" ;;
   *) echo "TIER must be 1, 2, or 3" >&2; exit 1 ;;
 esac

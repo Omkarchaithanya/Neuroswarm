@@ -26,7 +26,7 @@ work:
 
 tiers:
   tier1:
-    model: xLAM-2-1b-fc-r-Q4_0.gguf
+    model: xLAM-2-1B-fc-r-Q4_0.gguf
     threads: "2"
     ctx: "4096"
     resources:
@@ -34,7 +34,7 @@ tiers:
         cpu: "2"
         memory: 3Gi
   tier2:
-    model: xLAM-2-3b-fc-r-Q4_0.gguf
+    model: xLAM-2-3B-fc-r-Q4_0.gguf
     threads: "3"
     ctx: "4096"
     resources:

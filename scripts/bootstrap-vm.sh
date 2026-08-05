@@ -103,8 +103,8 @@ if [[ -n "$DEMO_MODEL_SOURCE" ]]; then
 fi
 
 required_models=(
-  "$MODEL_DIR/xLAM-2-1b-fc-r-Q4_0.gguf"
-  "$MODEL_DIR/xLAM-2-3b-fc-r-Q4_0.gguf"
+  "$MODEL_DIR/xLAM-2-1B-fc-r-Q4_0.gguf"
+  "$MODEL_DIR/xLAM-2-3B-fc-r-Q4_0.gguf"
   "$MODEL_DIR/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf"
 )
 

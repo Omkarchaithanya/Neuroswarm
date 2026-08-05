@@ -103,8 +103,8 @@ Expected GGUF files:
 
 | File | Purpose |
 |---|---|
-| `/models/xLAM-2-1b-fc-r-Q4_0.gguf` | Tier 1 drafter |
-| `/models/xLAM-2-3b-fc-r-Q4_0.gguf` | Tier 2 verifier |
+| `/models/xLAM-2-1B-fc-r-Q4_0.gguf` | Tier 1 drafter |
+| `/models/xLAM-2-3B-fc-r-Q4_0.gguf` | Tier 2 verifier |
 | `/models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf` | Tier 3 arbiter |
 
 For first demo, you can point all three filenames at one tiny GGUF model with symlinks. For final scoring, use three real tiers.

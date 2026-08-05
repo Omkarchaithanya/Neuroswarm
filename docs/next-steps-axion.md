@@ -62,8 +62,8 @@ Host has **8 vCPU / 32 GB**. Thread defaults sum to 8; MVP ctx 4096.
 ## 4. Add Models
 
 ```text
-/models/xLAM-2-1b-fc-r-Q4_0.gguf
-/models/xLAM-2-3b-fc-r-Q4_0.gguf
+/models/xLAM-2-1B-fc-r-Q4_0.gguf
+/models/xLAM-2-3B-fc-r-Q4_0.gguf
 /models/DeepSeek-R1-Distill-Qwen-7B-Q4_0.gguf
 ```
 
