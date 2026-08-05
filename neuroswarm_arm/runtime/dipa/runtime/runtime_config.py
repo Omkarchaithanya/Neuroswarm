@@ -74,6 +74,7 @@ class DIPARuntimeConfig:
     hardware: dict[str, Any] = field(default_factory=dict)
     streaming: dict[str, Any] = field(default_factory=dict)
     batching: dict[str, Any] = field(default_factory=dict)
+    draft_models: dict[str, Any] = field(default_factory=dict)
     pd_mode: str = field(
         default_factory=lambda: os.getenv("NSA_DIPA_PD_MODE", "off").strip().lower()
         or "off"

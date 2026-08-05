@@ -298,13 +298,18 @@ class LlamaCppBackend(InferenceBackend):
         speculation: bool = False,
         supervisor: ProcessSupervisor | None = None,
         managed_command: list[str] | None = None,
+        draft_base_url: str | None = None,
+        draft_command: list[str] | None = None,
         numa_bind: list[str] | None = None,
         telemetry: TelemetryExporter | None = None,
     ) -> None:
         self.name = name
         self.base_url = base_url
         self.tier = tier
-        self._spec_url = os.getenv("NSA_TIER_SPEC_URL", "").strip()
+        self.draft_base_url = (
+            draft_base_url or os.getenv("NSA_TIER_SPEC_URL", "")
+        ).strip()
+        self._spec_url = self.draft_base_url
         env_k = os.getenv("NSA_DIPA_KLEIDIAI", "").strip() in {"1", "true", "TRUE", "yes"}
         self._kleidiai = env_k if kleidiai is None else kleidiai
         self.capabilities = BackendCapabilities(
@@ -336,12 +341,27 @@ class LlamaCppBackend(InferenceBackend):
         self._telemetry = telemetry
         self._supervisor = supervisor
         self._managed_command = managed_command
+        self._draft_command = list(draft_command) if draft_command else None
         self._numa_bind = numa_bind
         self._verifier = KleidiaiVerifier(
             require=os.getenv("NSA_REQUIRE_KLEIDIAI", "0").strip()
             in {"1", "true", "TRUE", "yes"}
         )
         self._kleidiai_active: bool | None = None
+
+    def configure_draft(
+        self,
+        *,
+        draft_base_url: str,
+        draft_command: list[str] | None = None,
+        speculation: bool = True,
+    ) -> None:
+        """Attach a draft llama-server endpoint for speculative decoding."""
+        self.draft_base_url = draft_base_url.strip()
+        self._spec_url = self.draft_base_url
+        self._draft_command = list(draft_command) if draft_command else None
+        self.capabilities.speculation = speculation
+        self.capabilities.self_speculation = speculation
 
     def record_spec_verify(self, draft: Any, *, accepted: bool) -> None:
         """Record ASR metrics for a draft verification outcome (no-op if spec URL unset)."""
@@ -392,6 +412,12 @@ class LlamaCppBackend(InferenceBackend):
             )
             ok = self._supervisor.wait_kleidiai(self.name, timeout_s=180.0)
             self.capabilities.kleidiai = bool(ok or self._kleidiai)
+            if self._draft_command and self.draft_base_url:
+                self._supervisor.start_draft(
+                    self.name,
+                    self._draft_command,
+                    base_url=self.draft_base_url,
+                )
         self._probe_kleidiai_runtime()
 
     def stop(self) -> None:
@@ -430,6 +456,7 @@ class LlamaCppBackend(InferenceBackend):
             "continuous_batching": self.capabilities.continuous_batching,
             "prefix_caching": self.capabilities.prefix_caching,
             "prefill_decode_split": self.capabilities.prefill_decode_split,
+            "draft_base_url": self.draft_base_url,
         }
         if self._supervisor is not None:
             details["supervisor"] = self._supervisor.snapshot().get(self.name, {})

@@ -23,6 +23,12 @@ class SupervisedProcess:
     started_at: float = 0.0
     kleidiai_ok: bool = False
     last_error: str = ""
+    draft_pid: int | None = None
+    draft_base_url: str = ""
+    draft_command: list[str] = field(default_factory=list)
+    draft_started_at: float = 0.0
+    draft_kleidiai_ok: bool = False
+    draft_last_error: str = ""
 
 
 class ProcessSupervisor:
@@ -131,6 +137,74 @@ class ProcessSupervisor:
             self._readers[name] = t
             return meta
 
+    def start_draft(
+        self,
+        name: str,
+        command: Sequence[str],
+        *,
+        base_url: str,
+        env: Mapping[str, str] | None = None,
+        cwd: str | None = None,
+    ) -> SupervisedProcess:
+        with self._lock:
+            meta = self._meta.get(name)
+            if meta is None:
+                raise KeyError(f"No target process named '{name}'")
+            if meta.draft_pid is not None:
+                proc = self._procs.get(f"{name}-draft")
+                if proc is not None and proc.poll() is None:
+                    return meta
+            cmd = list(command)
+            log_path = self.log_dir / f"{name}-draft.log"
+            log_f = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
+            full_env = dict(os.environ)
+            if env:
+                full_env.update({k: str(v) for k, v in env.items()})
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    env=full_env,
+                    cwd=cwd,
+                    bufsize=1,
+                )
+            except Exception as exc:
+                log_f.close()
+                meta.draft_last_error = str(exc)
+                raise
+            verifier = KleidiaiVerifier(require=self.require_kleidiai)
+            self._procs[f"{name}-draft"] = proc
+            self._verifiers[f"{name}-draft"] = verifier
+            meta.draft_pid = proc.pid
+            meta.draft_base_url = base_url
+            meta.draft_command = cmd
+            meta.draft_started_at = time.time()
+
+            def _read_draft() -> None:
+                assert proc.stdout is not None
+                try:
+                    for line in proc.stdout:
+                        log_f.write(line)
+                        log_f.flush()
+                        if verifier.feed(line):
+                            meta.draft_kleidiai_ok = True
+                finally:
+                    try:
+                        log_f.close()
+                    except Exception:
+                        pass
+
+            t = threading.Thread(
+                target=_read_draft,
+                name=f"llama-log-{name}-draft",
+                daemon=True,
+            )
+            t.start()
+            self._readers[f"{name}-draft"] = t
+            return meta
+
     def wait_kleidiai(self, name: str, timeout_s: float = 120.0) -> bool:
         deadline = time.time() + timeout_s
         while time.time() < deadline:
@@ -172,6 +246,50 @@ class ProcessSupervisor:
                     proc.kill()
             self._procs.pop(name, None)
 
+    def stop_draft(self, name: str, timeout_s: float = 15.0) -> None:
+        with self._lock:
+            proc = self._procs.get(f"{name}-draft")
+            if proc is None:
+                return
+            if proc.poll() is None:
+                try:
+                    if os.name == "nt":
+                        proc.terminate()
+                    else:
+                        proc.send_signal(signal.SIGTERM)
+                except Exception:
+                    proc.kill()
+                try:
+                    proc.wait(timeout=timeout_s)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+            self._procs.pop(f"{name}-draft", None)
+            meta = self._meta.get(name)
+            if meta:
+                meta.draft_pid = None
+
+    def wait_draft_ready(self, name: str, timeout_s: float = 60.0) -> bool:
+        import urllib.request
+        import urllib.error
+
+        meta = self._meta.get(name)
+        if meta is None:
+            return False
+        draft_url = meta.draft_base_url.rstrip("/") + "/health"
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            proc = self._procs.get(f"{name}-draft")
+            if proc is not None and proc.poll() is not None:
+                return False
+            try:
+                with urllib.request.urlopen(draft_url, timeout=2.0) as resp:
+                    if resp.status == 200:
+                        return True
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
+                pass
+            time.sleep(0.5)
+        return False
+
     def stop_all(self) -> None:
         for name in list(self._procs):
             self.stop(name)
@@ -181,6 +299,7 @@ class ProcessSupervisor:
         with self._lock:
             for name, meta in self._meta.items():
                 proc = self._procs.get(name)
+                draft_proc = self._procs.get(f"{name}-draft")
                 out[name] = {
                     "pid": meta.pid,
                     "base_url": meta.base_url,
@@ -193,5 +312,18 @@ class ProcessSupervisor:
                         if name in self._verifiers
                         else {}
                     ),
+                    "draft": {
+                        "pid": meta.draft_pid,
+                        "base_url": meta.draft_base_url,
+                        "command": meta.draft_command,
+                        "kleidiai_ok": meta.draft_kleidiai_ok,
+                        "running": draft_proc is not None and draft_proc.poll() is None,
+                        "last_error": meta.draft_last_error,
+                        "verify": (
+                            asdict(self._verifiers[f"{name}-draft"].result())
+                            if f"{name}-draft" in self._verifiers
+                            else {}
+                        ),
+                    },
                 }
         return out

@@ -88,6 +88,7 @@ class BackendFactory:
 
         self.register_sglang(registry, use_mock=use_mock)
         self.register_mlx(registry, use_mock=use_mock)
+        self._inject_draft_models(registry)
         return registry
 
     def register_sglang(self, registry: BackendRegistry, *, use_mock: bool = False) -> None:
@@ -135,7 +136,101 @@ class BackendFactory:
             )
         )
 
+    def _inject_draft_models(self, registry: BackendRegistry) -> None:
+        if not _speculation_enabled(self.config):
+            return
+        tier_spec_url = os.getenv("NSA_TIER_SPEC_URL", "").strip()
+        if tier_spec_url:
+            for backend in registry.all():
+                if isinstance(backend, LlamaCppBackend):
+                    backend.configure_draft(draft_base_url=tier_spec_url)
+            return
+
+        draft = _resolve_draft_config(self.config)
+        if not draft["path"]:
+            return
+        draft_path = Path(str(draft["path"])).expanduser()
+        if not draft_path.exists():
+            logger.warning(
+                "Draft model file does not exist: %s; disabling speculative draft pairing",
+                draft_path,
+            )
+            for backend in registry.all():
+                if isinstance(backend, LlamaCppBackend):
+                    backend.capabilities.speculation = False
+                    backend.capabilities.self_speculation = False
+            return
+
+        draft_port = str(draft["port"])
+        draft_base_url = f"http://127.0.0.1:{draft_port}"
+        draft_command = [
+            "llama-server",
+            "-m",
+            str(draft_path),
+            "--port",
+            draft_port,
+            "-c",
+            str(draft["ctx_size"]),
+            "-t",
+            str(draft["n_threads"]),
+            "--host",
+            "127.0.0.1",
+        ]
+
+        for backend in registry.all():
+            if not isinstance(backend, LlamaCppBackend):
+                continue
+            backend.configure_draft(
+                draft_base_url=draft_base_url,
+                draft_command=draft_command,
+            )
+            supervisor = getattr(backend, "_supervisor", None)
+            if supervisor is None:
+                continue
+            try:
+                supervisor.start_draft(
+                    backend.name,
+                    draft_command,
+                    base_url=draft_base_url,
+                )
+            except KeyError:
+                # Target process metadata is created by LlamaCppBackend.start(); the
+                # backend will launch the prepared draft command immediately after.
+                continue
+
 
 def _tier_num(name: str) -> int:
     digits = "".join(ch for ch in name if ch.isdigit())
     return int(digits) if digits else 0
+
+
+def _speculation_enabled(config: DIPARuntimeConfig) -> bool:
+    cascade_spec = dict(config.cascade.get("speculation") or {})
+    ascr = dict(config.cascade.get("ascr") or {})
+    return bool(
+        cascade_spec.get("enabled")
+        or cascade_spec.get("speculation")
+        or ascr.get("enabled")
+    )
+
+
+def _resolve_draft_config(config: DIPARuntimeConfig) -> dict[str, Any]:
+    raw = config.draft_models if isinstance(config.draft_models, Mapping) else {}
+    return {
+        "path": (
+            os.getenv("NSA_DRAFT_MODEL_PATH", "").strip()
+            or str(
+                raw.get("path")
+                or raw.get("model_path")
+                or raw.get("draft_path")
+                or ""
+            )
+        ),
+        "port": int(os.getenv("NSA_DRAFT_PORT", "") or raw.get("port") or 8081),
+        "ctx_size": int(
+            os.getenv("NSA_DRAFT_CTX_SIZE", "") or raw.get("ctx_size") or 2048
+        ),
+        "n_threads": int(
+            os.getenv("NSA_DRAFT_N_THREADS", "") or raw.get("n_threads") or 4
+        ),
+    }
