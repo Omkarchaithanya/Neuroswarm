@@ -84,6 +84,125 @@ class SpeculativeFromTier1Proposer(ProposalStrategy):
             return _empty_proposal(self.name)
 
 
+@register_proposer("self_speculation")
+class SelfSpeculationProposer(ProposalStrategy):
+    """Use the target backend itself to draft a short speculative suffix."""
+
+    name = "self_speculation"
+
+    def __init__(self, target_backend_name: str = "tier2") -> None:
+        self.target_backend_name = target_backend_name
+        self._target_backend: Any = None
+        self._ctx_exec: Any = None
+        self._top_logprobs = 5
+        self._temperature = 0.7
+
+    async def initialize(self, ctx: ASCRInitContext) -> None:
+        self._ctx_exec = ctx
+        cfg = dict(ctx.config or {})
+        strategies = dict(cfg.get("strategies") or {})
+        body = dict(strategies.get(self.name) or {})
+        self.target_backend_name = str(
+            body.get("target_backend_name")
+            or body.get("backend")
+            or cfg.get("target_backend_name")
+            or self.target_backend_name
+        )
+        self._top_logprobs = int(body.get("top_logprobs", self._top_logprobs))
+        self._temperature = max(0.1, float(body.get("temperature", self._temperature)))
+        self._target_backend = _resolve_backend(
+            ctx.registry,
+            self.target_backend_name,
+            fallbacks=("tier2", "tier3", "llama_cpp"),
+        )
+
+    async def propose(self, req: ProposalRequest) -> Proposal:
+        backend = self._target_backend
+        if backend is None or not hasattr(backend, "generate_with_logits"):
+            return _empty_proposal(self.name)
+        try:
+            result = await backend.generate_with_logits(
+                [{"role": "user", "content": req.prompt_text}],
+                max_tokens=max(1, int(req.draft_len)),
+                temperature=max(float(req.temperature), self._temperature),
+                top_logprobs=max(1, self._top_logprobs),
+                session_id=req.session_id,
+                quant=req.quant,
+                kv_handle=req.kv_handle,
+                id_slot=req.id_slot,
+                ctx=self._ctx_exec,
+            )
+            text = str(getattr(result, "text", "") or "")
+            tokens = _tokens_from_result(result, text, backend)
+            if not text.strip() or not tokens:
+                return _empty_proposal(self.name)
+            return Proposal(
+                tokens=tokens,
+                text=text,
+                strategy=self.name,
+                draft_len=len(tokens),
+                confidence=0.55,
+                source_tier=int(getattr(result, "tier_used", 2) or 2),
+                metadata={
+                    "backend": getattr(result, "backend", "") or self.target_backend_name,
+                    "model": getattr(result, "model", ""),
+                    "latency_ms": float(getattr(result, "latency_ms", 0.0) or 0.0),
+                    "top_logprobs": float(self._top_logprobs),
+                },
+            )
+        except Exception:
+            return _empty_proposal(self.name)
+
+
+@register_proposer("ngram")
+class NgramProposer(ProposalStrategy):
+    """Prompt lookup proposer using only repeated n-grams from req.prompt_text."""
+
+    name = "ngram"
+
+    def __init__(self, ngram_size: int = 16) -> None:
+        self.ngram_size = ngram_size
+
+    async def initialize(self, ctx: ASCRInitContext) -> None:
+        strategies = dict((ctx.config or {}).get("strategies") or {})
+        body = dict(strategies.get(self.name) or {})
+        self.ngram_size = int(body.get("ngram_size", self.ngram_size))
+
+    async def propose(self, req: ProposalRequest) -> Proposal:
+        words = (req.prompt_text or "").split()
+        draft_len = max(0, int(req.draft_len))
+        if draft_len <= 0:
+            return _empty_proposal(self.name)
+        n = max(1, min(int(self.ngram_size), len(words)))
+        if len(words) <= n:
+            return _empty_proposal(self.name)
+        seed = words[-n:]
+        draft_words: list[str] = []
+        # Search only before the trailing seed, then emit tokens that followed
+        # the earlier occurrence in the original prompt.
+        for index in range(0, len(words) - n):
+            if words[index : index + n] != seed:
+                continue
+            start = index + n
+            end = min(len(words) - n, start + draft_len)
+            draft_words = words[start:end]
+            if draft_words:
+                break
+        text = " ".join(draft_words)
+        return Proposal(
+            tokens=[
+                ProposalToken(text=word, token_id=hash(word), logprob=0.0, rank=0)
+                for word in draft_words
+            ],
+            text=text,
+            strategy=self.name,
+            draft_len=len(draft_words),
+            confidence=0.5 if draft_words else 0.0,
+            source_tier=1,
+            metadata={"ngram_size": n, "zero_latency": True},
+        )
+
+
 def _empty_proposal(strategy: str) -> Proposal:
     return Proposal(
         tokens=[],
@@ -93,6 +212,24 @@ def _empty_proposal(strategy: str) -> Proposal:
         confidence=0.0,
         source_tier=1,
     )
+
+
+def _resolve_backend(
+    registry: Any,
+    preferred: str,
+    *,
+    fallbacks: tuple[str, ...],
+) -> Any:
+    if registry is None:
+        return None
+    for name in (preferred, *fallbacks):
+        try:
+            backend = registry.get(name)
+        except Exception:
+            backend = None
+        if backend is not None:
+            return backend
+    return None
 
 
 def _make_generate_request(req: ProposalRequest) -> Any:

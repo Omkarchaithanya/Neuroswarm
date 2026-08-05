@@ -13,8 +13,12 @@ from .registry import (
     register_proposer,
     register_verifier,
 )
-from .self_speculation import NgramProposer, SelfSpeculationProposer, SuffixProposer
-from .strategies import SpeculativeFromTier1Proposer
+from .self_speculation import SuffixProposer
+from .strategies import (
+    NgramProposer,
+    SelfSpeculationProposer,
+    SpeculativeFromTier1Proposer,
+)
 
 # Optional proposers — may be absent on partial checkouts / WIP branches.
 try:
