@@ -14,7 +14,11 @@ from neuroswarm_arm.runtime.dipa.backends.llama_cpp.backend import (
     LlamaCppBackend,
 )
 from neuroswarm_arm.runtime.dipa.execution.execution_context import ExecutionContext
-from neuroswarm_arm.runtime.dipa.interfaces.types import GenerateRequest, InferenceRequest
+from neuroswarm_arm.runtime.dipa.interfaces.types import (
+    GenerateRequest,
+    HealthState,
+    InferenceRequest,
+)
 
 
 class _FakeResponse:
@@ -142,3 +146,98 @@ async def test_empty_spec_url_falls_back_without_metrics(
     backend.record_spec_verify(draft, accepted=True)
     assert ASR_METRICS.snapshot() == before
     assert "n_probs" not in (captured.get("body") or {})
+
+
+@pytest.mark.asyncio
+async def test_draft_url_enables_capabilities_and_health(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NSA_TIER_SPEC_URL", raising=False)
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "0")
+    monkeypatch.setattr(
+        llama_backend.LlamaHttpClient,
+        "is_ready",
+        lambda self: self.base_url == "http://127.0.0.1:9081",
+    )
+
+    backend = LlamaCppBackend(
+        name="tier2",
+        base_url="http://127.0.0.1:8082",
+        draft_base_url="http://127.0.0.1:9081",
+    )
+
+    assert backend.capabilities.speculation is True
+    assert backend.capabilities.self_speculation is True
+    assert backend._draft_client is not None
+    status = await backend.draft_health()
+    assert status.state == HealthState.HEALTHY
+
+
+@pytest.mark.asyncio
+async def test_no_draft_url_is_backward_compatible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NSA_TIER_SPEC_URL", raising=False)
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "0")
+
+    backend = LlamaCppBackend(name="tier2", base_url="http://127.0.0.1:8082")
+
+    assert backend.capabilities.speculation is False
+    assert backend._draft_client is None
+    status = await backend.draft_health()
+    assert status.state == HealthState.UNKNOWN
+
+
+@pytest.mark.asyncio
+async def test_generate_with_logits_stream_records_asr_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NSA_TIER_SPEC_URL", raising=False)
+    monkeypatch.setenv("NSA_LLAMA_SLOT_KV_REUSE", "0")
+    backend = LlamaCppBackend(
+        name="tier2",
+        base_url="http://127.0.0.1:8082",
+        draft_base_url="http://127.0.0.1:9081",
+    )
+
+    def fake_stream(self: Any, *args: Any, **kwargs: Any) -> list[str]:  # noqa: ARG001
+        payload = {
+            "choices": [
+                {
+                    "logprobs": {
+                        "content": [
+                            {
+                                "token": "hello",
+                                "logprob": 0.0,
+                                "top_logprobs": [
+                                    {"token": "hello", "logprob": 0.0}
+                                ],
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        return [f"data: {json.dumps(payload)}", "data: [DONE]"]
+
+    monkeypatch.setattr(
+        llama_backend.LlamaHttpClient,
+        "generate_with_logits_stream",
+        fake_stream,
+    )
+    draft = Proposal.from_text("hello", strategy="draft_model")
+
+    chunks = [
+        chunk
+        async for chunk in backend.generate_with_logits_stream(
+            [{"role": "user", "content": "hi"}],
+            max_tokens=2,
+            temperature=0.0,
+            draft=draft,
+        )
+    ]
+
+    assert any(chunk.text == "hello" for chunk in chunks)
+    assert ASR_METRICS.get("asr_draft_tokens_total") == 1.0
+    assert ASR_METRICS.get("asr_verify_calls_total") == 1.0
+    assert ASR_METRICS.get("asr_accepted_tokens_total") == 1.0

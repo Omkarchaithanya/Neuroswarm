@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 from urllib import error, request
+from urllib.parse import urlparse
 
 from neuroswarm_arm.runtime.dipa.interfaces.backend import InferenceBackend
 from neuroswarm_arm.runtime.dipa.interfaces.types import (
@@ -310,6 +311,11 @@ class LlamaCppBackend(InferenceBackend):
             draft_base_url or os.getenv("NSA_TIER_SPEC_URL", "")
         ).strip()
         self._spec_url = self.draft_base_url
+        self._draft_client = (
+            LlamaHttpClient(base_url=self.draft_base_url)
+            if self.draft_base_url
+            else None
+        )
         env_k = os.getenv("NSA_DIPA_KLEIDIAI", "").strip() in {"1", "true", "TRUE", "yes"}
         self._kleidiai = env_k if kleidiai is None else kleidiai
         self.capabilities = BackendCapabilities(
@@ -319,8 +325,8 @@ class LlamaCppBackend(InferenceBackend):
             prefill_decode_split=False,  # honest: OpenAI chat path is fused
             prefix_caching=prefix_caching,
             tokenize=True,
-            speculation=speculation,
-            self_speculation=speculation,
+            speculation=bool(speculation or self._draft_client is not None),
+            self_speculation=bool(speculation or self._draft_client is not None),
             kleidiai=self._kleidiai,
             device_classes=(DeviceClass.CPU,),
         )
@@ -359,9 +365,15 @@ class LlamaCppBackend(InferenceBackend):
         """Attach a draft llama-server endpoint for speculative decoding."""
         self.draft_base_url = draft_base_url.strip()
         self._spec_url = self.draft_base_url
+        self._draft_client = (
+            LlamaHttpClient(base_url=self.draft_base_url)
+            if self.draft_base_url
+            else None
+        )
         self._draft_command = list(draft_command) if draft_command else None
-        self.capabilities.speculation = speculation
-        self.capabilities.self_speculation = speculation
+        active = bool(speculation and self._draft_client is not None)
+        self.capabilities.speculation = active
+        self.capabilities.self_speculation = active
 
     def record_spec_verify(self, draft: Any, *, accepted: bool) -> None:
         """Record ASR metrics for a draft verification outcome (no-op if spec URL unset)."""
@@ -412,10 +424,14 @@ class LlamaCppBackend(InferenceBackend):
             )
             ok = self._supervisor.wait_kleidiai(self.name, timeout_s=180.0)
             self.capabilities.kleidiai = bool(ok or self._kleidiai)
-            if self._draft_command and self.draft_base_url:
+            draft_command = self._draft_command or _derive_draft_command(
+                self._managed_command,
+                self.draft_base_url,
+            )
+            if draft_command and self.draft_base_url:
                 self._supervisor.start_draft(
                     self.name,
-                    self._draft_command,
+                    draft_command,
                     base_url=self.draft_base_url,
                 )
         self._probe_kleidiai_runtime()
@@ -480,6 +496,32 @@ class LlamaCppBackend(InferenceBackend):
             state=HealthState.UNHEALTHY,
             latency_ms=latency_ms,
             message="llama.cpp unavailable",
+            details=details,
+        )
+
+    async def draft_health(self) -> HealthStatus:
+        t0 = time.perf_counter()
+        details = {"base_url": self.draft_base_url}
+        if self._draft_client is None:
+            return HealthStatus(
+                state=HealthState.UNKNOWN,
+                latency_ms=0.0,
+                message="draft backend not configured",
+                details=details,
+            )
+        ready = await asyncio.to_thread(self._draft_client.is_ready)
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        if ready:
+            return HealthStatus(
+                state=HealthState.HEALTHY,
+                latency_ms=latency_ms,
+                message="draft llama.cpp ready",
+                details=details,
+            )
+        return HealthStatus(
+            state=HealthState.UNHEALTHY,
+            latency_ms=latency_ms,
+            message="draft llama.cpp unavailable",
             details=details,
         )
 
@@ -825,8 +867,6 @@ class LlamaCppBackend(InferenceBackend):
                     if prop.tokens
                     else (prop.text.split() if prop.text.strip() else [])
                 )
-                if spec_enabled:
-                    ASR_METRICS.inc("asr_draft_tokens_total", float(len(words)))
                 bundle = LogitsBundle(
                     draft_tokens=list(words),
                     draft_token_ids=[
@@ -848,6 +888,30 @@ class LlamaCppBackend(InferenceBackend):
                 finished = False
                 seen_steps = 0
                 accepted_count = 0
+
+                def _draft_token_at(draft_position: int) -> Any | None:
+                    if draft_position < 0:
+                        return None
+                    if draft_position < len(prop.tokens):
+                        return prop.tokens[draft_position]
+                    if draft_position < len(words):
+                        return Proposal.from_text(
+                            words[draft_position],
+                            strategy="draft_model",
+                        )
+                    return None
+
+                def _record_accept_position(pos: Any, draft_position: int) -> None:
+                    if not spec_enabled or pos.waiting:
+                        return
+                    draft_token = _draft_token_at(draft_position)
+                    if draft_token is None:
+                        return
+                    self.record_spec_verify(
+                        draft_token,
+                        accepted=pos.accepted_token is not None,
+                    )
+
                 for line in self._client.generate_with_logits_stream(
                     messages,
                     max_tokens=max_tokens,
@@ -875,8 +939,6 @@ class LlamaCppBackend(InferenceBackend):
                             continue
                         bundle.steps.append(step)
                         while True:
-                            if spec_enabled:
-                                ASR_METRICS.inc("asr_verify_calls_total", 1.0)
                             pos = accept_one_draft_position(
                                 bundle,
                                 prop,
@@ -886,10 +948,9 @@ class LlamaCppBackend(InferenceBackend):
                             )
                             if pos.waiting:
                                 break
+                            _record_accept_position(pos, position)
                             if pos.accepted_token is not None:
-                                if spec_enabled:
-                                    ASR_METRICS.inc("asr_accepted_tokens_total", 1.0)
-                                    accepted_count += 1
+                                accepted_count += 1
                                 sync_q.put(
                                     TokenChunk(
                                         text=pos.accepted_token,
@@ -928,6 +989,7 @@ class LlamaCppBackend(InferenceBackend):
                                             greedy=greedy,
                                             tau_floor=tau_floor,
                                         )
+                                        _record_accept_position(bonus, position)
                                         if (
                                             not bonus.waiting
                                             and bonus.residual_or_bonus
@@ -979,6 +1041,7 @@ class LlamaCppBackend(InferenceBackend):
                         greedy=greedy,
                         tau_floor=tau_floor,
                     )
+                    _record_accept_position(bonus, position)
                     if not bonus.waiting and bonus.residual_or_bonus:
                         sync_q.put(
                             TokenChunk(
@@ -1023,6 +1086,66 @@ class LlamaCppBackend(InferenceBackend):
     async def cancel(self, session_id: str) -> None:
         # llama-server cancel is slot-specific; best-effort no-op when unmanaged.
         return None
+
+
+def _derive_draft_command(
+    managed_command: list[str] | None,
+    draft_base_url: str,
+) -> list[str] | None:
+    if not managed_command or not draft_base_url:
+        return None
+    cmd = [str(part) for part in managed_command]
+    draft_path = (
+        os.getenv("NSA_DRAFT_MODEL_PATH", "").strip()
+        or _arg_after(cmd, "--model-draft", "-md", "--draft-model")
+    )
+    if not draft_path:
+        return None
+    port = os.getenv("NSA_DRAFT_PORT", "").strip() or _port_from_url(draft_base_url)
+    ctx_size = (
+        os.getenv("NSA_DRAFT_CTX_SIZE", "").strip()
+        or _arg_after(cmd, "-c", "--ctx-size", "--ctx_size")
+        or "2048"
+    )
+    n_threads = (
+        os.getenv("NSA_DRAFT_N_THREADS", "").strip()
+        or _arg_after(cmd, "-t", "--threads")
+        or "4"
+    )
+    return [
+        _llama_server_executable(cmd),
+        "-m",
+        draft_path,
+        "--port",
+        port,
+        "-c",
+        ctx_size,
+        "-t",
+        n_threads,
+        "--host",
+        "127.0.0.1",
+    ]
+
+
+def _arg_after(command: list[str], *names: str) -> str:
+    for index, part in enumerate(command[:-1]):
+        if part in names:
+            return command[index + 1]
+    return ""
+
+
+def _port_from_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.port is not None:
+        return str(parsed.port)
+    return "8081"
+
+
+def _llama_server_executable(command: list[str]) -> str:
+    for part in command:
+        if "llama-server" in Path(part).name:
+            return part
+    return "llama-server"
 
 
 def _okf_hashes_from_request(req: GenerateRequest | DecodeRequest) -> list[str] | None:
