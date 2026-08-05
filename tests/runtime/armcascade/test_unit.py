@@ -39,6 +39,7 @@ def test_plugin_registration() -> None:
     proposers = known_proposers()
     verifiers = known_verifiers()
     assert "draft_model" in proposers
+    assert "speculative_from_tier1" in proposers
     assert "self_speculation" in proposers
     assert "eagle" in proposers
     assert "block" in verifiers

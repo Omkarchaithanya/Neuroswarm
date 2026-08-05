@@ -5,6 +5,7 @@ from __future__ import annotations
 # Working
 import neuroswarm_arm.runtime.armcascade.proposal.draft_model  # noqa: F401
 import neuroswarm_arm.runtime.armcascade.proposal.self_speculation  # noqa: F401
+import neuroswarm_arm.runtime.armcascade.proposal.strategies  # noqa: F401
 import neuroswarm_arm.runtime.armcascade.verification.strategies  # noqa: F401
 import neuroswarm_arm.runtime.armcascade.verification.logits_verifier  # noqa: F401
 

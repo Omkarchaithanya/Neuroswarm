@@ -14,6 +14,7 @@ from .registry import (
     register_verifier,
 )
 from .self_speculation import NgramProposer, SelfSpeculationProposer, SuffixProposer
+from .strategies import SpeculativeFromTier1Proposer
 
 # Optional proposers — may be absent on partial checkouts / WIP branches.
 try:
@@ -35,6 +36,7 @@ __all__ = [
     "NgramProposer",
     "ProposalRegistry",
     "SelfSpeculationProposer",
+    "SpeculativeFromTier1Proposer",
     "SuffixProposer",
     "VerifierRegistry",
     "detect_host_arch",
