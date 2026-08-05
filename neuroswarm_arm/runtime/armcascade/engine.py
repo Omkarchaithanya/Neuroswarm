@@ -276,6 +276,7 @@ class ASCREngine(ICascadeEngine):
             state.mode = "quality_cascade"
 
         committed = ""
+        round_prompt_text = req.prompt_text
         last_verify_text = ""
         last_backend = policy.draft_backend
         last_model = policy.draft_backend
@@ -283,8 +284,12 @@ class ASCREngine(ICascadeEngine):
         last_logits = True
         last_agreement: float | None = None
         saw_logits = False
+        target_tokens = max(1, int(getattr(req, "max_tokens", 1024) or 1024))
+        generated_tokens = 0
 
         while state.rounds < thresholds.max_rounds:
+            if generated_tokens >= target_tokens:
+                break
             state.rounds += 1
             elapsed_ms = (time.monotonic() - t0) * 1000.0
             thr_in.latency_used_ms = elapsed_ms
@@ -413,10 +418,10 @@ class ASCREngine(ICascadeEngine):
                 )
 
             prop_req = ProposalRequest(
-                prompt_text=req.prompt_text,
+                prompt_text=round_prompt_text,
                 messages=build_messages(req.messages, req.system_prompt),
-                draft_len=thresholds.draft_len,
-                max_tokens=req.max_tokens,
+                draft_len=min(thresholds.draft_len, target_tokens - generated_tokens),
+                max_tokens=target_tokens - generated_tokens,
                 temperature=req.temperature,
                 session_id=req.session_id,
                 quant=plan.quant,
@@ -426,7 +431,7 @@ class ASCREngine(ICascadeEngine):
             )
             try:
                 proposal = await proposer.propose(prop_req)
-            except NotImplementedError:
+            except Exception:
                 # Stub strategy → degrade to quality cascade.
                 state.mode = "quality_cascade"
                 use_quality = True
@@ -452,12 +457,13 @@ class ASCREngine(ICascadeEngine):
                 use_quality = True
                 continue
 
+            round_draft_tokens = int(proposal.draft_len or approx_tokens(proposal.text))
             verify_req = VerifyRequest(
                 messages=build_messages(req.messages, req.system_prompt),
-                prompt_text=req.prompt_text,
+                prompt_text=round_prompt_text,
                 mode=VerifyMode.BLOCK,
                 accept_threshold=thresholds.accept_threshold,
-                max_tokens=max(thresholds.draft_len, 1),
+                max_tokens=max(round_draft_tokens, 1) + 1,
                 temperature=req.temperature,
                 session_id=req.session_id,
                 quant=plan.quant,
@@ -468,7 +474,7 @@ class ASCREngine(ICascadeEngine):
             )
             try:
                 vres = await verifier.verify(proposal, verify_req)
-            except NotImplementedError:
+            except Exception:
                 use_quality = True
                 continue
 
@@ -517,7 +523,7 @@ class ASCREngine(ICascadeEngine):
                 cpu_utilization=telemetry["cpu_utilization"],
                 kv_pressure=telemetry["kv_pressure"],
                 cache_hit_ratio=telemetry["cache_hit_ratio"],
-                draft_len=proposal.draft_len,
+                draft_len=round_draft_tokens,
                 accepted_prefix_len=vres.accepted_prefix_len,
                 accept_threshold=thresholds.accept_threshold,
                 escalate_threshold=thresholds.escalate_threshold,
@@ -526,10 +532,49 @@ class ASCREngine(ICascadeEngine):
             decision = self.acceptance.decide(signals)
             esc_state.confidence = signals.confidence or self.confidence.fuse(signals)
             state.last_confidence = esc_state.confidence
+            accepted_prefix_len = max(
+                0,
+                min(round_draft_tokens, int(vres.accepted_prefix_len or 0)),
+            )
+            rejected_this_round = max(0, round_draft_tokens - accepted_prefix_len)
+            if getattr(vres, "rejected", False) and accepted_prefix_len == 0:
+                rejected_this_round = round_draft_tokens
+            self._record_verify_round(
+                state,
+                accepted_tokens=accepted_prefix_len,
+                rejected_tokens=rejected_this_round,
+                draft_tokens=round_draft_tokens,
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                tier_used=tier_id,
+                mode=state.mode,
+                logits_available=bool(vres.logits_available),
+                text_agreement=last_agreement,
+                numa_locality=placement.locality,
+                cpu=telemetry["cpu_utilization"],
+                cache_hit=telemetry["cache_hit_ratio"],
+                kv_reuse=float(getattr(ctx, "kv_reuse", 0.0) or 0.0),
+            )
+            # Emit per‑round metrics after each verification round
+            self.metrics.record_round(
+                accepted_tokens=state.accepted_tokens or approx_tokens(committed),
+                rejected_tokens=state.rejected_tokens,
+                draft_tokens=state.draft_tokens or approx_tokens(committed),
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                tier_used=tier_used,
+                mode=state.mode,
+                numa_locality=placement.locality,
+                cpu=telemetry["cpu_utilization"],
+                cache_hit=telemetry["cache_hit_ratio"],
+                kv_reuse=float(getattr(ctx, "kv_reuse", 0.0) or 0.0),
+                logits_available=saw_logits and state.mode == "speculative",
+                text_agreement=last_agreement,
+            )
 
             if decision.action == AcceptanceAction.ACCEPT:
                 prefix = _prefix_text(proposal.text, decision.accepted_prefix_len) or last_verify_text
                 committed = (committed + " " + prefix).strip() if committed else prefix
+                # Update generated token count
+                generated_tokens += decision.accepted_prefix_len or approx_tokens(prefix)
                 state.accepted_tokens += decision.accepted_prefix_len or approx_tokens(prefix)
                 break
 
@@ -537,6 +582,8 @@ class ASCREngine(ICascadeEngine):
                 prefix = _prefix_text(proposal.text, decision.accepted_prefix_len)
                 if prefix:
                     committed = (committed + " " + prefix).strip() if committed else prefix
+                    # Update generated token count with partially accepted tokens
+                    generated_tokens += decision.accepted_prefix_len
                     state.accepted_tokens += decision.accepted_prefix_len
                 # Continue with remaining generation via quality on verify tier.
                 use_quality = True

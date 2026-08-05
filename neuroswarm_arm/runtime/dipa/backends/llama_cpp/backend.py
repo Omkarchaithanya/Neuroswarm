@@ -596,27 +596,14 @@ class LlamaCppBackend(InferenceBackend):
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
-        response_format = _json_response_format(req, tier=self.tier)
-        extra, slot_meta = _llama_chat_extra(
-            session_id=req.session_id,
-            messages=req.messages,
-            slot_router=self._slot_router,
-            tokenize_fn=self.tokenize,
-            okf_block_hashes=_okf_hashes_from_request(req),
-            cache_prompt_tokens=list(req.cache_prompt_tokens or []),
-            response_format=response_format,
-            request_logprobs=bool(req.speculative) or bool(self._spec_url),
-            explicit_id_slot=req.id_slot,
-        )
-        slot_id = slot_meta.get("slot_id")
-        slot_reused = bool(slot_meta.get("slot_reused"))
+        # Prepare telemetry attributes for this generation request
         span_attrs = {
-            "session_id": req.session_id,
             "backend": self.name,
             "tier": self.tier,
             "slot.reused": slot_reused,
             "gen_ai.arm.kleidiai_active": self.kleidiai_active,
         }
+
         if isinstance(slot_id, int):
             span_attrs["slot.id"] = slot_id
         tel = self._telemetry

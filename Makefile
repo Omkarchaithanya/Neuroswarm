@@ -47,3 +47,20 @@ logs-vm:
 
 stop-vm:
 	@echo "Use the GCP Console or gcloud locally to stop the VM when you are done benchmarking."
+# Start draft model alongside main stack
+up-with-draft:
+	docker compose -f docker-compose.yml -f docker-compose.draft.yml up -d
+
+# Validate speculative decoding end-to-end
+validate-specdec:
+	uv run python scripts/validate_specdec.py
+
+# Benchmark with draft model (live)
+bench-spec-full: up-with-draft
+	sleep 10  # Wait for draft health
+	NSA_SPECDEC_BENCH=1 NSA_TIER_SPEC_URL=http://127.0.0.1:8081 \
+		uv run python benchmarks/specdec_bench.py --live
+
+# Stop draft model
+stop-draft:
+	docker compose -f docker-compose.draft.yml down

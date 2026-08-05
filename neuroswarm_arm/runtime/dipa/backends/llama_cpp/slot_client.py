@@ -46,34 +46,34 @@ class SlotClient:
             safe = f"{safe}.kv"
         return str(self.slot_dir / safe)
 
-    def kv_export(self, id_slot: int, filename: str) -> dict[str, Any]:
-        """Thin wrapper: persist slot KV to *filename*."""
+    def kv_export(self, id_slot: int, handle: str) -> dict[str, Any]:
+        """Thin wrapper: persist slot KV to *handle* (internal naming)."""
+        return self.kv_export_to_file(id_slot, self.resolve_filename(handle))
+
+    def kv_export_to_file(self, id_slot: int, filename: str) -> dict[str, Any]:
+        """Persist slot KV to specific filesystem path."""
         try:
             return self.save_slot(id_slot, filename)
         except RuntimeError as exc:
             raise SlotKVError(
-                f"kv_export failed for slot {id_slot} file {filename!r}: {exc}"
+                f"kv_export_to_file failed for slot {id_slot} file {filename!r}: {exc}"
             ) from exc
 
-    def kv_import(self, id_slot: int, filename: str) -> dict[str, Any]:
-        """Thin wrapper: restore slot KV from *filename*."""
-        path = Path(filename)
-        if path.is_file():
-            resolved = str(path)
-        elif path.is_absolute():
-            resolved = str(path)
-        else:
-            resolved = self.resolve_filename(filename)
-        if not Path(resolved).is_file():
+    def kv_import(self, id_slot: int, handle: str) -> dict[str, Any]:
+        """Thin wrapper: restore slot KV from *handle* (internal naming)."""
+        return self.kv_import_from_file(id_slot, self.resolve_filename(handle))
+
+    def kv_import_from_file(self, id_slot: int, filename: str) -> dict[str, Any]:
+        """Restore slot KV from specific filesystem path."""
+        if not Path(filename).is_file():
             raise SlotKVError(
-                f"kv_import: slot file not found for handle {filename!r} "
-                f"(resolved {resolved!r})"
+                f"kv_import_from_file: slot file not found: {filename!r}"
             )
         try:
-            return self.restore_slot(id_slot, resolved)
+            return self.restore_slot(id_slot, filename)
         except RuntimeError as exc:
             raise SlotKVError(
-                f"kv_import failed for slot {id_slot} file {resolved!r}: {exc}"
+                f"kv_import_from_file failed for slot {id_slot} file {filename!r}: {exc}"
             ) from exc
 
     def health(self) -> dict[str, Any]:
