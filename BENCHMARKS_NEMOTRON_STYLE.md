@@ -1,9 +1,5 @@
-# Neuroswarm — Benchmark Report (Nemotron-Style, Advanced)
+# Neuroswarm — Benchmark Report
 
-> **Repository:** `Omkarchaithanya/Neuroswarm`  
-> **Report Type:** Public-facing benchmark card + deep technical appendix  
-> **Version:** v2.0  
-> **Date:** 2026-08-06
 
 ---
 
