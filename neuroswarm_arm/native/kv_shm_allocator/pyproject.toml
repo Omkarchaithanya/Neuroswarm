@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "pybind11>=2.10", "cmake>=3.20"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kv_shm_allocator"
+version = "0.1.0"
+description = "NSA KV Shared Memory Allocator for llama.cpp"
+authors = [{name = "NSA Team"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kv_shm_allocator*"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.pybind11]
+# pybind11 configuration
+include-dirs = ["include"]
+
+[tool.cmake]
+# CMake configuration for building the C++ extension
+cmake-args = [
+    "-DCMAKE_BUILD_TYPE=Release",
+]

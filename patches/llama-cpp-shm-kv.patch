@@ -1,0 +1,224 @@
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -1,6 +1,10 @@
+ #include "server.h"
+ 
+ #include <llama.h>
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <unistd.h>
+ 
+ #include <algorithm>
+ #include <atomic>
+@@ -100,6 +104,15 @@ struct slot_context {
+     llama_sampling_context* ctx_sampling = nullptr;
+ };
+ 
++// SHM operations context
++struct shm_context {
++    int fd = -1;
++    void* base = MAP_FAILED;
++    size_t size = 0;
++    std::string name;
++};
++
++
+ static slot_context g_slot_ctx;
+ 
+ // slot helpers
+@@ -200,6 +213,60 @@ static void slot_action_restore(httplib::Response& res, const nlohmann::json& j)
+     }
+ }
+ 
++// Save KV cache to shared memory
++static void slot_action_save_shm(httplib::Response& res, const nlohmann::json& j) {
++    if (!j.contains("shm_name") || !j.contains("shm_size")) {
++        res.set_content("{\"error\": \"shm_name and shm_size required\"}", "application/json");
++        res.status = 400;
++        return;
++    }
++    
++    const std::string shm_name = j["shm_name"].get<std::string>();
++    const size_t shm_size = j["shm_size"].get<size_t>();
++    
++    // Open existing POSIX SHM (created by Python)
++    int fd = shm_open(shm_name.c_str(), O_RDWR, 0666);
++    if (fd < 0) {
++        nlohmann::json error = {{"error", "shm_open failed: " + std::string(strerror(errno))}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Map it
++    void* shm_base = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++    if (shm_base == MAP_FAILED) {
++        close(fd);
++        nlohmann::json error = {{"error", "mmap failed: " + std::string(strerror(errno))}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Get KV cache token count
++    int n_tokens = llama_get_kv_cache_token_count(g_slot_ctx.ctx);
++    
++    // Serialize KV cache directly into SHM
++    // Layout: [metadata][layer_0_K][layer_0_V]...[layer_N_K][layer_N_V]
++    struct shm_metadata {
++        int n_layers;
++        int n_kv_heads;
++        int head_size;
++        int n_tokens;
++        size_t layer_offsets[128]; // max 128 layers
++    };
++    
++    shm_metadata* meta = (shm_metadata*)shm_base;
++    meta->n_layers = llama_model_n_layers(llama_get_model(g_slot_ctx.ctx));
++    meta->n_kv_heads = llama_model_n_kv_heads(llama_get_model(g_slot_ctx.ctx));
++    meta->head_size = llama_model_head_size(llama_get_model(g_slot_ctx.ctx));
++    meta->n_tokens = n_tokens;
++    
++    size_t offset = sizeof(shm_metadata);
++    for (int i = 0; i < meta->n_layers; i++) {
++        meta->layer_offsets[i] = offset;
++        
++        // Copy K cache for this layer
++        size_t k_size = n_tokens * meta->n_kv_heads * meta->head_size * sizeof(ggml_fp16_t);
++        llama_kv_cache_seq_cp(g_slot_ctx.ctx, i, 0, n_tokens, -1, true, (ggml_fp16_t*)((char*)shm_base + offset));
++        offset += k_size;
++        
++        // Copy V cache for this layer
++        size_t v_size = n_tokens * meta->n_kv_heads * meta->head_size * sizeof(ggml_fp16_t);
++        llama_kv_cache_seq_cp(g_slot_ctx.ctx, i, 0, n_tokens, -1, false, (ggml_fp16_t*)((char*)shm_base + offset));
++        offset += v_size;
++    }
++    
++    // Verify we didn't overflow
++    if (offset > shm_size) {
++        munmap(shm_base, shm_size);
++        close(fd);
++        nlohmann::json error = {{"error", "SHM size insufficient: need " + std::to_string(offset) + " bytes"}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Keep mapping open for restore - store in global
++    static thread_local shm_context active_shm;
++    active_shm.fd = fd;
++    active_shm.base = shm_base;
++    active_shm.size = shm_size;
++    active_shm.name = shm_name;
++    
++    nlohmann::json response = {
++        {"status", "ok"},
++        {"shm_name", shm_name},
++        {"bytes_written", offset},
++        {"n_tokens", n_tokens},
++        {"n_layers", meta->n_layers}
++    };
++    res.set_content(response.dump(), "application/json");
++}
++
++// Restore KV cache from shared memory
++static void slot_action_restore_shm(httplib::Response& res, const nlohmann::json& j) {
++    if (!j.contains("shm_name") || !j.contains("shm_size")) {
++        res.set_content("{\"error\": \"shm_name and shm_size required\"}", "application/json");
++        res.status = 400;
++        return;
++    }
++    
++    const std::string shm_name = j["shm_name"].get<std::string>();
++    const size_t shm_size = j["shm_size"].get<size_t>();
++    
++    // Open existing POSIX SHM
++    int fd = shm_open(shm_name.c_str(), O_RDWR, 0666);
++    if (fd < 0) {
++        nlohmann::json error = {{"error", "shm_open failed: " + std::string(strerror(errno))}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Map it
++    void* shm_base = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++    if (shm_base == MAP_FAILED) {
++        close(fd);
++        nlohmann::json error = {{"error", "mmap failed: " + std::string(strerror(errno))}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Read metadata
++    struct shm_metadata {
++        int n_layers;
++        int n_kv_heads;
++        int head_size;
++        int n_tokens;
++        size_t layer_offsets[128];
++    };
++    
++    shm_metadata* meta = (shm_metadata*)shm_base;
++    
++    // Verify model compatibility
++    int model_n_layers = llama_model_n_layers(llama_get_model(g_slot_ctx.ctx));
++    if (meta->n_layers != model_n_layers) {
++        munmap(shm_base, shm_size);
++        close(fd);
++        nlohmann::json error = {{"error", "Layer count mismatch: SHM has " + std::to_string(meta->n_layers) + ", model has " + std::to_string(model_n_layers)}};
++        res.set_content(error.dump(), "application/json");
++        res.status = 500;
++        return;
++    }
++    
++    // Restore KV cache from SHM
++    size_t offset = sizeof(shm_metadata);
++    for (int i = 0; i < meta->n_layers; i++) {
++        // Restore K cache
++        size_t k_size = meta->n_tokens * meta->n_kv_heads * meta->head_size * sizeof(ggml_fp16_t);
++        llama_copy_state_data(g_slot_ctx.ctx, (const char*)shm_base + offset, k_size, true, i);
++        offset += k_size;
++        
++        // Restore V cache
++        size_t v_size = meta->n_tokens * meta->n_kv_heads * meta->head_size * sizeof(ggml_fp16_t);
++        llama_copy_state_data(g_slot_ctx.ctx, (const char*)shm_base + offset, v_size, false, i);
++        offset += v_size;
++    }
++    
++    munmap(shm_base, shm_size);
++    close(fd);
++    
++    nlohmann::json response = {
++        {"status", "ok"},
++        {"shm_name", shm_name},
++        {"n_tokens_restored", meta->n_tokens},
++        {"n_layers", meta->n_layers}
++    };
++    res.set_content(response.dump(), "application/json");
++}
++
++
+ // slot polling
+ static void slot_action_poll(httplib::Response& res, const nlohmann::json& j) {
+     // ...
+@@ -500,6 +557,8 @@ static void server_init_slots() {
+     server.Post("/slot/restore", [](const httplib::Request& req, httplib::Response& res) {
+         nlohmann::json j = nlohmann::json::parse(req.body);
+         slot_action_restore(res, j);
+     });
++
++    server.Post("/slot/save_shm", [](const httplib::Request& req, httplib::Response& res) {
++        nlohmann::json j = nlohmann::json::parse(req.body);
++        slot_action_save_shm(res, j);
++    });
++
++    server.Post("/slot/restore_shm", [](const httplib::Request& req, httplib::Response& res) {
++        nlohmann::json j = nlohmann::json::parse(req.body);
++        slot_action_restore_shm(res, j);
++    });
+ }
+ 
+ // Main server entry point

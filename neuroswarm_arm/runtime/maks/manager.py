@@ -671,6 +671,32 @@ class KVManager:
             return await self.load_payload(rec.kv_id)
         raise KVNotFoundError(key)
 
+    async def read_payloads(self, session_id: str) -> list:
+        """
+        Read all physical block payloads for a session.
+
+        Returns list of layer data (dict with k/v tensors or raw bytes per layer).
+        Used by MAKStoLlamaKVBridge for zero-copy SHM transfer.
+        """
+        # Find all KV records for this session
+        recs = []
+        for rec in await self.registry.all_records():
+            if rec.session_id == session_id:
+                recs.append(rec)
+
+        if not recs:
+            return []
+
+        # Load payload for each record (each layer/block)
+        payloads = []
+        for rec in sorted(recs, key=lambda r: r.metadata.layer_count or 0):
+            data = await self.load_payload(rec.kv_id)
+            # Try to parse as structured layer data (K/V tensors)
+            # For now, return raw bytes per layer/block
+            payloads.append(data)
+
+        return payloads
+
     def start(self) -> None:
         self.scheduler.start()
 

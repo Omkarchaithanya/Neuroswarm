@@ -14,6 +14,19 @@ from typing import Any, Mapping, Sequence
 from .kleidiai_verifier import KleidiaiVerifier
 
 
+def _shm_enabled() -> bool:
+    """Check if NSA KV shared memory is enabled via environment."""
+    val = os.getenv("NSA_KV_SHM_ENABLED", "0").strip()
+    return val in {"1", "true", "TRUE", "yes"}
+
+
+def _get_shm_name(session_id: str | None = None) -> str:
+    """Generate shared memory name for session."""
+    if session_id:
+        return f"nsa_kv_{session_id}"
+    return f"nsa_kv_{os.getpid()}"
+
+
 @dataclass
 class SupervisedProcess:
     name: str
@@ -66,6 +79,7 @@ class ProcessSupervisor:
         env: Mapping[str, str] | None = None,
         cwd: str | None = None,
         numa_bind: Sequence[str] | None = None,
+        session_id: str | None = None,
     ) -> SupervisedProcess:
         with self._lock:
             if name in self._procs and self._procs[name].poll() is None:
@@ -80,6 +94,12 @@ class ProcessSupervisor:
                 # Single-UMA cache-aware pin via taskset (Axion path).
                 cpus = str(env["NSA_TASKSET_CPUS"])
                 cmd = ["taskset", "-c", cpus] + cmd
+            
+            # Add KV SHM backend if enabled
+            if _shm_enabled():
+                shm_name = _get_shm_name(session_id)
+                cmd.extend(["--kv-backend", "shm", "--kv-shm-name", shm_name])
+            
             log_path = self.log_dir / f"{name}.log"
             log_f = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
             full_env = dict(os.environ)
@@ -87,6 +107,12 @@ class ProcessSupervisor:
                 full_env.update({k: str(v) for k, v in env.items()})
             # Leave GGML_KLEIDIAI_SME unset for auto unless caller sets it.
             try:
+                # Pass the SHM fd to child process if SHM enabled
+                pass_fds = ()
+                if _shm_enabled() and hasattr(os, 'get_inheritable'):
+                    # The fd will be inherited by child process
+                    pass_fds = ()
+                
                 proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
@@ -95,6 +121,7 @@ class ProcessSupervisor:
                     env=full_env,
                     cwd=cwd,
                     bufsize=1,
+                    pass_fds=pass_fds,
                 )
             except Exception as exc:
                 log_f.close()
@@ -145,6 +172,7 @@ class ProcessSupervisor:
         base_url: str,
         env: Mapping[str, str] | None = None,
         cwd: str | None = None,
+        session_id: str | None = None,
     ) -> SupervisedProcess:
         with self._lock:
             meta = self._meta.get(name)
@@ -155,12 +183,19 @@ class ProcessSupervisor:
                 if proc is not None and proc.poll() is None:
                     return meta
             cmd = list(command)
+            
+            # Add KV SHM backend if enabled
+            if _shm_enabled():
+                shm_name = _get_shm_name(session_id)
+                cmd.extend(["--kv-backend", "shm", "--kv-shm-name", shm_name])
+            
             log_path = self.log_dir / f"{name}-draft.log"
             log_f = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
             full_env = dict(os.environ)
             if env:
                 full_env.update({k: str(v) for k, v in env.items()})
             try:
+                pass_fds = ()
                 proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
@@ -169,6 +204,7 @@ class ProcessSupervisor:
                     env=full_env,
                     cwd=cwd,
                     bufsize=1,
+                    pass_fds=pass_fds,
                 )
             except Exception as exc:
                 log_f.close()

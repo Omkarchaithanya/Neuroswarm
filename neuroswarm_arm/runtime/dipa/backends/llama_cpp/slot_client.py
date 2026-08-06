@@ -214,6 +214,61 @@ class SlotClient:
         except error.URLError as exc:
             raise RuntimeError(f"unavailable: {exc.reason}") from exc
 
+    def kv_export_shm(self, id_slot: int, shm_name: str) -> dict[str, Any]:
+        """
+        Save slot KV to shared memory via llama-server /slots/{id}?action=save_shm.
+
+        Args:
+            id_slot: Slot ID to export from
+            shm_name: Name of the SHM segment (e.g., "nsa_kv_session123")
+
+        Returns:
+            Server response dict
+        """
+        return self._post_slot_action(id_slot, "save_shm", {"shm_name": shm_name})
+
+    def kv_import_shm(self, id_slot: int, shm_name: str, offset: int = 0) -> dict[str, Any]:
+        """
+        Restore slot KV from shared memory via llama-server /slots/{id}?action=restore_shm.
+
+        Args:
+            id_slot: Slot ID to import into
+            shm_name: Name of the SHM segment
+            offset: Byte offset into SHM where KV data starts (default 0, after metadata header)
+
+        Returns:
+            Server response dict
+        """
+        return self._post_slot_action(id_slot, "restore_shm", {"shm_name": shm_name, "offset": offset})
+
+    async def restore_from_shm(self, id_slot: int, shm_name: str) -> None:
+        """
+        Async wrapper for kv_import_shm.
+
+        Args:
+            id_slot: Slot ID to restore into
+            shm_name: Name of the SHM segment
+        """
+        import asyncio
+        await asyncio.to_thread(self.kv_import_shm, id_slot, shm_name)
+
+    def kv_import_from_shm(self, id_slot: int, shm_name: str, offset_map: dict) -> dict[str, Any]:
+        """
+        Import KV from SHM with offset map (for metadata-aware restore).
+
+        Args:
+            id_slot: Slot ID
+            shm_name: SHM segment name
+            offset_map: Dict mapping tensor names to {offset, size, shape, dtype, layer, head}
+
+        Returns:
+            Server response dict
+        """
+        return self._post_slot_action(id_slot, "restore_shm", {
+            "shm_name": shm_name,
+            "offset_map": offset_map,
+        })
+
 
 class SlotContext:
     """Async context manager: save SOURCE slot on entry, restore TARGET on exit."""

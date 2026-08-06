@@ -43,6 +43,7 @@ from neuroswarm_arm.runtime.dipa.backends.llama_cpp.kleidiai_verifier import (
 )
 from .process_supervisor import ProcessSupervisor
 from .slot_client import SlotClient
+from .kv_bridge import MAKStoLlamaKVBridge
 
 
 def _slot_kv_reuse_enabled() -> bool:
@@ -355,6 +356,18 @@ class LlamaCppBackend(InferenceBackend):
         )
         self._kleidiai_active: bool | None = None
 
+        # Initialize KV bridge for zero-copy SHM transfer
+        self._kv_bridge: MAKStoLlamaKVBridge | None = None
+        if os.getenv("NSA_KV_SHM_BRIDGE", "0").strip() in {"1", "true", "TRUE", "yes"}:
+            # MAKS manager would be injected; for now create bridge with None manager
+            # The MAKS manager should be set via set_maks_manager() before use
+            self._kv_bridge = MAKStoLlamaKVBridge(maks_manager=None, slot_client=self._slots)
+
+    def set_maks_manager(self, maks_manager: Any) -> None:
+        """Set the MAKS manager for the KV bridge."""
+        if self._kv_bridge is not None:
+            self._kv_bridge._maks_manager = maks_manager
+
     def configure_draft(
         self,
         *,
@@ -651,7 +664,25 @@ class LlamaCppBackend(InferenceBackend):
         if isinstance(slot_id, int):
             metrics["slot_id"] = float(slot_id)
             metrics["id_slot"] = float(slot_id)
+        # Use SHM bridge for zero-copy KV transfer when enabled
         if (
+            self._kv_bridge is not None
+            and req.kv_handle
+            and isinstance(slot_id, int)
+        ):
+            try:
+                shm_name = await self._kv_bridge.share_session_kv(
+                    req.session_id, slot_id, self
+                )
+                # Store shm_name in kv_handle for future use
+                req.kv_handle = shm_name
+                metrics["slot_kv_saved"] = 1.0
+                metrics["slot_kv_shm"] = 1.0
+            except Exception:
+                # Soft-fail: fall back to file-based or skip
+                metrics["slot_kv_saved"] = 0.0
+                metrics["slot_kv_shm"] = 0.0
+        elif (
             _slot_kv_reuse_enabled()
             and req.kv_handle
             and isinstance(slot_id, int)
