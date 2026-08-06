@@ -123,11 +123,16 @@ class CascadeRouter:
             kwargs: dict[str, Any] = {}
             if tier_id == 3:
                 kwargs["chat_template_kwargs"] = {"enable_thinking": False}
+            if req.tools:
+                kwargs["tools"] = req.tools
+            if req.tool_choice:
+                kwargs["tool_choice"] = req.tool_choice
             max_tok = min(req.max_tokens, cap) if tier_id == start_tier else req.max_tokens
             payload = client.chat(
                 messages, max_tokens=max_tok, temperature=req.temperature, **kwargs
             )
             content = self._extract_text(payload)
+            tool_calls = self._extract_tool_calls(payload)
             conf = self._confidence(content)
             tier_used = tier_id
             threshold = thresholds.get(tier_id, 0.0)
@@ -148,7 +153,7 @@ class CascadeRouter:
             model=req.model,
             tier_used=tier_used,
             content=content,
-            choices=[ChatChoice(message=Message(role="assistant", content=content))],
+            choices=[ChatChoice(message=Message(role="assistant", content=content, tool_calls=tool_calls or None))],
             usage=ChatUsage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
@@ -156,6 +161,7 @@ class CascadeRouter:
             ),
             tool_schemas_used=tool_names,
             thinking_token_cap=cap,
+            tool_calls=tool_calls,
             metrics={
                 "latency_ms": elapsed_ms,
                 "tool_schema_count": float(len(tool_names)),
@@ -218,6 +224,12 @@ class CascadeRouter:
             return content
         except Exception:
             return str(payload)
+
+    def _extract_tool_calls(self, payload: dict) -> list[dict]:
+        try:
+            return list(payload["choices"][0]["message"].get("tool_calls") or [])
+        except Exception:
+            return []
 
     def _approx_tokens(self, text: str) -> int:
         if not text.strip():

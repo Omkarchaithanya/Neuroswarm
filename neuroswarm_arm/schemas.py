@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class Message(BaseModel):
     role: str
     content: str
+    tool_calls: list[dict] | None = None
 
 
 class ChatRequest(BaseModel):
@@ -20,6 +21,8 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
     agent_id: str = "default"
     stream: bool = False
+    tools: list[dict] | None = None
+    tool_choice: str | dict | None = None
 
 
 class ToolDef(BaseModel):
