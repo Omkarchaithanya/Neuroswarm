@@ -161,3 +161,4 @@ work/arop/
 !.cursor/mcp.json.example
 # Observability nginx basic-auth (generated; never commit secrets)
 ops/nginx/obs.htpasswd
+llama.cpp/
