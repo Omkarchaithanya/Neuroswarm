@@ -606,6 +606,7 @@ class LlamaCppBackend(InferenceBackend):
             index += 1
 
     async def generate(
+        slot_reused = False  # FIX: prevent NameError
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
         t0 = time.perf_counter()
