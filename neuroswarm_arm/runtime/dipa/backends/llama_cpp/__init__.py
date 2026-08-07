@@ -1,6 +1,6 @@
-"""NSA KV Shared Memory Allocator Package."""
+"""NSA llama.cpp backend package: HTTP client, InferenceBackend, and KV shared-memory allocator."""
 
-from .backend import LlamaCppBackend
+from .backend import LlamaCppBackend, LlamaHttpClient
 from .native_shm import (
     LlamaCppSharedMemoryAllocator,
     BufferInfo,
@@ -9,6 +9,7 @@ from .native_shm import (
 
 __all__ = [
     "LlamaCppBackend",
+    "LlamaHttpClient",
     "LlamaCppSharedMemoryAllocator",
     "BufferInfo",
     "create_allocator",
