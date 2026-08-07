@@ -606,9 +606,9 @@ class LlamaCppBackend(InferenceBackend):
             index += 1
 
     async def generate(
-        slot_reused = False  # FIX: prevent NameError
         self, req: GenerateRequest, ctx: ExecutionContext
     ) -> GenerateResult:
+        slot_reused = False  # FIX: prevent NameError
         t0 = time.perf_counter()
         # Prepare telemetry attributes for this generation request
         span_attrs = {
