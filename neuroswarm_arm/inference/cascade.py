@@ -118,21 +118,21 @@ class CascadeRouter:
         tier_clients = {1: self.tier1, 2: self.tier2, 3: self.tier3}
         thresholds = {1: self.confidence_threshold, 2: 0.5, 3: 0.0}
 
+        tier_messages = messages
+        if req.tools:
+            tier_messages = self._inject_xlam_tool_prompt(messages, req.tools)
+
         for tier_id in range(start_tier, 4):
             client = tier_clients[tier_id]
             kwargs: dict[str, Any] = {}
             if tier_id == 3:
                 kwargs["chat_template_kwargs"] = {"enable_thinking": False}
-            if req.tools:
-                kwargs["tools"] = req.tools
-            if req.tool_choice:
-                kwargs["tool_choice"] = req.tool_choice
             max_tok = min(req.max_tokens, cap) if tier_id == start_tier else req.max_tokens
             payload = client.chat(
-                messages, max_tokens=max_tok, temperature=req.temperature, **kwargs
+                tier_messages, max_tokens=max_tok, temperature=req.temperature, **kwargs
             )
             content = self._extract_text(payload)
-            tool_calls = self._extract_tool_calls(payload)
+            tool_calls = self._extract_tool_calls(payload, content)
             conf = self._confidence(content)
             tier_used = tier_id
             threshold = thresholds.get(tier_id, 0.0)
@@ -213,6 +213,57 @@ class CascadeRouter:
             score -= 0.2
         return max(0.0, min(1.0, score))
 
+    def _inject_xlam_tool_prompt(self, messages: list[dict], tools: list[dict]) -> list[dict]:
+        """Build Salesforce xLAM native tool-call prompt.
+
+        xLAM-fc-r models are NOT compatible with llama.cpp's native
+        tools/tool_choice grammar enforcement (confirmed: sending a
+        `tools` field triggers a fatal "peg-native format" parse error).
+        Instead, tool definitions must be embedded as instruction text in
+        this exact bracketed-block format, and the model replies with a
+        raw JSON array in plain content — no native tool_calls field.
+        """
+        import json
+
+        xlam_tools = []
+        for tool in tools:
+            if isinstance(tool, dict) and "function" in tool:
+                fn = tool["function"]
+                xlam_tools.append({
+                    "name": fn.get("name", ""),
+                    "description": fn.get("description", ""),
+                    "parameters": {
+                        k: v for k, v in fn.get("parameters", {}).get("properties", {}).items()
+                    },
+                })
+            else:
+                xlam_tools.append(tool)
+
+        task_instruction = (
+            "You are an expert in composing functions. You are given a question "
+            "and a set of possible functions. Based on the question, you will "
+            "need to make one or more function/tool calls to achieve the "
+            "purpose. If none of the functions can be used, point it out."
+        )
+        format_instruction = (
+            "The output MUST strictly be a JSON array, and NO other text MUST "
+            "be included.\nExample: "
+            '[{"name": "func_name", "arguments": {"arg1": "val1"}}]\n'
+            "If no function call is needed, output an empty array: []"
+        )
+        query = messages[-1]["content"] if messages else ""
+
+        prompt = (
+            f"[BEGIN OF TASK INSTRUCTION]\n{task_instruction}\n[END OF TASK INSTRUCTION]\n\n"
+            f"[BEGIN OF AVAILABLE TOOLS]\n{json.dumps(xlam_tools)}\n[END OF AVAILABLE TOOLS]\n\n"
+            f"[BEGIN OF FORMAT INSTRUCTION]\n{format_instruction}\n[END OF FORMAT INSTRUCTION]\n\n"
+            f"[BEGIN OF QUERY]\n{query}\n[END OF QUERY]\n"
+        )
+
+        new_messages = list(messages[:-1])
+        new_messages.append({"role": "user", "content": prompt})
+        return new_messages
+
     def _extract_text(self, payload: dict) -> str:
         try:
             msg = payload["choices"][0]["message"]
@@ -225,11 +276,33 @@ class CascadeRouter:
         except Exception:
             return str(payload)
 
-    def _extract_tool_calls(self, payload: dict) -> list[dict]:
+    def _extract_tool_calls(self, payload: dict, content: str = "") -> list[dict]:
         try:
-            return list(payload["choices"][0]["message"].get("tool_calls") or [])
+            native = list(payload["choices"][0]["message"].get("tool_calls") or [])
+            if native:
+                return native
         except Exception:
-            return []
+            pass
+        stripped = (content or "").strip()
+        if stripped.startswith("["):
+            try:
+                import json
+                arr = json.loads(stripped)
+                if isinstance(arr, list):
+                    return [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": call.get("name", ""),
+                                "arguments": call.get("arguments", {}),
+                            },
+                        }
+                        for call in arr
+                        if isinstance(call, dict)
+                    ]
+            except Exception:
+                pass
+        return []
 
     def _approx_tokens(self, text: str) -> int:
         if not text.strip():
