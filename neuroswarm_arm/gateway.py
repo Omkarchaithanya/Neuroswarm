@@ -458,7 +458,7 @@ class AgentGateway:
                 prompt_token_estimate=int(getattr(usage, "prompt_tokens", 0) or 0),
                 planner_decision_trace={
                     "tier_used": tier,
-                    "tool_schemas_used": list(getattr(response, "tool_schemas_used", []) or []),
+                    "tool_schemas_used": ([t.get("function", {}).get("name", t.get("name", "unknown")) for t in (request.tools or [])] or list(getattr(response, "tool_schemas_used", []) or []),),  # FIX: prefer request.tools
                 },
                 extensions={"source": "AgentGateway"},
             )
@@ -477,7 +477,7 @@ class AgentGateway:
                         "peak_memory_bytes": float(metrics.get("peak_memory_bytes", 0) or 0),
                         "average_memory_bytes": float(metrics.get("average_memory_bytes", 0) or 0),
                         "kv_cache_bytes": float(metrics.get("kv_bytes", 0) or 0),
-                        "tool_calls": float(len(getattr(response, "tool_schemas_used", []) or [])),
+                        "tool_schemas_used": ([t.get("function", {}).get("name", t.get("name", "unknown")) for t in (request.tools or [])] or float(len(getattr(response, "tool_schemas_used", []) or [])),),  # FIX: prefer request.tools
                         "retries": float(metrics.get("retries", 0) or 0),
                         "estimated_energy_joules": float(metrics.get("energy_joules", 0) or 0),
                     },
