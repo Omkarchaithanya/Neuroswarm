@@ -1,10 +1,4 @@
----
-title: NeuroSwarm-Arm
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
+
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/skandaganesha24/some-placeholder.png" alt="NeuroSwarm-Arm" width="340" style="border-radius: 10px;">
